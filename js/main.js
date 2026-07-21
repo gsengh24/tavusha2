@@ -344,6 +344,48 @@ function selectSize(btn, size) {
   TAVUSHA.selectedSize = size;
 }
 
+// ─── INTERACTIVE STYLE QUIZ ───────────────────────────────────
+function updateStyleQuiz(mode, btn) {
+  document.querySelectorAll('.style-quiz-btn').forEach(b => b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+
+  const imgEl   = document.getElementById('quizImg');
+  const titleEl = document.getElementById('quizTitle');
+  const descEl  = document.getElementById('quizDesc');
+
+  const quizData = {
+    gala: {
+      img: 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&q=80',
+      title: 'Ivory Silk Evening Gown',
+      desc: 'Draped cowl neckline in champagne silk. Pair with minimal gold jewelry.',
+      id: 1
+    },
+    brunch: {
+      img: 'https://images.unsplash.com/photo-1583496661160-fb5886a0aaaa?w=300&q=80',
+      title: 'Blush Satin Co-ord Set',
+      desc: 'Cropped tailored blazer and wide-leg trousers—effortlessly chic.',
+      id: 2
+    },
+    sangeet: {
+      img: 'assets/images/ethnic.jpg',
+      title: 'Gold Embroidered Anarkali',
+      desc: 'Intricate gold threadwork on a flowing silhouette. Ceremonial splendour.',
+      id: 9
+    },
+    office: {
+      img: 'assets/images/workwear.jpg',
+      title: 'Ivory Oversized Blazer',
+      desc: 'Structured power blazer with peak lapels. Boardroom to dinner ready.',
+      id: 7
+    }
+  };
+
+  const item = quizData[mode] || quizData.gala;
+  if (imgEl)   imgEl.src = item.img;
+  if (titleEl) titleEl.textContent = item.title;
+  if (descEl)  descEl.textContent  = item.desc;
+}
+
 // ─── CART ─────────────────────────────────────────────────────
 function addToCartFromQuickView() {
   if (!TAVUSHA.quickViewProduct) return;

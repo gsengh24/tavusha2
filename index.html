@@ -196,6 +196,26 @@
   </div>
 </section>
 
+<!-- ═══ INFINITE MARQUEE TAPE 1 (GOLD) ════════════════════════════ -->
+<div class="marquee-ribbon marquee-ribbon--gold">
+  <div class="marquee-ribbon__track">
+    <div class="marquee-ribbon__item">SPRING SUMMER 2026 <span>✦</span> SILK &amp; SATIN EDIT <span>✦</span> CURATED BY TAVUSHA <span>✦</span> INSPIRED BY COUTURE <span>✦</span> FASHION IS IDENTITY <span>✦</span> HIGH GLAMOUR <span>✦</span></div>
+    <div class="marquee-ribbon__item">SPRING SUMMER 2026 <span>✦</span> SILK &amp; SATIN EDIT <span>✦</span> CURATED BY TAVUSHA <span>✦</span> INSPIRED BY COUTURE <span>✦</span> FASHION IS IDENTITY <span>✦</span> HIGH GLAMOUR <span>✦</span></div>
+  </div>
+</div>
+
+<!-- ═══ PRESS / MEDIA RIBBON ══════════════════════════════════════ -->
+<section class="press-ribbon">
+  <div class="press-ribbon__title">AS FEATURED IN</div>
+  <div class="press-ribbon__logos">
+    <span class="press-logo">VOGUE</span>
+    <span class="press-logo">ELLE</span>
+    <span class="press-logo">HARPER'S BAZAAR</span>
+    <span class="press-logo">GRAZIA</span>
+    <span class="press-logo">COSMOPOLITAN</span>
+  </div>
+</section>
+
 <!-- ═══════════════════════════════════════════════════════════════
      MANIFESTO SECTION
      Reference: "We deliver the perfect outfit to match [photo] your identity"
@@ -295,6 +315,70 @@
 </section>
 
 <!-- ═══════════════════════════════════════════════════════════════
+     EDITORIAL CAMPAIGN POSTER SPREAD (DESIGNER FEATURE)
+═══════════════════════════════════════════════════════════════ -->
+<section class="poster-spread" id="poster-spread">
+  <div class="poster-spread__header">
+    <div class="poster-spread__eyebrow">Editorial Campaign 2026</div>
+    <h2 class="poster-spread__title reveal">The Couture &amp; Cocktail Edit</h2>
+  </div>
+
+  <div class="poster-spread__grid">
+    <!-- Main Magazine Feature Poster -->
+    <div class="main-poster reveal" onclick="openQuickView(1)">
+      <img class="main-poster__bg" src="assets/images/party_wear.jpg" alt="Campaign Poster" loading="lazy">
+      <div class="main-poster__overlay"></div>
+
+      <!-- Rotating Circular Seal Stamp -->
+      <div class="circular-seal">
+        <svg viewBox="0 0 100 100">
+          <path id="sealPath" fill="none" d="M 50, 50 m -37, 0 a 37,37 0 1,1 74,0 a 37,37 0 1,1 -74,0"/>
+          <text font-size="9.5" font-weight="700" letter-spacing="2">
+            <textPath href="#sealPath">★ TAVUSHA SELECTION ★ MUMBAI - MILAN</textPath>
+          </text>
+        </svg>
+      </div>
+
+      <div class="main-poster__content">
+        <span class="main-poster__tag">Limited Run — 250 Pieces</span>
+        <h3 class="main-poster__headline">Ivory Silk Evening Gown</h3>
+        <p class="main-poster__sub">Fluid cowl neckline and open back draped in pure mulberry silk. A masterclass in quiet luxury.</p>
+        <button class="btn-pill btn-pill--gold">Shop The Campaign →</button>
+      </div>
+    </div>
+
+    <!-- Side Poster Stack + Quote Filler -->
+    <div class="poster-side">
+      <div class="side-poster-card reveal delay-1" onclick="openQuickView(9)">
+        <img class="side-poster-card__img" src="assets/images/ethnic.jpg" alt="Ethnic Feature" loading="lazy">
+        <div>
+          <div class="side-poster-card__badge">Heritage Couture</div>
+          <h4 class="side-poster-card__title">Gold Embroidered Anarkali</h4>
+          <p class="side-poster-card__quote">"Ceremonial splendour crafted for modern celebrations."</p>
+          <span style="font-size:0.75rem;font-weight:700;color:var(--brand-dark)">Explore Heritage →</span>
+        </div>
+      </div>
+
+      <div class="side-poster-card reveal delay-2" onclick="openQuickView(7)">
+        <img class="side-poster-card__img" src="assets/images/workwear.jpg" alt="Power Dressing" loading="lazy">
+        <div>
+          <div class="side-poster-card__badge">Power Tailoring</div>
+          <h4 class="side-poster-card__title">Ivory Oversized Blazer</h4>
+          <p class="side-poster-card__quote">"Boardroom precision meets effortless evening allure."</p>
+          <span style="font-size:0.75rem;font-weight:700;color:var(--brand-dark)">Explore Tailoring →</span>
+        </div>
+      </div>
+
+      <!-- Quote Box Filler -->
+      <div class="designer-quote-box reveal delay-3">
+        <p class="designer-quote-box__text">"Fashion is not something that exists in dresses only. Fashion is in the sky, in the street; fashion has to do with ideas."</p>
+        <p class="designer-quote-box__author">— TAVUSHA EDITORIAL DIRECTORY</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════════
      CATEGORY BROWSER
      Reference: Large typographic stacked list with one highlighted
      + Sub-category tabs: Everyday | Essential | Active
@@ -327,6 +411,82 @@
     </div>
   </div>
 </section>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     INTERACTIVE STYLE QUIZ / FIT FINDER WIDGET
+═══════════════════════════════════════════════════════════════ -->
+<div class="style-finder-widget reveal">
+  <div>
+    <h3 class="style-finder__title">Find Your Signature Occasion Fit</h3>
+    <p class="style-finder__sub">Select your upcoming occasion to unlock the editor's recommended styling combination.</p>
+
+    <div class="style-finder__options">
+      <button class="style-quiz-btn active" onclick="updateStyleQuiz('gala', this)">Gala Night</button>
+      <button class="style-quiz-btn" onclick="updateStyleQuiz('brunch', this)">Sunday Brunch</button>
+      <button class="style-quiz-btn" onclick="updateStyleQuiz('sangeet', this)">Sangeet &amp; Wedding</button>
+      <button class="style-quiz-btn" onclick="updateStyleQuiz('office', this)">Executive Luxe</button>
+    </div>
+  </div>
+
+  <div class="style-finder__preview" id="styleQuizPreview">
+    <img class="style-finder__img" id="quizImg" src="https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=300&q=80" alt="Gala Pick">
+    <div>
+      <div style="font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--brand);margin-bottom:4px">Recommended Look</div>
+      <div class="style-finder__rec-name" id="quizTitle">Ivory Silk Evening Gown</div>
+      <div class="style-finder__rec-desc" id="quizDesc">Draped cowl neckline in champagne silk. Pair with minimal gold jewelry.</div>
+      <button class="btn-pill btn-pill--gold" onclick="openQuickView(1)" style="padding:8px 18px;font-size:0.65rem">Shop Look →</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════════
+     LOOKBOOK POLAROID MOODBOARD GRID
+═══════════════════════════════════════════════════════════════ -->
+<section class="moodboard-section">
+  <div style="text-align:center;margin-bottom:48px">
+    <div style="font-size:0.65rem;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;color:var(--brand-dark);margin-bottom:8px">Community &amp; Style</div>
+    <h2 style="font-family:var(--font-display);font-size:clamp(2rem,4vw,3.5rem);font-weight:700">#TAVUSHAWOMEN Lookbook</h2>
+    <p style="font-size:0.85rem;color:var(--warm-grey)">Tag @TAVUSHA on Instagram to be featured on our editorial board.</p>
+  </div>
+
+  <div class="moodboard-grid">
+    <div class="polaroid-card reveal" onclick="openQuickView(1)">
+      <div class="polaroid-tape"></div>
+      <img class="polaroid-card__img" src="assets/images/party_wear.jpg" alt="Lookbook 1" loading="lazy">
+      <div class="polaroid-card__caption">Evening Glamour</div>
+      <span class="polaroid-card__tag">@priya_sharma</span>
+    </div>
+
+    <div class="polaroid-card reveal delay-1" onclick="openQuickView(3)">
+      <div class="polaroid-tape"></div>
+      <img class="polaroid-card__img" src="assets/images/vacation.jpg" alt="Lookbook 2" loading="lazy">
+      <div class="polaroid-card__caption">Resort Sunset</div>
+      <span class="polaroid-card__tag">@ananya_k</span>
+    </div>
+
+    <div class="polaroid-card reveal delay-2" onclick="openQuickView(9)">
+      <div class="polaroid-tape"></div>
+      <img class="polaroid-card__img" src="assets/images/ethnic.jpg" alt="Lookbook 3" loading="lazy">
+      <div class="polaroid-card__caption">Heritage Sangeet</div>
+      <span class="polaroid-card__tag">@radhika_m</span>
+    </div>
+
+    <div class="polaroid-card reveal delay-3" onclick="openQuickView(7)">
+      <div class="polaroid-tape"></div>
+      <img class="polaroid-card__img" src="assets/images/workwear.jpg" alt="Lookbook 4" loading="lazy">
+      <div class="polaroid-card__caption">Power Hour</div>
+      <span class="polaroid-card__tag">@neha_kapoor</span>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ INFINITE MARQUEE TAPE 2 (DARK) ═══════════════════════════ -->
+<div class="marquee-ribbon">
+  <div class="marquee-ribbon__track">
+    <div class="marquee-ribbon__item">EXPRESS SHIPPING <span>✦</span> EASY 7-DAY RETURNS <span>✦</span> 100% ETHICALLY CURATED <span>✦</span> LUXURY PACKAGING INCLUDED <span>✦</span> CUSTOMER CARE 24/7 <span>✦</span></div>
+    <div class="marquee-ribbon__item">EXPRESS SHIPPING <span>✦</span> EASY 7-DAY RETURNS <span>✦</span> 100% ETHICALLY CURATED <span>✦</span> LUXURY PACKAGING INCLUDED <span>✦</span> CUSTOMER CARE 24/7 <span>✦</span></div>
+  </div>
+</div>
 
 <!-- ═══════════════════════════════════════════════════════════════
      CUSTOMER REVIEWS
