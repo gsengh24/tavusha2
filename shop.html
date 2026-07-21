@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Explore the full TAVUSHA catalog — Curated premium fashion for every occasion.">
+  <title>Shop All — TAVUSHA</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='26' font-family='serif' font-weight='bold'>T</text></svg>">
+  <style>
+    .shop-page { padding: 40px var(--container-pad) 80px; }
+    .shop-header { margin-bottom: 40px; text-align: center; }
+    .shop-header__eyebrow { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brand-dark); margin-bottom: 8px; }
+    .shop-header__title { font-family: var(--font-display); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; color: var(--black); line-height: 1.1; margin-bottom: 12px; }
+    .shop-header__desc { font-size: 0.9rem; color: var(--warm-grey); max-width: 540px; margin: 0 auto; }
+    
+    .shop-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 40px; }
+    .shop-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+    .filter-btn { padding: 8px 18px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: transparent; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); cursor: pointer; transition: all var(--dur-fast); font-family: var(--font-ui); }
+    .filter-btn:hover { border-color: var(--black); color: var(--black); }
+    .filter-btn.active { background: var(--black); color: #fff; border-color: var(--black); }
+    
+    .shop-sort { display: flex; align-items: center; gap: 10px; font-size: 0.75rem; color: var(--warm-grey); }
+    .sort-select { padding: 8px 16px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--white); font-size: 0.75rem; font-family: var(--font-ui); color: var(--black); outline: none; cursor: pointer; }
+    
+    .shop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
+    .shop-count { font-size: 0.75rem; color: var(--warm-grey); font-weight: 500; }
+
+    @media (max-width: 1024px) {
+      .shop-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    @media (max-width: 768px) {
+      .shop-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
+      .shop-controls { flex-direction: column; align-items: flex-start; }
+    }
+    @media (max-width: 480px) {
+      .shop-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ ANNOUNCEMENT ════════════════════════════════════════════ -->
+<div class="announcement" id="announcement">
+  ✦ &nbsp;Free Shipping on Orders Above ₹2,499 &nbsp;·&nbsp; Code <strong>TAVUSHA10</strong> — 10% Off First Order &nbsp;✦
+  <button class="announcement__close" id="announcementClose" aria-label="Close">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+</div>
+
+<!-- ═══ NAVIGATION ═══════════════════════════════════════════════ -->
+<nav class="nav" id="nav">
+  <div class="nav__primary">
+    <div class="nav__left">
+      <a href="index.html" class="nav__link">Home</a>
+      <a href="shop.html" class="nav__link active">Shop All</a>
+      <a href="#" class="nav__link">Occasion</a>
+      <a href="#" class="nav__link">Ethnic</a>
+    </div>
+
+    <a href="index.html" class="nav__logo">TAVUSHA</a>
+
+    <div class="nav__right">
+      <button class="nav__icon-btn" id="searchBtn" aria-label="Search">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+      </button>
+      <button class="nav__icon-btn" id="wishlistBtn" aria-label="Wishlist">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span class="nav__badge-dot" id="wishlistCount" style="display:none">0</span>
+      </button>
+      <button class="nav__icon-btn" id="cartBtn" aria-label="Cart">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+        <span class="nav__badge-dot" id="cartCount">0</span>
+      </button>
+      <button class="nav__hamburger" id="hamburger" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<!-- ═══ MOBILE MENU ══════════════════════════════════════════════ -->
+<div class="mobile-menu" id="mobileMenu">
+  <button class="mobile-menu__close" id="mobileMenuClose" aria-label="Close">
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <nav class="mobile-menu__links">
+    <a href="index.html" class="mobile-menu__link">Home</a>
+    <a href="shop.html" class="mobile-menu__link">Shop All</a>
+    <a href="#" class="mobile-menu__link">Occasions</a>
+    <a href="#" class="mobile-menu__link">Ethnic Wear</a>
+  </nav>
+</div>
+
+<!-- ═══ SHOP PAGE CONTENT ════════════════════════════════════════ -->
+<main class="shop-page">
+  <div class="shop-header">
+    <p class="shop-header__eyebrow">Curated Collection</p>
+    <h1 class="shop-header__title">The TAVUSHA Catalog</h1>
+    <p class="shop-header__desc">Discover handpicked styles for every mood, occasion, and statement. High fashion meets everyday luxury.</p>
+  </div>
+
+  <div class="shop-controls">
+    <div class="shop-filters">
+      <button class="filter-btn active" data-cat="all" onclick="filterShop('all', this)">All Items</button>
+      <button class="filter-btn" data-cat="party" onclick="filterShop('party', this)">Party Wear</button>
+      <button class="filter-btn" data-cat="ethnic" onclick="filterShop('ethnic', this)">Ethnic Wear</button>
+      <button class="filter-btn" data-cat="casual" onclick="filterShop('casual', this)">Casual Luxe</button>
+      <button class="filter-btn" data-cat="maxi" onclick="filterShop('maxi', this)">Maxi Dresses</button>
+      <button class="filter-btn" data-cat="coord" onclick="filterShop('coord', this)">Co-ords</button>
+    </div>
+
+    <div class="shop-sort">
+      <span class="shop-count" id="shopCount">Showing 12 items</span>
+      <select class="sort-select" id="sortSelect" onchange="sortShop(this.value)">
+        <option value="featured">Sort by: Featured</option>
+        <option value="price-low">Price: Low to High</option>
+        <option value="price-high">Price: High to Low</option>
+        <option value="rating">Highest Rated</option>
+      </select>
+    </div>
+  </div>
+
+  <div class="shop-grid" id="shopGrid">
+    <!-- Products rendered dynamically by JS -->
+  </div>
+</main>
+
+<!-- ═══ FOOTER ════════════════════════════════════════════════════ -->
+<footer class="footer-ref">
+  <div class="footer-ref__grid">
+    <div>
+      <div class="footer-ref__logo">TAVUSHA</div>
+      <p class="footer-ref__desc">Your premium one-stop fashion destination. Curated collections for every woman.</p>
+    </div>
+    <div>
+      <div class="footer-ref__col-title">Shop</div>
+      <ul class="footer-ref__links">
+        <li><a href="shop.html" class="footer-ref__link">All Items</a></li>
+        <li><a href="shop.html?cat=party" class="footer-ref__link">Party Wear</a></li>
+        <li><a href="shop.html?cat=ethnic" class="footer-ref__link">Ethnic Wear</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-ref__col-title">Help</div>
+      <ul class="footer-ref__links">
+        <li><a href="#" class="footer-ref__link">Size Guide</a></li>
+        <li><a href="#" class="footer-ref__link">Shipping Info</a></li>
+        <li><a href="#" class="footer-ref__link">Returns</a></li>
+      </ul>
+    </div>
+    <div>
+      <div class="footer-ref__col-title">About</div>
+      <ul class="footer-ref__links">
+        <li><a href="#" class="footer-ref__link">Our Story</a></li>
+        <li><a href="#" class="footer-ref__link">Journal</a></li>
+      </ul>
+    </div>
+  </div>
+  <div class="footer-ref__bottom">
+    <p class="footer-ref__copy">© 2026 TAVUSHA. All rights reserved.</p>
+  </div>
+</footer>
+
+<!-- ═══ CART DRAWER ════════════════════════════════════════════════ -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cartDrawer">
+  <div class="cart-drawer__header">
+    <h2 class="cart-drawer__title">Your Bag</h2>
+    <button class="cart-drawer__close" onclick="closeCart()" aria-label="Close">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="cart-drawer__items" id="cartItems"></div>
+  <div class="cart-drawer__footer" id="cartFooter" style="display:none">
+    <div class="cart-drawer__subtotal">
+      <span class="cart-drawer__label">Subtotal</span>
+      <span class="cart-drawer__total" id="cartTotal">₹0</span>
+    </div>
+    <p class="cart-drawer__shipping">✦ Free shipping on your order!</p>
+    <button class="cart-drawer__checkout" onclick="showToast('Checkout coming soon!','info')">Proceed to Checkout</button>
+    <button class="cart-drawer__continue" onclick="closeCart()">Continue Shopping</button>
+  </div>
+</div>
+
+<!-- ═══ QUICK VIEW MODAL ═══════════════════════════════════════════ -->
+<div class="modal-overlay" id="quickViewOverlay" onclick="closeQuickView(event)">
+  <div class="quick-view" id="quickView">
+    <div class="quick-view__gallery" style="background:var(--card-rose)">
+      <img class="quick-view__img" id="quickViewImg" src="" alt="">
+      <button class="quick-view__close" onclick="closeQuickView()" aria-label="Close">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="quick-view__info">
+      <div class="quick-view__brand" id="quickViewBrand"></div>
+      <h2 class="quick-view__name" id="quickViewName"></h2>
+      <div class="quick-view__price" id="quickViewPrice"></div>
+      <div class="quick-view__divider"></div>
+      <div class="quick-view__size-label">Select Size</div>
+      <div class="quick-view__sizes" id="quickViewSizes"></div>
+      <button class="quick-view__add" onclick="addToCartFromQuickView()">Add to Bag</button>
+      <button class="quick-view__wishlist-btn" id="quickViewWishBtn" onclick="toggleWishlistQuickView()">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        Add to Wishlist
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SEARCH OVERLAY ════════════════════════════════════════════ -->
+<div class="search-overlay" id="searchOverlay">
+  <button class="search-overlay__close" onclick="closeSearch()" aria-label="Close">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+  <p class="search-overlay__hint">What are you looking for?</p>
+  <form class="search-overlay__form" onsubmit="handleSearch(event)">
+    <input class="search-overlay__input" id="searchInput" type="text" placeholder="Search TAVUSHA…" autocomplete="off" aria-label="Search">
+    <button class="search-overlay__btn" type="submit" aria-label="Search">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    </button>
+  </form>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+<div class="cursor__dot" id="cursorDot"></div>
+<div class="cursor__ring" id="cursorRing"></div>
+
+<script src="js/products.js"></script>
+<script src="js/main.js"></script>
+<script>
+  let currentCategory = 'all';
+  let currentProducts = [...TAVUSHA_PRODUCTS];
+
+  document.addEventListener('DOMContentLoaded', () => {
+    // Check URL params
+    const params = new URLSearchParams(window.location.search);
+    const catParam = params.get('cat');
+    if (catParam) {
+      const btn = document.querySelector(`.filter-btn[data-cat="${catParam}"]`);
+      if (btn) filterShop(catParam, btn);
+      else renderShopGrid();
+    } else {
+      renderShopGrid();
+    }
+  });
+
+  function renderShopGrid() {
+    const grid = document.getElementById('shopGrid');
+    const countEl = document.getElementById('shopCount');
+    if (!grid) return;
+
+    let items = TAVUSHA_PRODUCTS.filter(p => currentCategory === 'all' || p.category.includes(currentCategory));
+    currentProducts = items;
+
+    if (countEl) countEl.textContent = `Showing ${items.length} item${items.length !== 1 ? 's' : ''}`;
+
+    if (items.length === 0) {
+      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--warm-grey)">
+        <p style="font-family:var(--font-display);font-size:1.5rem">No items found in this category</p>
+        <button class="btn-pill" style="margin-top:16px" onclick="filterShop('all', document.querySelector('.filter-btn[data-cat=all]'))">View All Items</button>
+      </div>`;
+      return;
+    }
+
+    grid.innerHTML = items.map((p, i) => renderProductCard(p, i)).join('');
+    reInitReveal(grid);
+  }
+
+  function filterShop(cat, btn) {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    if (btn) btn.classList.add('active');
+    currentCategory = cat;
+    renderShopGrid();
+  }
+
+  function sortShop(val) {
+    if (val === 'price-low') {
+      TAVUSHA_PRODUCTS.sort((a, b) => a.price - b.price);
+    } else if (val === 'price-high') {
+      TAVUSHA_PRODUCTS.sort((a, b) => b.price - a.price);
+    } else if (val === 'rating') {
+      TAVUSHA_PRODUCTS.sort((a, b) => b.rating - a.rating);
+    } else {
+      TAVUSHA_PRODUCTS.sort((a, b) => a.id - b.id);
+    }
+    renderShopGrid();
+  }
+</script>
+</body>
+</html>
