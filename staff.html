@@ -95,7 +95,7 @@ async function loadStaffProducts() {
     ? `<p class="sp-empty">No products yet. Tap "Upload New Product" to add one.</p>`
     : state.products.map(p => `
       <div class="sp-card">
-        <img src="${API_BASE.replace('/api','')}${p.images[0] || ''}" class="sp-thumb" onerror="this.style.visibility='hidden'"/>
+        <img src="${p.images[0] || ''}" class="sp-thumb" onerror="this.style.visibility='hidden'"/>
         <div class="sp-card__body">
           <div class="sp-card__title">${esc(p.title)}</div>
           <div class="sp-card__meta">₹${p.price} · ${esc(p.colour || '-')} · ${esc(p.size || '-')}</div>
@@ -157,7 +157,7 @@ function openProductForm(product) {
   const removeList = new Set();
   if (product && product.images.length) {
     const wrap = document.getElementById('existingImgs');
-    wrap.innerHTML = product.images.map(img => `<img src="${API_BASE.replace('/api','')}${img}" data-src="${img}" class="sp-thumb sp-thumb--pick"/>`).join('');
+    wrap.innerHTML = product.images.map(img => `<img src="${img}" data-src="${img}" class="sp-thumb sp-thumb--pick"/>`).join('');
     wrap.querySelectorAll('img').forEach(im => im.onclick = () => {
       const src = im.dataset.src;
       if (removeList.has(src)) { removeList.delete(src); im.classList.remove('sp-thumb--marked'); }
