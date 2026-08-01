@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Staff Portal — TAVUSHA</title>
+
+<!-- Reuses the site's OWN stylesheet as-is, so colours/fonts/spacing match exactly.
+     This file does not modify css/styles.css, index.html, or shop.html in any way. -->
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/staff-panel.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='26' font-family='serif' font-weight='bold'>T</text></svg>">
+</head>
+<body>
+
+<nav class="nav" id="nav">
+  <div class="nav__primary">
+    <div class="nav__left"><a href="index.html" class="nav__link">← Back to site</a></div>
+    <a href="index.html" class="nav__logo">TAVUSHA</a>
+    <div class="nav__right"><span class="sp-badge">Owner &amp; Staff Portal</span></div>
+  </div>
+</nav>
+
+<div id="app" class="sp-shell"></div>
+
+<script>
+const RENDER_BACKEND = 'https://tavusha-staff-backend.onrender.com/api';
+const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:5000/api' : RENDER_BACKEND;
+let state = { token: localStorage.getItem('sp_token') || null, user: JSON.parse(localStorage.getItem('sp_user') || 'null'), products: [], staffList: [] };
+
+function persist() { localStorage.setItem('sp_token', state.token || ''); localStorage.setItem('sp_user', JSON.stringify(state.user)); }
+
+async function api(path, options = {}) {
+  const headers = options.headers || {};
+  if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
+  if (!(options.body instanceof FormData) && options.body) { headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(options.body); }
+  const res = await fetch(API_BASE + path, { ...options, headers });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || 'Something went wrong');
+  return data;
+}
+
+function render() {
+  const app = document.getElementById('app');
+  if (!state.token) { app.innerHTML = loginView(); attachLogin(); return; }
+  if (state.user.role === 'admin') { app.innerHTML = adminView(); attachAdmin(); return; }
+  app.innerHTML = staffView(); attachStaff();
+}
+
+function esc(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function statusPill(s) { return `<span class="sp-pill sp-pill--${s}">${s}</span>`; }
+function logout() { state = { token: null, user: null, products: [], staffList: [] }; persist(); render(); }
+
+/* ---------------- LOGIN ---------------- */
+function loginView() {
+  return `
+  <div class="sp-login">
+    <p class="shop-header__eyebrow">TAVUSHA Portal</p>
+    <h1 class="sp-login__title">Admin &amp; Staff Portal</h1>
+    <p style="font-size:0.8rem;color:var(--warm-grey);margin-top:-16px;margin-bottom:20px">Owners and staff log in here with your credentials</p>
+    <div id="loginError" class="sp-error" style="display:none"></div>
+    <input id="loginId" placeholder="Login ID (e.g. admin@tavusha.com)" class="sp-input"/>
+    <input id="password" type="password" placeholder="Password" class="sp-input"/>
+    <button id="loginBtn" class="btn-pill sp-btn-block">Sign In to Dashboard</button>
+  </div>`;
+}
+function attachLogin() {
+  document.getElementById('loginBtn').onclick = async () => {
+    try {
+      const data = await api('/auth/login', { method: 'POST', body: { loginId: document.getElementById('loginId').value.trim(), password: document.getElementById('password').value } });
+      state.token = data.token; state.user = data.user; persist(); render();
+    } catch (err) {
+      const el = document.getElementById('loginError'); el.textContent = err.message; el.style.display = 'block';
+    }
+  };
+}
+
+/* ---------------- STAFF VIEW ---------------- */
+function staffView() {
+  return `
+  <div class="sp-header-row">
+    <div><div class="sp-name">${esc(state.user.name)}</div><div class="sp-sub">Staff Panel</div></div>
+    <button id="logoutBtn" class="sp-link-btn">Logout</button>
+  </div>
+  <button id="newProductBtn" class="btn-pill sp-btn-block" style="margin-bottom:20px">+ Upload New Product</button>
+  <div id="productList" class="sp-list"></div>
+  <div id="formModal" class="sp-modal-overlay" style="display:none"><div class="sp-modal" id="formModalContent"></div></div>`;
+}
+async function loadStaffProducts() {
+  state.products = await api('/products');
+  const list = document.getElementById('productList');
+  if (!list) return;
+  list.innerHTML = state.products.length === 0
+    ? `<p class="sp-empty">No products yet. Tap "Upload New Product" to add one.</p>`
+    : state.products.map(p => `
+      <div class="sp-card">
+        <img src="${API_BASE.replace('/api','')}${p.images[0] || ''}" class="sp-thumb" onerror="this.style.visibility='hidden'"/>
+        <div class="sp-card__body">
+          <div class="sp-card__title">${esc(p.title)}</div>
+          <div class="sp-card__meta">₹${p.price} · ${esc(p.colour || '-')} · ${esc(p.size || '-')}</div>
+          <div class="sp-card__meta">${statusPill(p.status)} <span class="sp-sub">Stock: ${p.stock}</span></div>
+        </div>
+        <div class="sp-card__actions">
+          <button class="sp-mini-btn editBtn" data-id="${p._id}">Edit</button>
+          <button class="sp-mini-btn sp-mini-btn--danger delBtn" data-id="${p._id}">Remove</button>
+        </div>
+      </div>`).join('');
+  list.querySelectorAll('.editBtn').forEach(b => b.onclick = () => openProductForm(state.products.find(p => p._id === b.dataset.id)));
+  list.querySelectorAll('.delBtn').forEach(b => b.onclick = async () => { if (confirm('Remove this product?')) { await api('/products/' + b.dataset.id, { method: 'DELETE' }); loadStaffProducts(); } });
+}
+function attachStaff() {
+  document.getElementById('logoutBtn').onclick = logout;
+  document.getElementById('newProductBtn').onclick = () => openProductForm(null);
+  loadStaffProducts();
+}
+
+/* crop tool state */
+let cropImages = [];
+const CATEGORIES = [['party','Party Wear'],['ethnic','Ethnic Wear'],['casual','Casual Luxe'],['maxi','Maxi Dresses'],['coord','Co-ords'],['other','Other']];
+
+function openProductForm(product) {
+  cropImages = [];
+  const modal = document.getElementById('formModal');
+  const content = document.getElementById('formModalContent');
+  modal.style.display = 'flex';
+  content.innerHTML = `
+    <div class="sp-modal__head">
+      <h2 class="sp-modal__title">${product ? 'Edit Product' : 'New Product'}</h2>
+      <button id="closeForm" class="sp-close">&times;</button>
+    </div>
+    <input id="f_title" placeholder="Product Title" class="sp-input" value="${product ? esc(product.title) : ''}"/>
+    <textarea id="f_desc" placeholder="Details / Description" class="sp-input" rows="2">${product ? esc(product.description || '') : ''}</textarea>
+    <div class="sp-grid2">
+      <input id="f_price" type="number" placeholder="Price (₹)" class="sp-input" value="${product ? product.price : ''}"/>
+      <input id="f_stock" type="number" placeholder="Stock qty" class="sp-input" value="${product ? product.stock : ''}"/>
+      <input id="f_colour" placeholder="Colour" class="sp-input" value="${product ? esc(product.colour || '') : ''}"/>
+      <input id="f_size" placeholder="Size (e.g. S, M, L)" class="sp-input" value="${product ? esc(product.size || '') : ''}"/>
+    </div>
+    <select id="f_category" class="sp-input">
+      ${CATEGORIES.map(([v, label]) => `<option value="${v}" ${product && product.category === v ? 'selected' : ''}>${label}</option>`).join('')}
+    </select>
+
+    ${product && product.images.length ? `<div class="sp-existing-label">Existing photos (tap to remove)</div><div id="existingImgs" class="sp-thumb-row"></div>` : ''}
+
+    <label class="sp-field-label">Add Photos (tap to crop before upload)</label>
+    <input id="f_images" type="file" accept="image/*" multiple capture="environment" class="sp-file"/>
+    <div id="cropArea"></div>
+
+    <label class="sp-field-label">Add Video (optional)</label>
+    <input id="f_videos" type="file" accept="video/*" multiple capture="environment" class="sp-file"/>
+
+    <button id="saveProductBtn" class="btn-pill sp-btn-block" style="margin-top:14px">${product ? 'Save Changes' : 'Upload Product'}</button>
+    <div id="formMsg" class="sp-form-msg"></div>`;
+  document.getElementById('closeForm').onclick = closeForm;
+
+  const removeList = new Set();
+  if (product && product.images.length) {
+    const wrap = document.getElementById('existingImgs');
+    wrap.innerHTML = product.images.map(img => `<img src="${API_BASE.replace('/api','')}${img}" data-src="${img}" class="sp-thumb sp-thumb--pick"/>`).join('');
+    wrap.querySelectorAll('img').forEach(im => im.onclick = () => {
+      const src = im.dataset.src;
+      if (removeList.has(src)) { removeList.delete(src); im.classList.remove('sp-thumb--marked'); }
+      else { removeList.add(src); im.classList.add('sp-thumb--marked'); }
+    });
+  }
+
+  document.getElementById('f_images').onchange = (e) => handleImageSelect(e.target.files);
+
+  document.getElementById('saveProductBtn').onclick = async () => {
+    const msg = document.getElementById('formMsg');
+    try {
+      msg.textContent = 'Saving...'; msg.className = 'sp-form-msg sp-form-msg--pending';
+      const fd = new FormData();
+      fd.append('title', document.getElementById('f_title').value);
+      fd.append('description', document.getElementById('f_desc').value);
+      fd.append('price', document.getElementById('f_price').value);
+      fd.append('stock', document.getElementById('f_stock').value || 0);
+      fd.append('colour', document.getElementById('f_colour').value);
+      fd.append('size', document.getElementById('f_size').value);
+      fd.append('category', document.getElementById('f_category').value);
+      if (product && removeList.size) fd.append('removeImages', JSON.stringify([...removeList]));
+
+      const crops = [];
+      cropImages.forEach((ci) => { fd.append('images', ci.file); crops.push(ci.cropBox); });
+      crops.length && fd.append('cropData', JSON.stringify(crops));
+      [...document.getElementById('f_videos').files].forEach(f => fd.append('videos', f));
+
+      if (product) await api('/products/' + product._id, { method: 'PUT', body: fd });
+      else await api('/products', { method: 'POST', body: fd });
+
+      msg.textContent = 'Saved! Waiting for admin approval.'; msg.className = 'sp-form-msg sp-form-msg--ok';
+      setTimeout(() => { closeForm(); loadStaffProducts(); }, 900);
+    } catch (err) {
+      msg.textContent = err.message; msg.className = 'sp-form-msg sp-form-msg--error';
+    }
+  };
+}
+function closeForm() { document.getElementById('formModal').style.display = 'none'; }
+
+/* simple client-side crop tool: drag box + resize handle */
+function handleImageSelect(files) {
+  const cropArea = document.getElementById('cropArea');
+  cropArea.innerHTML = ''; cropImages = [];
+  [...files].forEach((file, idx) => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        const wrap = document.createElement('div');
+        wrap.className = 'sp-crop-wrap';
+        wrap.style.width = '260px'; wrap.style.height = (260 * img.height / img.width) + 'px';
+        wrap.innerHTML = `<img src="${e.target.result}" class="sp-crop-img"/>
+          <div class="sp-crop-box" style="left:10%;top:10%;width:80%;height:80%;"><div class="sp-crop-handle"></div></div>`;
+        cropArea.appendChild(wrap);
+        const record = { file, naturalW: img.width, naturalH: img.height, cropBox: null };
+        cropImages[idx] = record;
+        setupCropDrag(wrap, wrap.querySelector('.sp-crop-box'), record);
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+function setupCropDrag(container, box, record) {
+  let dragging = null, start = {};
+  function updateBox() {
+    const cRect = container.getBoundingClientRect(), bRect = box.getBoundingClientRect();
+    const scaleX = record.naturalW / cRect.width, scaleY = record.naturalH / cRect.height;
+    record.cropBox = { left: (bRect.left - cRect.left) * scaleX, top: (bRect.top - cRect.top) * scaleY, width: bRect.width * scaleX, height: bRect.height * scaleY };
+  }
+  box.addEventListener('pointerdown', (e) => {
+    dragging = e.target.classList.contains('sp-crop-handle') ? 'resize' : 'move';
+    start = { x: e.clientX, y: e.clientY, left: box.offsetLeft, top: box.offsetTop, w: box.offsetWidth, h: box.offsetHeight };
+    e.preventDefault();
+  });
+  window.addEventListener('pointermove', (e) => {
+    if (!dragging) return;
+    const dx = e.clientX - start.x, dy = e.clientY - start.y;
+    if (dragging === 'move') {
+      box.style.left = Math.max(0, Math.min(container.clientWidth - box.offsetWidth, start.left + dx)) + 'px';
+      box.style.top = Math.max(0, Math.min(container.clientHeight - box.offsetHeight, start.top + dy)) + 'px';
+    } else {
+      box.style.width = Math.max(30, Math.min(container.clientWidth - box.offsetLeft, start.w + dx)) + 'px';
+      box.style.height = Math.max(30, Math.min(container.clientHeight - box.offsetTop, start.h + dy)) + 'px';
+    }
+    updateBox();
+  });
+  window.addEventListener('pointerup', () => { if (dragging) updateBox(); dragging = null; });
+  updateBox();
+}
+
+/* ---------------- ADMIN VIEW ---------------- */
+function adminView() {
+  return `
+  <div class="sp-header-row">
+    <div><div class="sp-name">${esc(state.user.name)}</div><div class="sp-sub">Admin Panel</div></div>
+    <button id="logoutBtn" class="sp-link-btn">Logout</button>
+  </div>
+  <div class="sp-tabs">
+    <button id="tabProducts" class="filter-btn active">Products</button>
+    <button id="tabStaff" class="filter-btn">Staff</button>
+  </div>
+  <div id="adminContent" class="sp-list"></div>`;
+}
+function attachAdmin() {
+  document.getElementById('logoutBtn').onclick = logout;
+  document.getElementById('tabProducts').onclick = () => showAdminTab('products');
+  document.getElementById('tabStaff').onclick = () => showAdminTab('staff');
+  showAdminTab('products');
+}
+async function showAdminTab(tab) {
+  document.getElementById('tabProducts').classList.toggle('active', tab === 'products');
+  document.getElementById('tabStaff').classList.toggle('active', tab === 'staff');
+  const content = document.getElementById('adminContent');
+  if (tab === 'products') {
+    state.products = await api('/products');
+    content.innerHTML = state.products.length === 0 ? `<p class="sp-empty">No products uploaded yet.</p>` : state.products.map(p => `
+      <div class="sp-card">
+        <img src="${API_BASE.replace('/api','')}${p.images[0] || ''}" class="sp-thumb" onerror="this.style.visibility='hidden'"/>
+        <div class="sp-card__body">
+          <div class="sp-card__title">${esc(p.title)}</div>
+          <div class="sp-card__meta">₹${p.price} · Stock: ${p.stock}</div>
+          <div class="sp-card__meta">${statusPill(p.status)}</div>
+        </div>
+        <div class="sp-card__actions">
+          ${p.status !== 'approved' ? `<button class="sp-mini-btn sp-mini-btn--ok apprBtn" data-id="${p._id}">Approve</button>` : ''}
+          ${p.status !== 'rejected' ? `<button class="sp-mini-btn rejBtn" data-id="${p._id}">Reject</button>` : ''}
+          <button class="sp-mini-btn sp-mini-btn--danger delPermBtn" data-id="${p._id}">Delete</button>
+        </div>
+      </div>`).join('');
+    content.querySelectorAll('.apprBtn').forEach(b => b.onclick = async () => { await api('/products/' + b.dataset.id + '/approve', { method: 'PATCH' }); showAdminTab('products'); });
+    content.querySelectorAll('.rejBtn').forEach(b => b.onclick = async () => { const reason = prompt('Reason for rejection?') || ''; await api('/products/' + b.dataset.id + '/reject', { method: 'PATCH', body: { reason } }); showAdminTab('products'); });
+    content.querySelectorAll('.delPermBtn').forEach(b => b.onclick = async () => { if (confirm('Permanently delete this product?')) { await api('/products/' + b.dataset.id + '/permanent', { method: 'DELETE' }); showAdminTab('products'); } });
+  } else {
+    state.staffList = await api('/auth/staff');
+    content.innerHTML = `
+      <button id="addStaffBtn" class="btn-pill sp-btn-block" style="margin-bottom:16px">+ Add Staff Login</button>
+      ${state.staffList.map(s => `
+      <div class="sp-card sp-card--stack">
+        <div class="sp-staff-row">
+          <div><div class="sp-card__title">${esc(s.name)}</div><div class="sp-sub">${esc(s.loginId)}</div></div>
+          <label class="sp-toggle"><input type="checkbox" class="activeToggle" data-id="${s._id}" ${s.isActive ? 'checked' : ''}/> Active</label>
+        </div>
+        <div class="sp-perm-row">
+          ${['canUpload','canEdit','canDelete','canUpdateStock'].map(perm => `
+            <label class="sp-perm-chip"><input type="checkbox" class="permToggle" data-id="${s._id}" data-perm="${perm}" ${s.permissions[perm] ? 'checked' : ''}/> ${perm.replace('can','')}</label>
+          `).join('')}
+        </div>
+      </div>`).join('')}`;
+    document.getElementById('addStaffBtn').onclick = addStaffPrompt;
+    content.querySelectorAll('.activeToggle').forEach(cb => cb.onchange = async () => { await api('/auth/staff/' + cb.dataset.id, { method: 'PUT', body: { isActive: cb.checked } }); });
+    content.querySelectorAll('.permToggle').forEach(cb => cb.onchange = async () => { await api('/auth/staff/' + cb.dataset.id, { method: 'PUT', body: { permissions: { [cb.dataset.perm]: cb.checked } } }); });
+  }
+}
+async function addStaffPrompt() {
+  const name = prompt('Staff full name?'); if (!name) return;
+  const loginId = prompt('Login ID (e.g. staff.rahul)?'); if (!loginId) return;
+  const password = prompt('Temporary password?'); if (!password) return;
+  try { await api('/auth/staff', { method: 'POST', body: { name, loginId, password } }); showAdminTab('staff'); }
+  catch (err) { alert(err.message); }
+}
+
+render();
+</script>
+</body>
+</html>

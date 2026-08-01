@@ -1,0 +1,94 @@
+/* Staff Portal styles — NEW FILE, does not modify css/styles.css.
+   Reuses the site's existing CSS variables (--black, --white, --warm-grey,
+   --border, --brand-dark, --font-display, --font-ui, --radius-pill, --dur-fast,
+   --container-pad) so the portal inherits the exact TAVUSHA look automatically. */
+
+.sp-badge {
+  font-size: 0.65rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase;
+  color: var(--brand-dark); border: 1px solid var(--border); border-radius: var(--radius-pill);
+  padding: 6px 14px;
+}
+
+.sp-shell { max-width: 480px; margin: 0 auto; padding: 24px var(--container-pad) 80px; }
+
+.sp-login { padding-top: 12vh; }
+.sp-login__title {
+  font-family: var(--font-display); font-size: clamp(1.6rem, 6vw, 2.2rem); font-weight: 700;
+  color: var(--black); margin: 8px 0 24px; line-height: 1.15;
+}
+.sp-error { color: #b3261e; font-size: 0.8rem; margin-bottom: 12px; }
+
+.sp-input {
+  width: 100%; border: 1px solid var(--border); border-radius: 12px; padding: 13px 16px;
+  font-family: var(--font-ui); font-size: 0.95rem; color: var(--black); margin-bottom: 10px;
+  background: var(--white); box-sizing: border-box;
+}
+.sp-input:focus { outline: none; border-color: var(--black); }
+
+.btn-pill.sp-btn-block { width: 100%; text-align: center; border: none; cursor: pointer; }
+
+.sp-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+.sp-name { font-weight: 700; font-family: var(--font-ui); color: var(--black); }
+.sp-sub { font-size: 0.75rem; color: var(--warm-grey); }
+.sp-link-btn { background: none; border: none; font-size: 0.8rem; color: var(--warm-grey); text-decoration: underline; cursor: pointer; font-family: var(--font-ui); }
+
+.sp-tabs { display: flex; gap: 8px; margin-bottom: 20px; }
+
+.sp-list { display: flex; flex-direction: column; gap: 12px; }
+.sp-empty { text-align: center; color: var(--warm-grey); font-size: 0.85rem; padding: 40px 0; }
+
+.sp-card { display: flex; gap: 12px; border: 1px solid var(--border); border-radius: 14px; padding: 12px; align-items: flex-start; }
+.sp-card--stack { flex-direction: column; }
+.sp-card__body { flex: 1; min-width: 0; }
+.sp-card__title { font-weight: 700; font-size: 0.9rem; color: var(--black); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sp-card__meta { font-size: 0.75rem; color: var(--warm-grey); margin-top: 2px; }
+.sp-card__actions { display: flex; flex-direction: column; gap: 6px; }
+
+.sp-thumb { width: 60px; height: 60px; border-radius: 10px; object-fit: cover; background: var(--card-rose, #f3e6e6); flex-shrink: 0; }
+.sp-thumb--pick { cursor: pointer; border: 2px solid transparent; }
+.sp-thumb--marked { border-color: #b3261e; opacity: 0.4; }
+.sp-thumb-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+
+.sp-mini-btn {
+  font-size: 0.7rem; font-weight: 600; border: 1px solid var(--border); background: var(--white);
+  border-radius: var(--radius-pill); padding: 6px 10px; cursor: pointer; font-family: var(--font-ui);
+  transition: all var(--dur-fast);
+}
+.sp-mini-btn--ok { background: var(--black); color: #fff; border-color: var(--black); }
+.sp-mini-btn--danger { color: #b3261e; border-color: #f0c9c5; }
+
+.sp-pill { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.05em; padding: 3px 10px; border-radius: var(--radius-pill); font-weight: 600; }
+.sp-pill--pending { background: #fdf1dd; color: #9a6300; }
+.sp-pill--approved { background: #e4f3e6; color: #1e7a34; }
+.sp-pill--rejected { background: #fbe4e2; color: #b3261e; }
+
+.sp-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; z-index: 40; }
+.sp-modal { background: var(--white); width: 100%; max-height: 92vh; overflow-y: auto; border-radius: 20px 20px 0 0; padding: 20px; box-sizing: border-box; }
+.sp-modal__head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.sp-modal__title { font-family: var(--font-display); font-size: 1.3rem; color: var(--black); }
+.sp-close { background: none; border: none; font-size: 1.8rem; line-height: 1; color: var(--warm-grey); cursor: pointer; }
+
+.sp-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 4px; }
+.sp-grid2 .sp-input { margin-bottom: 0; }
+.sp-existing-label, .sp-field-label { font-size: 0.72rem; color: var(--warm-grey); display: block; margin: 10px 0 6px; }
+.sp-file { width: 100%; margin-bottom: 10px; font-size: 0.85rem; }
+.sp-file::file-selector-button {
+  padding: 9px 14px; border-radius: var(--radius-pill); border: none; background: var(--black);
+  color: #fff; font-weight: 600; font-family: var(--font-ui); margin-right: 10px; cursor: pointer;
+}
+
+.sp-form-msg { text-align: center; font-size: 0.82rem; margin-top: 10px; }
+.sp-form-msg--pending { color: var(--warm-grey); }
+.sp-form-msg--ok { color: #1e7a34; }
+.sp-form-msg--error { color: #b3261e; }
+
+/* crop tool */
+.sp-crop-wrap { position: relative; margin: 0 auto 10px; }
+.sp-crop-img { width: 100%; height: 100%; object-fit: contain; border-radius: 10px; background: var(--card-rose, #f3e6e6); }
+.sp-crop-box { position: absolute; border: 2px dashed var(--black); box-sizing: border-box; cursor: move; }
+.sp-crop-handle { position: absolute; width: 18px; height: 18px; right: -9px; bottom: -9px; background: var(--black); border-radius: 50%; cursor: nwse-resize; }
+
+.sp-staff-row { display: flex; justify-content: space-between; align-items: center; width: 100%; margin-bottom: 10px; }
+.sp-toggle { font-size: 0.75rem; display: flex; align-items: center; gap: 6px; color: var(--warm-grey); }
+.sp-perm-row { display: flex; flex-wrap: wrap; gap: 6px; }
+.sp-perm-chip { font-size: 0.68rem; background: var(--card-rose, #f4f0f0); border-radius: var(--radius-pill); padding: 5px 10px; display: flex; align-items: center; gap: 5px; }
