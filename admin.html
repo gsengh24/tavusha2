@@ -187,10 +187,20 @@ function openProductForm(product) {
       [...document.getElementById('f_videos').files].forEach(f => fd.append('videos', f));
 
       if (product) await api('/products/' + product._id, { method: 'PUT', body: fd });
-      else await api('/products', { method: 'POST', body: fd });
+      else {
+        const newProd = await api('/products', { method: 'POST', body: fd });
+        // If admin uploaded, auto-approve immediately
+        if (state.user.role === 'admin' && newProd._id) {
+          await api('/products/' + newProd._id + '/approve', { method: 'PATCH' }).catch(() => {});
+        }
+      }
 
-      msg.textContent = 'Saved! Waiting for admin approval.'; msg.className = 'sp-form-msg sp-form-msg--ok';
-      setTimeout(() => { closeForm(); loadStaffProducts(); }, 900);
+      msg.textContent = 'Saved! Product is live.'; msg.className = 'sp-form-msg sp-form-msg--ok';
+      setTimeout(() => {
+        closeForm();
+        if (state.user.role === 'admin') showAdminTab('products');
+        else loadStaffProducts();
+      }, 900);
     } catch (err) {
       msg.textContent = err.message; msg.className = 'sp-form-msg sp-form-msg--error';
     }
@@ -257,14 +267,17 @@ function adminView() {
     <div><div class="sp-name">${esc(state.user.name)}</div><div class="sp-sub">Admin Panel</div></div>
     <button id="logoutBtn" class="sp-link-btn">Logout</button>
   </div>
+  <button id="newProductBtn" class="btn-pill sp-btn-block" style="margin-bottom:20px">+ Upload New Product</button>
   <div class="sp-tabs">
     <button id="tabProducts" class="filter-btn active">Products</button>
     <button id="tabStaff" class="filter-btn">Staff</button>
   </div>
-  <div id="adminContent" class="sp-list"></div>`;
+  <div id="adminContent" class="sp-list"></div>
+  <div id="formModal" class="sp-modal-overlay" style="display:none"><div class="sp-modal" id="formModalContent"></div></div>`;
 }
 function attachAdmin() {
   document.getElementById('logoutBtn').onclick = logout;
+  document.getElementById('newProductBtn').onclick = () => openProductForm(null);
   document.getElementById('tabProducts').onclick = () => showAdminTab('products');
   document.getElementById('tabStaff').onclick = () => showAdminTab('staff');
   showAdminTab('products');
