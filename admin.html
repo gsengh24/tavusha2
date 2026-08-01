@@ -25,7 +25,7 @@
 <div id="app" class="sp-shell"></div>
 
 <script>
-const RENDER_BACKEND = 'https://tavusha-staff-backend.onrender.com/api';
+const RENDER_BACKEND = 'https://tavusha2-backend.onrender.com/api';
 const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:5000/api' : RENDER_BACKEND;
 let state = { token: localStorage.getItem('sp_token') || null, user: JSON.parse(localStorage.getItem('sp_user') || 'null'), products: [], staffList: [] };
 
