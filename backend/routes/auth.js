@@ -68,14 +68,14 @@ router.post('/staff', protect, adminOnly, async (req, res) => {
 
 // GET /api/auth/staff - Admin: list all staff accounts
 router.get('/staff', protect, adminOnly, async (req, res) => {
-  const list = await Staff.find({ role: 'staff' }).sort({ createdAt: -1 });
+  const list = await Staff.find({ role: 'staff' });
   res.json(list);
 });
 
-// PUT /api/auth/staff/:id - Admin: update permissions / active status / reset password
+// PUT /api/auth/staff/:id - Admin: update permissions / active status / reset password / name / loginId
 router.put('/staff/:id', protect, adminOnly, async (req, res) => {
   try {
-    const { permissions, isActive, password, name } = req.body;
+    const { permissions, isActive, password, name, loginId } = req.body;
     const staff = await Staff.findById(req.params.id);
     if (!staff) return res.status(404).json({ message: 'Staff not found' });
 
@@ -83,6 +83,12 @@ router.put('/staff/:id', protect, adminOnly, async (req, res) => {
     if (typeof isActive === 'boolean') staff.isActive = isActive;
     if (name) staff.name = name;
     if (password) staff.password = password; // will be re-hashed by pre-save hook
+    if (loginId) {
+      const normalized = loginId.toLowerCase().trim();
+      const conflict = await Staff.findOne({ loginId: normalized, _id: { $ne: staff._id } });
+      if (conflict) return res.status(400).json({ message: 'This login ID is already taken by another account' });
+      staff.loginId = normalized;
+    }
 
     await staff.save();
     res.json(staff);

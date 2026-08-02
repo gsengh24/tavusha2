@@ -26,7 +26,7 @@
 
 <script>
 const RENDER_BACKEND = 'https://tavusha2-backend.onrender.com/api';
-const API_BASE = window.location.origin.includes('localhost') ? 'http://localhost:5000/api' : RENDER_BACKEND;
+const API_BASE = 'http://localhost:5000/api'; // Forced local for presentation
 let state = { token: localStorage.getItem('sp_token') || null, user: JSON.parse(localStorage.getItem('sp_user') || 'null'), products: [], staffList: [] };
 
 function persist() { localStorage.setItem('sp_token', state.token || ''); localStorage.setItem('sp_user', JSON.stringify(state.user)); }
@@ -92,27 +92,69 @@ async function loadStaffProducts() {
   const list = document.getElementById('productList');
   if (!list) return;
   list.innerHTML = state.products.length === 0
-    ? `<p class="sp-empty">No products yet. Tap "Upload New Product" to add one.</p>`
+    ? `<p class="sp-empty">No products yet. Tap "+ Upload New Product" to add one.</p>`
     : state.products.map(p => `
-      <div class="sp-card">
-        <img src="${p.images[0] || ''}" class="sp-thumb" onerror="this.style.visibility='hidden'"/>
+      <div class="sp-card sp-card--product">
+        <img src="${p.images[0] || ''}" class="sp-thumb" onerror="this.style.display='none'"/>
         <div class="sp-card__body">
           <div class="sp-card__title">${esc(p.title)}</div>
-          <div class="sp-card__meta">₹${p.price} · ${esc(p.colour || '-')} · ${esc(p.size || '-')}</div>
-          <div class="sp-card__meta">${statusPill(p.status)} <span class="sp-sub">Stock: ${p.stock}</span></div>
+          <div class="sp-card__meta sp-card__chips">
+            ${statusPill(p.status)}
+            <span class="sp-chip">${esc(p.colour || '—')}</span>
+            <span class="sp-chip">${esc(p.size || '—')}</span>
+          </div>
+          <div class="sp-quick-edit">
+            <div class="sp-qe-field">
+              <label class="sp-qe-label">₹ Price</label>
+              <input type="number" class="sp-qe-input qePriceInput" data-id="${p._id}" value="${p.price}" min="0"/>
+            </div>
+            <div class="sp-qe-field">
+              <label class="sp-qe-label">Stock</label>
+              <input type="number" class="sp-qe-input qeStockInput" data-id="${p._id}" value="${p.stock}" min="0"/>
+            </div>
+            <button class="sp-qe-save qeSaveBtn" data-id="${p._id}">Save</button>
+          </div>
         </div>
         <div class="sp-card__actions">
-          <button class="sp-mini-btn editBtn" data-id="${p._id}">Edit</button>
+          <button class="sp-mini-btn editBtn" data-id="${p._id}">Full Edit</button>
           <button class="sp-mini-btn sp-mini-btn--danger delBtn" data-id="${p._id}">Remove</button>
         </div>
       </div>`).join('');
   list.querySelectorAll('.editBtn').forEach(b => b.onclick = () => openProductForm(state.products.find(p => p._id === b.dataset.id)));
   list.querySelectorAll('.delBtn').forEach(b => b.onclick = async () => { if (confirm('Remove this product?')) { await api('/products/' + b.dataset.id, { method: 'DELETE' }); loadStaffProducts(); } });
+  list.querySelectorAll('.qeSaveBtn').forEach(b => b.onclick = () => quickSavePriceStock(b.dataset.id, b));
 }
 function attachStaff() {
   document.getElementById('logoutBtn').onclick = logout;
   document.getElementById('newProductBtn').onclick = () => openProductForm(null);
   loadStaffProducts();
+}
+async function quickSavePriceStock(id, btn) {
+  const row = btn.closest('.sp-quick-edit');
+  const priceEl = row.querySelector('.qePriceInput');
+  const stockEl = row.querySelector('.qeStockInput');
+  const orig = btn.textContent;
+  btn.textContent = '…'; btn.disabled = true;
+  try {
+    const fd = new FormData();
+    fd.append('price', priceEl.value);
+    fd.append('stock', stockEl.value);
+    const cur = state.products.find(p => p._id === id);
+    if (cur) {
+      fd.append('title', cur.title);
+      fd.append('description', cur.description || '');
+      fd.append('colour', cur.colour || '');
+      fd.append('size', cur.size || '');
+      fd.append('category', cur.category || 'other');
+    }
+    await api('/products/' + id, { method: 'PUT', body: fd });
+    btn.textContent = '✓'; btn.style.background = '#1e7a34'; btn.style.color = '#fff';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; btn.disabled = false; }, 1500);
+    if (cur) { cur.price = Number(priceEl.value); cur.stock = Number(stockEl.value); }
+  } catch(err) {
+    btn.textContent = '!'; btn.style.background = '#b3261e'; btn.style.color = '#fff';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; btn.disabled = false; }, 2000);
+  }
 }
 
 /* crop tool state */
@@ -129,29 +171,56 @@ function openProductForm(product) {
       <h2 class="sp-modal__title">${product ? 'Edit Product' : 'New Product'}</h2>
       <button id="closeForm" class="sp-close">&times;</button>
     </div>
-    <input id="f_title" placeholder="Product Title" class="sp-input" value="${product ? esc(product.title) : ''}"/>
-    <textarea id="f_desc" placeholder="Details / Description" class="sp-input" rows="2">${product ? esc(product.description || '') : ''}</textarea>
-    <div class="sp-grid2">
-      <input id="f_price" type="number" placeholder="Price (₹)" class="sp-input" value="${product ? product.price : ''}"/>
-      <input id="f_stock" type="number" placeholder="Stock qty" class="sp-input" value="${product ? product.stock : ''}"/>
-      <input id="f_colour" placeholder="Colour" class="sp-input" value="${product ? esc(product.colour || '') : ''}"/>
-      <input id="f_size" placeholder="Size (e.g. S, M, L)" class="sp-input" value="${product ? esc(product.size || '') : ''}"/>
+    <div id="formMsg" class="sp-form-msg" style="margin-bottom:8px"></div>
+
+    <label class="sp-field-label">Product Title *</label>
+    <input id="f_title" placeholder="e.g. Floral Maxi Dress" class="sp-input" value="${product ? esc(product.title) : ''}"/>
+
+    <label class="sp-field-label">Description</label>
+    <textarea id="f_desc" placeholder="Details, fabric, fit..." class="sp-input sp-textarea" rows="3">${product ? esc(product.description || '') : ''}</textarea>
+
+    <div class="sp-section-label">Pricing &amp; Stock</div>
+    <div class="sp-form-grid">
+      <div class="sp-form-group">
+        <label class="sp-field-label">Price (₹) *</label>
+        <input id="f_price" type="number" inputmode="numeric" placeholder="0" class="sp-input" value="${product ? product.price : ''}"/>
+      </div>
+      <div class="sp-form-group">
+        <label class="sp-field-label">Stock Qty</label>
+        <input id="f_stock" type="number" inputmode="numeric" placeholder="0" class="sp-input" value="${product ? product.stock : ''}"/>
+      </div>
     </div>
+    <label class="sp-toggle-row">
+      <span class="sp-field-label" style="margin:0">Mark as In Stock</span>
+      <div class="sp-switch"><input type="checkbox" id="f_inStock" ${(!product || product.inStock !== false) ? 'checked' : ''}/><span class="sp-switch__track"></span></div>
+    </label>
+
+    <div class="sp-section-label">Product Details</div>
+    <div class="sp-form-grid">
+      <div class="sp-form-group">
+        <label class="sp-field-label">Colour</label>
+        <input id="f_colour" placeholder="e.g. Rose Pink" class="sp-input" value="${product ? esc(product.colour || '') : ''}"/>
+      </div>
+      <div class="sp-form-group">
+        <label class="sp-field-label">Size</label>
+        <input id="f_size" placeholder="S / M / L / XL" class="sp-input" value="${product ? esc(product.size || '') : ''}"/>
+      </div>
+    </div>
+    <label class="sp-field-label">Category</label>
     <select id="f_category" class="sp-input">
       ${CATEGORIES.map(([v, label]) => `<option value="${v}" ${product && product.category === v ? 'selected' : ''}>${label}</option>`).join('')}
     </select>
 
-    ${product && product.images.length ? `<div class="sp-existing-label">Existing photos (tap to remove)</div><div id="existingImgs" class="sp-thumb-row"></div>` : ''}
-
-    <label class="sp-field-label">Add Photos (tap to crop before upload)</label>
-    <input id="f_images" type="file" accept="image/*" multiple capture="environment" class="sp-file"/>
+    <div class="sp-section-label">Photos</div>
+    ${product && product.images && product.images.length ? `<div class="sp-existing-label">Tap a photo to mark for removal</div><div id="existingImgs" class="sp-thumb-row"></div>` : ''}
+    <input id="f_images" type="file" accept="image/*" multiple class="sp-file"/>
     <div id="cropArea"></div>
 
-    <label class="sp-field-label">Add Video (optional)</label>
-    <input id="f_videos" type="file" accept="video/*" multiple capture="environment" class="sp-file"/>
+    <div class="sp-section-label">Video <span style="font-weight:400;font-size:0.7rem">(optional)</span></div>
+    <input id="f_videos" type="file" accept="video/*" multiple class="sp-file"/>
 
-    <button id="saveProductBtn" class="btn-pill sp-btn-block" style="margin-top:14px">${product ? 'Save Changes' : 'Upload Product'}</button>
-    <div id="formMsg" class="sp-form-msg"></div>`;
+    <button id="saveProductBtn" class="btn-pill sp-btn-block sp-save-btn">${product ? 'Save Changes' : 'Upload Product'}</button>
+  `;
   document.getElementById('closeForm').onclick = closeForm;
 
   const removeList = new Set();
@@ -169,13 +238,18 @@ function openProductForm(product) {
 
   document.getElementById('saveProductBtn').onclick = async () => {
     const msg = document.getElementById('formMsg');
+    const title = document.getElementById('f_title').value.trim();
+    const price = document.getElementById('f_price').value.trim();
+    if (!title) { msg.textContent = 'Product title is required.'; msg.className = 'sp-form-msg sp-form-msg--error'; return; }
+    if (!price) { msg.textContent = 'Price is required.'; msg.className = 'sp-form-msg sp-form-msg--error'; return; }
     try {
-      msg.textContent = 'Saving...'; msg.className = 'sp-form-msg sp-form-msg--pending';
+      msg.textContent = 'Saving…'; msg.className = 'sp-form-msg sp-form-msg--pending';
       const fd = new FormData();
-      fd.append('title', document.getElementById('f_title').value);
+      fd.append('title', title);
       fd.append('description', document.getElementById('f_desc').value);
-      fd.append('price', document.getElementById('f_price').value);
+      fd.append('price', price);
       fd.append('stock', document.getElementById('f_stock').value || 0);
+      fd.append('inStock', document.getElementById('f_inStock').checked);
       fd.append('colour', document.getElementById('f_colour').value);
       fd.append('size', document.getElementById('f_size').value);
       fd.append('category', document.getElementById('f_category').value);
@@ -189,13 +263,12 @@ function openProductForm(product) {
       if (product) await api('/products/' + product._id, { method: 'PUT', body: fd });
       else {
         const newProd = await api('/products', { method: 'POST', body: fd });
-        // If admin uploaded, auto-approve immediately
         if (state.user.role === 'admin' && newProd._id) {
           await api('/products/' + newProd._id + '/approve', { method: 'PATCH' }).catch(() => {});
         }
       }
 
-      msg.textContent = 'Saved! Product is live.'; msg.className = 'sp-form-msg sp-form-msg--ok';
+      msg.textContent = '✓ Saved successfully!'; msg.className = 'sp-form-msg sp-form-msg--ok';
       setTimeout(() => {
         closeForm();
         if (state.user.role === 'admin') showAdminTab('products');
@@ -286,52 +359,285 @@ async function showAdminTab(tab) {
   document.getElementById('tabProducts').classList.toggle('active', tab === 'products');
   document.getElementById('tabStaff').classList.toggle('active', tab === 'staff');
   const content = document.getElementById('adminContent');
-  if (tab === 'products') {
-    state.products = await api('/products');
-    content.innerHTML = state.products.length === 0 ? `<p class="sp-empty">No products uploaded yet.</p>` : state.products.map(p => `
-      <div class="sp-card">
-        <img src="${p.images[0] || ''}" class="sp-thumb" onerror="this.style.visibility='hidden'"/>
-        <div class="sp-card__body">
-          <div class="sp-card__title">${esc(p.title)}</div>
-          <div class="sp-card__meta">₹${p.price} · Stock: ${p.stock}</div>
-          <div class="sp-card__meta">${statusPill(p.status)}</div>
-        </div>
-        <div class="sp-card__actions">
-          ${p.status !== 'approved' ? `<button class="sp-mini-btn sp-mini-btn--ok apprBtn" data-id="${p._id}">Approve</button>` : ''}
-          ${p.status !== 'rejected' ? `<button class="sp-mini-btn rejBtn" data-id="${p._id}">Reject</button>` : ''}
-          <button class="sp-mini-btn sp-mini-btn--danger delPermBtn" data-id="${p._id}">Delete</button>
-        </div>
-      </div>`).join('');
-    content.querySelectorAll('.apprBtn').forEach(b => b.onclick = async () => { await api('/products/' + b.dataset.id + '/approve', { method: 'PATCH' }); showAdminTab('products'); });
-    content.querySelectorAll('.rejBtn').forEach(b => b.onclick = async () => { const reason = prompt('Reason for rejection?') || ''; await api('/products/' + b.dataset.id + '/reject', { method: 'PATCH', body: { reason } }); showAdminTab('products'); });
-    content.querySelectorAll('.delPermBtn').forEach(b => b.onclick = async () => { if (confirm('Permanently delete this product?')) { await api('/products/' + b.dataset.id + '/permanent', { method: 'DELETE' }); showAdminTab('products'); } });
-  } else {
-    state.staffList = await api('/auth/staff');
-    content.innerHTML = `
-      <button id="addStaffBtn" class="btn-pill sp-btn-block" style="margin-bottom:16px">+ Add Staff Login</button>
-      ${state.staffList.map(s => `
-      <div class="sp-card sp-card--stack">
-        <div class="sp-staff-row">
-          <div><div class="sp-card__title">${esc(s.name)}</div><div class="sp-sub">${esc(s.loginId)}</div></div>
-          <label class="sp-toggle"><input type="checkbox" class="activeToggle" data-id="${s._id}" ${s.isActive ? 'checked' : ''}/> Active</label>
-        </div>
-        <div class="sp-perm-row">
-          ${['canUpload','canEdit','canDelete','canUpdateStock'].map(perm => `
-            <label class="sp-perm-chip"><input type="checkbox" class="permToggle" data-id="${s._id}" data-perm="${perm}" ${s.permissions[perm] ? 'checked' : ''}/> ${perm.replace('can','')}</label>
-          `).join('')}
-        </div>
-      </div>`).join('')}`;
-    document.getElementById('addStaffBtn').onclick = addStaffPrompt;
-    content.querySelectorAll('.activeToggle').forEach(cb => cb.onchange = async () => { await api('/auth/staff/' + cb.dataset.id, { method: 'PUT', body: { isActive: cb.checked } }); });
-    content.querySelectorAll('.permToggle').forEach(cb => cb.onchange = async () => { await api('/auth/staff/' + cb.dataset.id, { method: 'PUT', body: { permissions: { [cb.dataset.perm]: cb.checked } } }); });
+  
+  try {
+    content.innerHTML = '<p class="sp-empty">Loading...</p>';
+    if (tab === 'products') {
+      state.products = await api('/products');
+      content.innerHTML = state.products.length === 0 ? `<p class="sp-empty">No products uploaded yet.</p>` : state.products.map(p => `
+        <div class="sp-card sp-card--product">
+          <img src="${p.images[0] || ''}" class="sp-thumb" onerror="this.style.display='none'"/>
+          <div class="sp-card__body">
+            <div class="sp-card__title">${esc(p.title)}</div>
+            <div class="sp-card__meta sp-card__chips">
+              ${statusPill(p.status)}
+              <span class="sp-chip">₹${p.price}</span>
+              <span class="sp-chip">Stock: ${p.stock}</span>
+            </div>
+            <div class="sp-quick-edit">
+              <div class="sp-qe-field"><label class="sp-qe-label">₹ Price</label><input type="number" class="sp-qe-input qePriceInput" data-id="${p._id}" value="${p.price}" min="0"/></div>
+              <div class="sp-qe-field"><label class="sp-qe-label">Stock</label><input type="number" class="sp-qe-input qeStockInput" data-id="${p._id}" value="${p.stock}" min="0"/></div>
+              <button class="sp-qe-save qeSaveBtn" data-id="${p._id}">Save</button>
+            </div>
+          </div>
+          <div class="sp-card__actions">
+            <button class="sp-mini-btn editBtn" data-id="${p._id}">Edit</button>
+            ${p.status !== 'approved' ? `<button class="sp-mini-btn sp-mini-btn--ok apprBtn" data-id="${p._id}">Approve</button>` : ''}
+            ${p.status !== 'rejected' ? `<button class="sp-mini-btn rejBtn" data-id="${p._id}">Reject</button>` : ''}
+            <button class="sp-mini-btn sp-mini-btn--danger delPermBtn" data-id="${p._id}">Delete</button>
+          </div>
+        </div>`).join('');
+      content.querySelectorAll('.editBtn').forEach(b => b.onclick = () => openProductForm(state.products.find(p => p._id === b.dataset.id)));
+      content.querySelectorAll('.qeSaveBtn').forEach(b => b.onclick = () => quickSavePriceStock(b.dataset.id, b));
+      content.querySelectorAll('.apprBtn').forEach(b => b.onclick = async () => { await api('/products/' + b.dataset.id + '/approve', { method: 'PATCH' }); showAdminTab('products'); });
+      content.querySelectorAll('.rejBtn').forEach(b => b.onclick = async () => { const reason = prompt('Reason for rejection?') || ''; await api('/products/' + b.dataset.id + '/reject', { method: 'PATCH', body: { reason } }); showAdminTab('products'); });
+      content.querySelectorAll('.delPermBtn').forEach(b => b.onclick = async () => { if (confirm('Permanently delete this product?')) { await api('/products/' + b.dataset.id + '/permanent', { method: 'DELETE' }); showAdminTab('products'); } });
+    } else {
+      state.staffList = await api('/auth/staff');
+      content.innerHTML = `
+        <button id="addStaffBtn" class="btn-pill sp-btn-block" style="margin-bottom:16px">+ Add New Staff Member</button>
+        <div class="sp-staff-list">
+        ${state.staffList.length === 0 ? `<p class="sp-empty">No staff members yet. Add one above.</p>` : state.staffList.map(s => `
+        <div class="sp-card sp-card--stack">
+          <div class="sp-staff-row">
+            <div>
+              <div class="sp-card__title">${esc(s.name)}</div>
+              <div class="sp-sub sp-staff-id-row"><span class="sp-id-badge">${esc(s.loginId)}</span></div>
+            </div>
+            <div class="sp-staff-controls">
+              <label class="sp-toggle"><input type="checkbox" class="activeToggle" data-id="${s._id}" ${s.isActive ? 'checked' : ''}/> <span>${s.isActive ? 'Active' : 'Inactive'}</span></label>
+            </div>
+          </div>
+          <div class="sp-perm-row">
+            ${['canUpload','canEdit','canDelete','canUpdateStock'].map(perm => `
+              <label class="sp-perm-chip ${s.permissions && s.permissions[perm] ? 'sp-perm-chip--on' : ''}"><input type="checkbox" class="permToggle" data-id="${s._id}" data-perm="${perm}" ${s.permissions && s.permissions[perm] ? 'checked' : ''}/><span class="sp-perm-icon">${{canUpload:'↑',canEdit:'✎',canDelete:'✕',canUpdateStock:'⊡'}[perm]}</span> ${perm.replace('can','')}</label>
+            `).join('')}
+          </div>
+          <div class="sp-staff-actions">
+            <button class="sp-mini-btn editStaffBtn" data-id="${s._id}">Edit Member</button>
+            <button class="sp-mini-btn resetPwBtn" data-id="${s._id}">Reset Password</button>
+            <button class="sp-mini-btn sp-mini-btn--danger delStaffBtn" data-id="${s._id}">Remove</button>
+          </div>
+        </div>`).join('')}
+        </div>`;
+      document.getElementById('addStaffBtn').onclick = () => openStaffModal(null);
+      content.querySelectorAll('.activeToggle').forEach(cb => cb.onchange = async () => {
+        const label = cb.parentElement.querySelector('span');
+        if(label) label.textContent = cb.checked ? 'Active' : 'Inactive';
+        await api('/auth/staff/' + cb.dataset.id, { method: 'PUT', body: { isActive: cb.checked } });
+      });
+      content.querySelectorAll('.permToggle').forEach(cb => cb.onchange = async () => {
+        const chip = cb.closest('.sp-perm-chip');
+        if(chip) { if(cb.checked) chip.classList.add('sp-perm-chip--on'); else chip.classList.remove('sp-perm-chip--on'); }
+        await api('/auth/staff/' + cb.dataset.id, { method: 'PUT', body: { permissions: { [cb.dataset.perm]: cb.checked } } });
+      });
+      content.querySelectorAll('.editStaffBtn').forEach(b => b.onclick = () => {
+        const s = state.staffList.find(x => x._id === b.dataset.id);
+        if(s) openStaffModal(s);
+      });
+      content.querySelectorAll('.resetPwBtn').forEach(b => b.onclick = () => openResetPasswordModal(b.dataset.id));
+      content.querySelectorAll('.delStaffBtn').forEach(b => b.onclick = async () => {
+        if(confirm('Remove this staff member permanently?')) {
+          try { await api('/auth/staff/' + b.dataset.id, { method: 'DELETE' }); showAdminTab('staff'); }
+          catch(err) { alert(err.message); }
+        }
+      });
+    }
+  } catch(err) {
+    content.innerHTML = `<div class="sp-form-msg sp-form-msg--error" style="margin-top:40px">${err.message || 'Error loading data. Check console.'}</div>`;
+    console.error('Tab Load Error:', err);
   }
 }
-async function addStaffPrompt() {
-  const name = prompt('Staff full name?'); if (!name) return;
-  const loginId = prompt('Login ID (e.g. staff.rahul)?'); if (!loginId) return;
-  const password = prompt('Temporary password?'); if (!password) return;
-  try { await api('/auth/staff', { method: 'POST', body: { name, loginId, password } }); showAdminTab('staff'); }
-  catch (err) { alert(err.message); }
+
+/* ---- Auto-generate helpers ---- */
+function genId(name) {
+  const clean = (name || 'staff').toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,8);
+  return 'staff.' + clean + Math.floor(10 + Math.random() * 90);
+}
+function genPassword() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#!';
+  return Array.from({length: 10}, () => chars[Math.floor(Math.random()*chars.length)]).join('');
+}
+
+/* ---- Staff Modal (Create / Edit) ---- */
+function openStaffModal(staff) {
+  const PERM_DEFS = [
+    { key: 'canUpload',      icon: '↑', label: 'Upload Products' },
+    { key: 'canEdit',        icon: '✎', label: 'Edit Products' },
+    { key: 'canDelete',      icon: '✕', label: 'Delete Products' },
+    { key: 'canUpdateStock', icon: '⊡', label: 'Update Stock' }
+  ];
+  const isEdit = !!staff;
+  const modal = document.getElementById('formModal');
+  const content = document.getElementById('formModalContent');
+  modal.style.display = 'flex';
+  content.innerHTML = `
+    <div class="sp-modal__head">
+      <h2 class="sp-modal__title">${isEdit ? 'Edit Staff Member' : 'Create Staff Member'}</h2>
+      <button id="closeStaffForm" class="sp-close">&times;</button>
+    </div>
+    <div id="staffFormMsg" class="sp-form-msg" style="margin-bottom:10px"></div>
+
+    <label class="sp-field-label">Full Name</label>
+    <input id="sf_name" placeholder="e.g. Rahul Sharma" class="sp-input" value="${staff ? esc(staff.name) : ''}"/>
+
+    <label class="sp-field-label">Login ID</label>
+    <div class="sp-input-row">
+      <input id="sf_loginId" placeholder="e.g. staff.rahul42" class="sp-input sp-input--flex" value="${staff ? esc(staff.loginId) : ''}"/>
+      <button type="button" id="genIdBtn" class="sp-gen-btn" title="Auto-generate ID">⟳ Generate ID</button>
+    </div>
+
+    ${!isEdit ? `
+    <label class="sp-field-label">Password</label>
+    <div class="sp-input-row">
+      <input id="sf_password" type="password" placeholder="Create a password" class="sp-input sp-input--flex"/>
+      <button type="button" id="genPwBtn" class="sp-gen-btn" title="Auto-generate password">⟳ Generate</button>
+      <button type="button" id="togglePwBtn" class="sp-gen-btn sp-gen-btn--icon" title="Show/hide">👁</button>
+    </div>
+    <div id="pwStrength" class="sp-pw-strength"></div>
+    ` : ''}
+
+    <label class="sp-field-label" style="margin-top:16px">Permissions</label>
+    <div class="sp-perm-grid">
+      ${PERM_DEFS.map(p => `
+        <label class="sp-perm-card ${(staff && staff.permissions[p.key]) || (!staff && (p.key==='canUpload'||p.key==='canEdit'||p.key==='canUpdateStock')) ? 'sp-perm-card--on' : ''}">
+          <input type="checkbox" id="sf_${p.key}" class="sp-perm-cb" ${(staff && staff.permissions[p.key]) || (!staff && (p.key==='canUpload'||p.key==='canEdit'||p.key==='canUpdateStock')) ? 'checked' : ''}/>
+          <span class="sp-perm-card__icon">${p.icon}</span>
+          <span class="sp-perm-card__label">${p.label}</span>
+        </label>`).join('')}
+    </div>
+
+    <button id="saveStaffBtn" class="btn-pill sp-btn-block" style="margin-top:20px">${isEdit ? 'Save Changes' : 'Create Staff Member'}</button>
+  `;
+  document.getElementById('closeStaffForm').onclick = closeForm;
+
+  // Permission card toggle visuals
+  content.querySelectorAll('.sp-perm-cb').forEach(cb => {
+    cb.onchange = () => {
+      const card = cb.closest('.sp-perm-card');
+      if(cb.checked) card.classList.add('sp-perm-card--on');
+      else card.classList.remove('sp-perm-card--on');
+    };
+  });
+
+  // Auto-generate buttons
+  if(document.getElementById('genIdBtn')) {
+    document.getElementById('genIdBtn').onclick = () => {
+      document.getElementById('sf_loginId').value = genId(document.getElementById('sf_name').value);
+    };
+  }
+  if(document.getElementById('genPwBtn')) {
+    document.getElementById('genPwBtn').onclick = () => {
+      const pw = genPassword();
+      const field = document.getElementById('sf_password');
+      field.type = 'text';
+      field.value = pw;
+      updatePwStrength(pw);
+    };
+    document.getElementById('togglePwBtn').onclick = () => {
+      const f = document.getElementById('sf_password');
+      f.type = f.type === 'password' ? 'text' : 'password';
+    };
+    document.getElementById('sf_password').oninput = e => updatePwStrength(e.target.value);
+  }
+
+  // Name → auto-suggest ID for new staff
+  if(!isEdit && document.getElementById('sf_name')) {
+    document.getElementById('sf_name').oninput = () => {
+      const idField = document.getElementById('sf_loginId');
+      if(!idField.value || idField.dataset.touched !== 'y') {
+        idField.value = genId(document.getElementById('sf_name').value);
+      }
+    };
+    document.getElementById('sf_loginId').oninput = e => { e.target.dataset.touched = 'y'; };
+  }
+
+  document.getElementById('saveStaffBtn').onclick = async () => {
+    const msg = document.getElementById('staffFormMsg');
+    const name = document.getElementById('sf_name').value.trim();
+    const loginId = document.getElementById('sf_loginId').value.trim();
+    const permissions = {
+      canUpload: document.getElementById('sf_canUpload').checked,
+      canEdit: document.getElementById('sf_canEdit').checked,
+      canDelete: document.getElementById('sf_canDelete').checked,
+      canUpdateStock: document.getElementById('sf_canUpdateStock').checked,
+    };
+
+    if(!name) { msg.textContent = 'Please enter the staff member\'s name.'; msg.className = 'sp-form-msg sp-form-msg--error'; return; }
+    if(!loginId) { msg.textContent = 'Please enter or generate a Login ID.'; msg.className = 'sp-form-msg sp-form-msg--error'; return; }
+
+    try {
+      msg.textContent = 'Saving...'; msg.className = 'sp-form-msg sp-form-msg--pending';
+      if(isEdit) {
+        await api('/auth/staff/' + staff._id, { method: 'PUT', body: { name, loginId, permissions } });
+        msg.textContent = '✓ Staff member updated!'; msg.className = 'sp-form-msg sp-form-msg--ok';
+      } else {
+        const password = document.getElementById('sf_password').value;
+        if(!password) { msg.textContent = 'Please enter or generate a password.'; msg.className = 'sp-form-msg sp-form-msg--error'; return; }
+        await api('/auth/staff', { method: 'POST', body: { name, loginId, password, permissions } });
+        msg.textContent = `✓ Staff member created! Login: ${loginId} · Password saved.`;
+        msg.className = 'sp-form-msg sp-form-msg--ok';
+      }
+      setTimeout(() => { closeForm(); showAdminTab('staff'); }, 1200);
+    } catch(err) {
+      msg.textContent = err.message; msg.className = 'sp-form-msg sp-form-msg--error';
+    }
+  };
+}
+
+/* ---- Reset Password Modal ---- */
+function openResetPasswordModal(staffId) {
+  const modal = document.getElementById('formModal');
+  const content = document.getElementById('formModalContent');
+  modal.style.display = 'flex';
+  content.innerHTML = `
+    <div class="sp-modal__head">
+      <h2 class="sp-modal__title">Reset Password</h2>
+      <button id="closeResetForm" class="sp-close">&times;</button>
+    </div>
+    <p class="sp-sub" style="margin-bottom:16px">Enter a new password for this staff member, or auto-generate one.</p>
+    <div id="resetMsg" class="sp-form-msg" style="margin-bottom:10px"></div>
+    <label class="sp-field-label">New Password</label>
+    <div class="sp-input-row">
+      <input id="rp_password" type="password" placeholder="New password" class="sp-input sp-input--flex"/>
+      <button type="button" id="rp_genBtn" class="sp-gen-btn">⟳ Generate</button>
+      <button type="button" id="rp_toggleBtn" class="sp-gen-btn sp-gen-btn--icon">👁</button>
+    </div>
+    <div id="rp_strength" class="sp-pw-strength"></div>
+    <button id="rp_saveBtn" class="btn-pill sp-btn-block" style="margin-top:20px">Save New Password</button>
+  `;
+  document.getElementById('closeResetForm').onclick = closeForm;
+  document.getElementById('rp_genBtn').onclick = () => {
+    const pw = genPassword();
+    const field = document.getElementById('rp_password');
+    field.type = 'text'; field.value = pw; updatePwStrengthEl('rp_strength', pw);
+  };
+  document.getElementById('rp_toggleBtn').onclick = () => {
+    const f = document.getElementById('rp_password');
+    f.type = f.type === 'password' ? 'text' : 'password';
+  };
+  document.getElementById('rp_password').oninput = e => updatePwStrengthEl('rp_strength', e.target.value);
+  document.getElementById('rp_saveBtn').onclick = async () => {
+    const msg = document.getElementById('resetMsg');
+    const pw = document.getElementById('rp_password').value;
+    if(!pw) { msg.textContent = 'Please enter or generate a password.'; msg.className = 'sp-form-msg sp-form-msg--error'; return; }
+    try {
+      msg.textContent = 'Saving...'; msg.className = 'sp-form-msg sp-form-msg--pending';
+      await api('/auth/staff/' + staffId, { method: 'PUT', body: { password: pw } });
+      msg.textContent = '✓ Password reset successfully!'; msg.className = 'sp-form-msg sp-form-msg--ok';
+      setTimeout(() => closeForm(), 1200);
+    } catch(err) { msg.textContent = err.message; msg.className = 'sp-form-msg sp-form-msg--error'; }
+  };
+}
+
+function updatePwStrength(pw) { updatePwStrengthEl('pwStrength', pw); }
+function updatePwStrengthEl(elId, pw) {
+  const el = document.getElementById(elId); if(!el) return;
+  if(!pw) { el.innerHTML = ''; return; }
+  const score = [pw.length >= 8, /[A-Z]/.test(pw), /[0-9]/.test(pw), /[^A-Za-z0-9]/.test(pw)].filter(Boolean).length;
+  const labels = ['','Weak','Fair','Good','Strong'];
+  const colors = ['','#b3261e','#e08000','#2d7a4e','#1a5c38'];
+  el.innerHTML = `<div class="sp-pw-bar"><div class="sp-pw-fill" style="width:${score*25}%;background:${colors[score]}"></div></div><span style="font-size:0.7rem;color:${colors[score]}">${labels[score]}</span>`;
 }
 
 render();
