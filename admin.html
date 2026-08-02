@@ -26,7 +26,8 @@
 
 <script>
 const RENDER_BACKEND = 'https://tavusha2-backend.onrender.com/api';
-const API_BASE = 'http://localhost:5000/api'; // Forced local for presentation
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
+const API_BASE = isLocal ? `http://${window.location.hostname}:5000/api` : RENDER_BACKEND;
 let state = { token: localStorage.getItem('sp_token') || null, user: JSON.parse(localStorage.getItem('sp_user') || 'null'), products: [], staffList: [] };
 
 function persist() { localStorage.setItem('sp_token', state.token || ''); localStorage.setItem('sp_user', JSON.stringify(state.user)); }
