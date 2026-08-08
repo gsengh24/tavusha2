@@ -1,0 +1,92 @@
+const supabase = require('../supabase');
+
+function generateOrderNumber() {
+  const year = new Date().getFullYear();
+  const rand = Math.floor(10000 + Math.random() * 90000);
+  return `TAV-${year}-${rand}`;
+}
+
+class OrderModel {
+  static async findAll(filters = {}) {
+    let q = supabase.from('orders').select('*');
+    if (filters.status) q = q.eq('order_status', filters.status);
+    if (filters.payment_status) q = q.eq('payment_status', filters.payment_status);
+    q = q.order('created_at', { ascending: false });
+    const { data, error } = await q;
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async findById(id) {
+    const { data, error } = await supabase.from('orders').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  static async findByOrderNumber(orderNumber) {
+    const { data, error } = await supabase.from('orders').select('*').eq('order_number', orderNumber).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  static async findByRazorpayOrderId(razorpayOrderId) {
+    const { data, error } = await supabase.from('orders').select('*').eq('razorpay_order_id', razorpayOrderId).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  static async create(fields) {
+    let orderNumber = generateOrderNumber();
+    // Ensure uniqueness
+    const existing = await this.findByOrderNumber(orderNumber);
+    if (existing) orderNumber = generateOrderNumber();
+
+    const { data, error } = await supabase.from('orders').insert([{
+      order_number: orderNumber,
+      customer_name: fields.customer_name,
+      customer_phone: fields.customer_phone,
+      customer_email: fields.customer_email || '',
+      delivery_address: fields.delivery_address,
+      pincode: fields.pincode,
+      shipping_zone: fields.shipping_zone || '',
+      shipping_charge: fields.shipping_charge || 0,
+      items: fields.items,
+      item_count: fields.item_count || fields.items.length,
+      subtotal: fields.subtotal,
+      total: fields.total,
+      payment_type: fields.payment_type || 'cod',
+      advance_required: fields.advance_required || 0,
+      advance_paid: 0,
+      payment_status: 'pending',
+      razorpay_order_id: fields.razorpay_order_id || '',
+      order_status: 'confirmed',
+      special_instructions: fields.special_instructions || '',
+    }]).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  static async update(id, fields) {
+    const update = { updated_at: new Date().toISOString() };
+    const allowed = [
+      'order_status','payment_status','advance_paid','razorpay_payment_id',
+      'razorpay_order_id','razorpay_signature','tracking_number','tracking_url',
+      'tracking_courier','whatsapp_sent','whatsapp_log','admin_notes',
+      'shipping_charge' // admin override
+    ];
+    allowed.forEach(k => { if (fields[k] !== undefined) update[k] = fields[k]; });
+    const { data, error } = await supabase.from('orders').update(update).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  static async appendWhatsAppLog(id, entry) {
+    const order = await this.findById(id);
+    if (!order) return;
+    const log = Array.isArray(order.whatsapp_log) ? order.whatsapp_log : [];
+    log.push({ ...entry, timestamp: new Date().toISOString() });
+    await supabase.from('orders').update({ whatsapp_log: log, updated_at: new Date().toISOString() }).eq('id', id);
+  }
+}
+
+module.exports = OrderModel;

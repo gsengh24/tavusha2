@@ -3,187 +3,182 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Explore the full TAVUSHA catalog — Curated premium fashion for every occasion.">
-  <title>Shop All — TAVUSHA</title>
+  <meta name="theme-color" content="#1a1209">
+  <title>Shop All Collections — TAVUSHA | Women's Fashion India</title>
+  <meta name="description" content="Browse all TAVUSHA women's fashion collections. Party wear, ethnic wear, co-ords, maxi dresses & designer wear. Free shipping above ₹2,499.">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://tavusha.com/shop.html">
+  <meta property="og:title" content="Shop — TAVUSHA">
+  <meta property="og:description" content="Browse all premium women's fashion collections. Free shipping above ₹2,499.">
+  <meta property="og:url" content="https://tavusha.com/shop.html">
+  <meta property="og:image" content="https://tavusha.com/assets/images/og-cover.jpg">
   <link rel="stylesheet" href="css/styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='26' font-family='serif' font-weight='bold'>T</text></svg>">
   <style>
-    .shop-page { padding: 40px var(--container-pad) 80px; }
-    .shop-header { margin-bottom: 40px; text-align: center; }
-    .shop-header__eyebrow { font-size: 0.65rem; font-weight: 600; letter-spacing: 0.2em; text-transform: uppercase; color: var(--brand-dark); margin-bottom: 8px; }
-    .shop-header__title { font-family: var(--font-display); font-size: clamp(2.5rem, 5vw, 4rem); font-weight: 700; color: var(--black); line-height: 1.1; margin-bottom: 12px; }
-    .shop-header__desc { font-size: 0.9rem; color: var(--warm-grey); max-width: 540px; margin: 0 auto; }
-    
-    .shop-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 20px; padding: 20px 0; border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); margin-bottom: 40px; }
-    .shop-filters { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-    .filter-btn { padding: 8px 18px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: transparent; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); cursor: pointer; transition: all var(--dur-fast); font-family: var(--font-ui); }
-    .filter-btn:hover { border-color: var(--black); color: var(--black); }
-    .filter-btn.active { background: var(--black); color: #fff; border-color: var(--black); }
-    
-    .shop-sort { display: flex; align-items: center; gap: 10px; font-size: 0.75rem; color: var(--warm-grey); }
-    .sort-select { padding: 8px 16px; border-radius: var(--radius-pill); border: 1px solid var(--border); background: var(--white); font-size: 0.75rem; font-family: var(--font-ui); color: var(--black); outline: none; cursor: pointer; }
-    
-    .shop-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; }
-    .shop-count { font-size: 0.75rem; color: var(--warm-grey); font-weight: 500; }
-
-    @media (max-width: 1024px) {
-      .shop-grid { grid-template-columns: repeat(3, 1fr); }
-    }
-    @media (max-width: 768px) {
-      .shop-grid { grid-template-columns: repeat(2, 1fr); gap: 14px; }
-      .shop-controls { flex-direction: column; align-items: flex-start; }
-    }
-    @media (max-width: 480px) {
-      .shop-grid { grid-template-columns: 1fr; }
-    }
+    .shop-wrapper { min-height:100vh; background:var(--bg-wash); padding-top:calc(var(--nav-h) + 44px + 40px); }
+    .shop-header { max-width:var(--container-max); margin:0 auto; padding:0 var(--container-pad) 40px; }
+    .shop-header__eyebrow { font-size:0.65rem; font-weight:700; letter-spacing:0.2em; text-transform:uppercase; color:var(--brand-dark); margin-bottom:8px; }
+    .shop-header__title { font-family:var(--font-display); font-size:clamp(2rem,4vw,3.2rem); font-weight:700; }
+    .shop-header__count { font-size:0.82rem; color:var(--warm-grey); margin-top:6px; }
+    .shop-controls { max-width:var(--container-max); margin:0 auto; padding:0 var(--container-pad) 32px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .shop-filter-btn { padding:8px 18px; border:1.5px solid var(--border); border-radius:var(--radius-pill); font-size:0.75rem; font-weight:600; font-family:var(--font-ui); cursor:pointer; background:white; color:var(--text-secondary); transition:all 0.18s; letter-spacing:0.04em; white-space:nowrap; }
+    .shop-filter-btn:hover { border-color:var(--black); color:var(--black); }
+    .shop-filter-btn.active { background:var(--black); color:white; border-color:var(--black); }
+    .shop-filter-btn.sale-btn { color:#B91C1C; border-color:#F87171; }
+    .shop-filter-btn.sale-btn.active { background:#B91C1C; border-color:#B91C1C; color:white; }
+    .shop-sort { margin-left:auto; padding:8px 14px; border:1.5px solid var(--border); border-radius:8px; font-size:0.75rem; font-weight:600; font-family:var(--font-ui); cursor:pointer; background:white; color:var(--black); }
+    .shop-grid { max-width:var(--container-max); margin:0 auto; padding:0 var(--container-pad) 80px; display:grid; grid-template-columns:repeat(4,1fr); gap:24px; }
+    .shop-empty { text-align:center; padding:80px 20px; color:var(--warm-grey); }
+    .shop-empty__icon { font-size:3rem; margin-bottom:16px; }
+    .shop-empty__title { font-family:var(--font-display); font-size:1.5rem; font-weight:700; color:var(--black); margin-bottom:8px; }
+    @media (max-width:1200px) { .shop-grid { grid-template-columns:repeat(3,1fr); } }
+    @media (max-width:900px)  { .shop-grid { grid-template-columns:repeat(2,1fr); gap:16px; } }
+    @media (max-width:640px)  { .shop-header { padding:0 20px 24px; } .shop-controls { padding:0 20px 20px; } .shop-grid { padding:0 20px 60px; grid-template-columns:repeat(2,1fr); gap:12px; } }
   </style>
 </head>
 <body>
 
-<!-- ═══ ANNOUNCEMENT ════════════════════════════════════════════ -->
 <div class="announcement" id="announcement">
-  ✦ &nbsp;Free Shipping on Orders Above ₹2,499 &nbsp;·&nbsp; Code <strong>TAVUSHA10</strong> — 10% Off First Order &nbsp;✦
+  <span class="announcement__text">&#10022; &nbsp;Free Shipping on Orders Above &#8377;2,499 &nbsp;&middot;&nbsp; Code <strong>TAVUSHA10</strong> &mdash; 10% Off &nbsp;&middot;&nbsp; New Arrivals Every Friday &nbsp;&#10022;</span>
   <button class="announcement__close" id="announcementClose" aria-label="Close">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
 </div>
 
-<!-- ═══ NAVIGATION ═══════════════════════════════════════════════ -->
 <nav class="nav" id="nav">
   <div class="nav__primary">
     <div class="nav__left">
-      <a href="index.html" class="nav__link">Home</a>
-      <a href="shop.html" class="nav__link active">Shop All</a>
-      <a href="#" class="nav__link">Occasion</a>
-      <a href="#" class="nav__link">Ethnic</a>
+      <a href="shop.html?cat=all" class="nav__link active">Shop</a>
+      <a href="shop.html?cat=party" class="nav__link">Occasion</a>
+      <a href="shop.html?cat=ethnic" class="nav__link">Ethnic</a>
+      <a href="shop.html?cat=sale" class="nav__link" style="color:#B91C1C">Sale</a>
     </div>
-
     <a href="index.html" class="nav__logo">TAVUSHA</a>
-
     <div class="nav__right">
       <button class="nav__icon-btn" id="searchBtn" aria-label="Search">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
       </button>
-      <button class="nav__icon-btn" id="wishlistBtn" aria-label="Wishlist">
+      <button class="nav__icon-btn" id="wishlistBtn" aria-label="Wishlist" style="position:relative">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         <span class="nav__badge-dot" id="wishlistCount" style="display:none">0</span>
       </button>
-      <button class="nav__icon-btn" id="cartBtn" aria-label="Cart">
+      <button class="nav__icon-btn" id="cartBtn" aria-label="Cart" style="position:relative">
         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
         <span class="nav__badge-dot" id="cartCount">0</span>
       </button>
-      <button class="nav__hamburger" id="hamburger" aria-label="Menu">
-        <span></span><span></span><span></span>
-      </button>
+      <button class="nav__hamburger" id="hamburger" aria-label="Menu"><span></span><span></span><span></span></button>
     </div>
+  </div>
+  <div class="nav__secondary">
+    <a href="shop.html?cat=all" class="nav__secondary-link">All</a>
+    <a href="shop.html?cat=party" class="nav__secondary-link">Dresses</a>
+    <a href="shop.html?cat=ethnic" class="nav__secondary-link">Ethnic Wear</a>
+    <a href="shop.html?cat=coord" class="nav__secondary-link">Co-ords</a>
+    <a href="shop.html?cat=maxi" class="nav__secondary-link">Maxi</a>
+    <a href="shop.html?cat=new" class="nav__secondary-link">New Arrivals</a>
+    <a href="shop.html?cat=sale" class="nav__secondary-link" style="color:#B91C1C;font-weight:700">Sale</a>
   </div>
 </nav>
 
-<!-- ═══ MOBILE MENU ══════════════════════════════════════════════ -->
 <div class="mobile-menu" id="mobileMenu">
-  <button class="mobile-menu__close" id="mobileMenuClose" aria-label="Close">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-  </button>
+  <button class="mobile-menu__close" id="mobileMenuClose"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   <nav class="mobile-menu__links">
-    <a href="index.html" class="mobile-menu__link">Home</a>
-    <a href="shop.html" class="mobile-menu__link">Shop All</a>
-    <a href="#" class="mobile-menu__link">Occasions</a>
-    <a href="#" class="mobile-menu__link">Ethnic Wear</a>
+    <a href="shop.html?cat=all" class="mobile-menu__link">All Products <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
+    <a href="shop.html?cat=party" class="mobile-menu__link">Occasion Wear <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
+    <a href="shop.html?cat=ethnic" class="mobile-menu__link">Ethnic Wear <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
+    <a href="shop.html?cat=coord" class="mobile-menu__link">Co-ord Sets <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
+    <a href="shop.html?cat=sale" class="mobile-menu__link" style="color:#B91C1C">Sale <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
   </nav>
 </div>
 
-<!-- ═══ SHOP PAGE CONTENT ════════════════════════════════════════ -->
-<main class="shop-page">
+<div class="shop-wrapper">
   <div class="shop-header">
-    <p class="shop-header__eyebrow">Curated Collection</p>
-    <h1 class="shop-header__title">The TAVUSHA Catalog</h1>
-    <p class="shop-header__desc">Discover handpicked styles for every mood, occasion, and statement. High fashion meets everyday luxury.</p>
+    <div class="shop-header__eyebrow">Tavusha Collection 2026</div>
+    <h1 class="shop-header__title" id="shopTitle">All Products</h1>
+    <div class="shop-header__count" id="shopCount">Loading&hellip;</div>
   </div>
 
   <div class="shop-controls">
-    <div class="shop-filters">
-      <button class="filter-btn active" data-cat="all" onclick="filterShop('all', this)">All Items</button>
-      <button class="filter-btn" data-cat="party" onclick="filterShop('party', this)">Party Wear</button>
-      <button class="filter-btn" data-cat="ethnic" onclick="filterShop('ethnic', this)">Ethnic Wear</button>
-      <button class="filter-btn" data-cat="casual" onclick="filterShop('casual', this)">Casual Luxe</button>
-      <button class="filter-btn" data-cat="maxi" onclick="filterShop('maxi', this)">Maxi Dresses</button>
-      <button class="filter-btn" data-cat="coord" onclick="filterShop('coord', this)">Co-ords</button>
-    </div>
-
-    <div class="shop-sort">
-      <span class="shop-count" id="shopCount">Showing 12 items</span>
-      <select class="sort-select" id="sortSelect" onchange="sortShop(this.value)">
-        <option value="featured">Sort by: Featured</option>
-        <option value="price-low">Price: Low to High</option>
-        <option value="price-high">Price: High to Low</option>
-        <option value="rating">Highest Rated</option>
-      </select>
-    </div>
+    <button class="shop-filter-btn" data-cat="all" onclick="filterShop('all',this)">All</button>
+    <button class="shop-filter-btn" data-cat="party" onclick="filterShop('party',this)">Dresses &amp; Party</button>
+    <button class="shop-filter-btn" data-cat="ethnic" onclick="filterShop('ethnic',this)">Ethnic Wear</button>
+    <button class="shop-filter-btn" data-cat="coord" onclick="filterShop('coord',this)">Co-ord Sets</button>
+    <button class="shop-filter-btn" data-cat="maxi" onclick="filterShop('maxi',this)">Maxi Dresses</button>
+    <button class="shop-filter-btn" data-cat="new" onclick="filterShop('new',this)">New Arrivals</button>
+    <button class="shop-filter-btn sale-btn" data-cat="sale" onclick="filterShop('sale',this)">Sale &#128293;</button>
+    <select class="shop-sort" id="shopSort" onchange="applySort()">
+      <option value="default">Sort: Featured</option>
+      <option value="price-asc">Price: Low to High</option>
+      <option value="price-desc">Price: High to Low</option>
+      <option value="rating">Top Rated</option>
+      <option value="new">Newest First</option>
+    </select>
   </div>
 
-  <div class="shop-grid" id="shopGrid">
-    <!-- Products rendered dynamically by JS -->
-  </div>
-</main>
+  <div class="shop-grid" id="shopGrid"></div>
+</div>
 
-<!-- ═══ FOOTER ════════════════════════════════════════════════════ -->
-<footer class="footer-ref">
-  <div class="footer-ref__grid">
-    <div>
-      <div class="footer-ref__logo">TAVUSHA</div>
-      <p class="footer-ref__desc">Your premium one-stop fashion destination. Curated collections for every woman.</p>
-    </div>
-    <div>
-      <div class="footer-ref__col-title">Shop</div>
-      <ul class="footer-ref__links">
-        <li><a href="shop.html" class="footer-ref__link">All Items</a></li>
-        <li><a href="shop.html?cat=party" class="footer-ref__link">Party Wear</a></li>
-        <li><a href="shop.html?cat=ethnic" class="footer-ref__link">Ethnic Wear</a></li>
-      </ul>
-    </div>
-    <div>
-      <div class="footer-ref__col-title">Help</div>
-      <ul class="footer-ref__links">
-        <li><a href="#" class="footer-ref__link">Size Guide</a></li>
-        <li><a href="#" class="footer-ref__link">Shipping Info</a></li>
-        <li><a href="#" class="footer-ref__link">Returns</a></li>
-      </ul>
-    </div>
-    <div>
-      <div class="footer-ref__col-title">About</div>
-      <ul class="footer-ref__links">
-        <li><a href="#" class="footer-ref__link">Our Story</a></li>
-        <li><a href="#" class="footer-ref__link">Journal</a></li>
-      </ul>
-    </div>
-  </div>
-  <div class="footer-ref__bottom">
-    <p class="footer-ref__copy">© 2026 TAVUSHA. All rights reserved.</p>
-  </div>
-</footer>
-
-<!-- ═══ CART DRAWER ════════════════════════════════════════════════ -->
+<!-- CART DRAWER -->
 <div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
 <div class="cart-drawer" id="cartDrawer">
   <div class="cart-drawer__header">
-    <h2 class="cart-drawer__title">Your Bag</h2>
-    <button class="cart-drawer__close" onclick="closeCart()" aria-label="Close">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-    </button>
+    <div class="cart-drawer__title">Your Bag</div>
+    <button class="cart-drawer__close" onclick="closeCart()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
   </div>
   <div class="cart-drawer__items" id="cartItems"></div>
   <div class="cart-drawer__footer" id="cartFooter" style="display:none">
-    <div class="cart-drawer__subtotal">
-      <span class="cart-drawer__label">Subtotal</span>
-      <span class="cart-drawer__total" id="cartTotal">₹0</span>
-    </div>
-    <p class="cart-drawer__shipping">✦ Free shipping on your order!</p>
-    <button class="cart-drawer__checkout" onclick="showToast('Checkout coming soon!','info')">Proceed to Checkout</button>
+    <div class="cart-drawer__subtotal"><span class="cart-drawer__label">Subtotal</span><span class="cart-drawer__total" id="cartTotal">&#8377;0</span></div>
+    <p class="cart-drawer__shipping">&#10022; Shipping calculated by PIN code at checkout</p>
+    <button class="cart-drawer__checkout" onclick="openCheckout()">Proceed to Checkout</button>
     <button class="cart-drawer__continue" onclick="closeCart()">Continue Shopping</button>
   </div>
 </div>
 
-<!-- ═══ QUICK VIEW MODAL ═══════════════════════════════════════════ -->
+<!-- CHECKOUT MODAL -->
+<div class="modal-overlay" id="checkoutOverlay" style="display:none;justify-content:center;align-items:center;z-index:9999;">
+  <div class="quick-view" style="max-width:480px;width:90%;height:auto;max-height:90vh;overflow-y:auto;display:block;padding:24px;box-sizing:border-box;position:relative;">
+    <div onclick="document.getElementById('checkoutOverlay').style.display='none'" style="position:absolute;top:16px;right:16px;cursor:pointer;font-size:1.5rem;font-weight:700">&times;</div>
+    <h2 style="font-family:var(--font-display);font-size:1.5rem;font-weight:700;margin-bottom:16px">Checkout</h2>
+    <div id="checkoutForm">
+      <label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px">Full Name</label>
+      <input type="text" id="coName" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px;font-family:var(--font-ui);box-sizing:border-box" placeholder="e.g. Radhika Sharma"/>
+      <label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px">Phone</label>
+      <input type="tel" id="coPhone" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px;font-family:var(--font-ui);box-sizing:border-box" placeholder="10-digit number"/>
+      <label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px">Address</label>
+      <input type="text" id="coAddress" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;margin-bottom:12px;font-family:var(--font-ui);box-sizing:border-box" placeholder="Flat, building, street"/>
+      <div style="display:flex;gap:10px;margin-bottom:12px">
+        <div style="flex:1"><label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px">PIN Code</label><input type="text" id="coPincode" maxlength="6" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-family:var(--font-ui);box-sizing:border-box" placeholder="6-digit PIN"/></div>
+        <div style="flex:1"><label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px">City</label><input type="text" id="coCity" readonly style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-family:var(--font-ui);box-sizing:border-box;background:#faf8f6" placeholder="Auto-filled"/></div>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Subtotal</span><span id="coSubtotal">&#8377;0</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Shipping (<span id="coShippingZone">&#8212;</span>)</span><span id="coShipping">Enter PIN</span></div>
+      <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1rem;border-top:1px solid var(--border);padding-top:8px;margin-bottom:16px"><span>Total</span><span id="coTotal">&#8212;</span></div>
+      <div style="display:flex;gap:10px;margin-bottom:20px">
+        <label style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:0.85rem;font-weight:600"><input type="radio" name="paymentType" value="cod" checked style="margin-right:6px"/> COD (20% advance)</label>
+        <label style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:0.85rem;font-weight:600"><input type="radio" name="paymentType" value="prepaid" style="margin-right:6px"/> Full Prepaid</label>
+      </div>
+      <button onclick="placeOrder()" class="quick-view__add" style="width:100%;border:none;cursor:pointer">Proceed to Pay</button>
+    </div>
+    <div id="checkoutPayment" style="display:none;text-align:center">
+      <h3 style="font-weight:700;font-size:1.1rem;margin-bottom:8px">Scan UPI QR to Pay</h3>
+      <p id="paymentPrompt" style="font-size:0.85rem;color:var(--warm-grey);margin-bottom:16px"></p>
+      <div style="margin:20px auto;width:180px;height:180px;border:1px solid var(--border);border-radius:12px;background:white;display:flex;align-items:center;justify-content:center"><img id="qrImg" src="" style="width:100%;height:100%"/></div>
+      <button onclick="simulatePaymentCapture()" class="quick-view__add" style="width:100%;background:#1e7a34;border:none;cursor:pointer">Simulate Payment Confirmation</button>
+    </div>
+    <div id="checkoutSuccess" style="display:none;text-align:center;padding:12px 0">
+      <div style="font-size:2.5rem;color:#1e7a34;margin-bottom:12px">&#10003;</div>
+      <h3 style="font-weight:700;font-size:1.25rem;margin-bottom:6px">Order Confirmed!</h3>
+      <div style="background:#faf8f6;border-radius:12px;padding:16px;margin-bottom:24px;text-align:left;font-size:0.82rem;line-height:1.6">
+        <strong>Order:</strong> <span id="successOrderNum">&#8212;</span><br/>
+        <strong>Name:</strong> <span id="successName">&#8212;</span><br/>
+        <strong>Paid:</strong> <span id="successPaid">&#8212;</span>
+      </div>
+      <button onclick="document.getElementById('checkoutOverlay').style.display='none'; clearCart()" class="quick-view__add" style="width:100%;border:none;cursor:pointer">Continue Shopping</button>
+    </div>
+  </div>
+</div>
+
+<!-- QUICK VIEW -->
 <div class="modal-overlay" id="quickViewOverlay" onclick="closeQuickView(event)">
   <div class="quick-view" id="quickView">
     <div class="quick-view__gallery" style="background:var(--card-rose)">
@@ -200,15 +195,19 @@
       <div class="quick-view__size-label">Select Size</div>
       <div class="quick-view__sizes" id="quickViewSizes"></div>
       <button class="quick-view__add" onclick="addToCartFromQuickView()">Add to Bag</button>
-      <button class="quick-view__wishlist-btn" id="quickViewWishBtn" onclick="toggleWishlistQuickView()">
+      <button class="quick-view__wishlist-btn" id="quickViewWishBtn" onclick="toggleWishlistQuickView()" style="margin-bottom:8px">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
         Add to Wishlist
       </button>
+      <a id="quickViewDetailLink" href="#" class="quick-view__wishlist-btn" style="display:flex;align-items:center;justify-content:center;gap:6px;text-decoration:none;color:var(--black)">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        View Full Details
+      </a>
     </div>
   </div>
 </div>
 
-<!-- ═══ SEARCH OVERLAY ════════════════════════════════════════════ -->
+<!-- SEARCH OVERLAY -->
 <div class="search-overlay" id="searchOverlay">
   <button class="search-overlay__close" onclick="closeSearch()" aria-label="Close">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
@@ -220,6 +219,15 @@
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
     </button>
   </form>
+  <div class="search-suggestions">
+    <button class="search-suggestion" onclick="doSearch('Party Wear')">Party Wear</button>
+    <button class="search-suggestion" onclick="doSearch('Ethnic Wear')">Ethnic Wear</button>
+    <button class="search-suggestion" onclick="doSearch('Co-ord Sets')">Co-ord Sets</button>
+    <button class="search-suggestion" onclick="doSearch('Maxi Dress')">Maxi Dress</button>
+    <button class="search-suggestion" onclick="doSearch('Wedding Guest')">Wedding Guest</button>
+    <button class="search-suggestion" onclick="doSearch('Office Wear')">Office Wear</button>
+    <button class="search-suggestion" onclick="doSearch('Accessories')">Accessories</button>
+  </div>
 </div>
 
 <div class="toast-container" id="toastContainer"></div>
@@ -227,66 +235,254 @@
 <div class="cursor__ring" id="cursorRing"></div>
 
 <script src="js/products.js"></script>
-<script src="https://tavusha2-backend.onrender.com/api/products/storefront.js" onerror="console.log('Backend offline')"></script>
 <script src="js/main.js"></script>
 <script>
-  let currentCategory = 'all';
-  let currentProducts = [...TAVUSHA_PRODUCTS];
+let currentCat='all', currentSort='default', currentQuery='';
+const CAT_LABELS={all:'All Products',party:'Dresses & Party Wear',ethnic:'Ethnic Wear',coord:'Co-ord Sets',maxi:'Maxi Dresses',new:'New Arrivals',sale:'Sale Items',workwear:'Office & Workwear',accessories:'Accessories',wedding:'Wedding Guest'};
 
-  document.addEventListener('DOMContentLoaded', () => {
-    // Check URL params
+function initShop(){
+  try {
     const params = new URLSearchParams(window.location.search);
-    const catParam = params.get('cat');
-    if (catParam) {
-      const btn = document.querySelector(`.filter-btn[data-cat="${catParam}"]`);
-      if (btn) filterShop(catParam, btn);
-      else renderShopGrid();
+    const cat = params.get('cat') || 'all';
+    const query = params.get('q') || '';
+    currentCat = cat;
+    currentQuery = query;
+    if (query) {
+      document.querySelectorAll('.shop-filter-btn').forEach(b=>b.classList.remove('active'));
+      const t = document.getElementById('shopTitle');
+      if (t) t.textContent = 'Search: "' + query + '"';
+      document.title = 'Search "' + query + '" \u2014 TAVUSHA';
     } else {
-      renderShopGrid();
-    }
-  });
-
-  function renderShopGrid() {
-    const grid = document.getElementById('shopGrid');
-    const countEl = document.getElementById('shopCount');
-    if (!grid) return;
-
-    let items = TAVUSHA_PRODUCTS.filter(p => currentCategory === 'all' || p.category.includes(currentCategory));
-    currentProducts = items;
-
-    if (countEl) countEl.textContent = `Showing ${items.length} item${items.length !== 1 ? 's' : ''}`;
-
-    if (items.length === 0) {
-      grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:60px 0;color:var(--warm-grey)">
-        <p style="font-family:var(--font-display);font-size:1.5rem">No items found in this category</p>
-        <button class="btn-pill" style="margin-top:16px" onclick="filterShop('all', document.querySelector('.filter-btn[data-cat=all]'))">View All Items</button>
-      </div>`;
-      return;
-    }
-
-    grid.innerHTML = items.map((p, i) => renderProductCard(p, i)).join('');
-    reInitReveal(grid);
-  }
-
-  function filterShop(cat, btn) {
-    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-    if (btn) btn.classList.add('active');
-    currentCategory = cat;
-    renderShopGrid();
-  }
-
-  function sortShop(val) {
-    if (val === 'price-low') {
-      TAVUSHA_PRODUCTS.sort((a, b) => a.price - b.price);
-    } else if (val === 'price-high') {
-      TAVUSHA_PRODUCTS.sort((a, b) => b.price - a.price);
-    } else if (val === 'rating') {
-      TAVUSHA_PRODUCTS.sort((a, b) => b.rating - a.rating);
-    } else {
-      TAVUSHA_PRODUCTS.sort((a, b) => a.id - b.id);
+      document.querySelectorAll('.shop-filter-btn').forEach(b=>b.classList.toggle('active',b.dataset.cat===cat));
+      const t = document.getElementById('shopTitle');
+      if (t) t.textContent = CAT_LABELS[cat] || 'Products';
+      document.title = (CAT_LABELS[cat] || 'Shop') + ' \u2014 TAVUSHA';
     }
     renderShopGrid();
+  } catch(err) {
+    console.error('initShop error:', err);
+    renderShopGrid();
   }
+}
+
+window.filterShopBySearch = function(q){
+  currentQuery = q;
+  document.querySelectorAll('.shop-filter-btn').forEach(b=>b.classList.remove('active'));
+  const t = document.getElementById('shopTitle');
+  if (t) t.textContent = 'Search: "' + q + '"';
+  try {
+    const url = new URL(window.location);
+    url.searchParams.set('q', q);
+    url.searchParams.delete('cat');
+    window.history.replaceState({}, '', url);
+  } catch(e){}
+  renderShopGrid();
+};
+
+function filterShop(cat,btn){
+  currentQuery = '';
+  currentCat = cat;
+  document.querySelectorAll('.shop-filter-btn').forEach(b=>b.classList.remove('active'));
+  if (btn) btn.classList.add('active');
+  const t = document.getElementById('shopTitle');
+  if (t) t.textContent = CAT_LABELS[cat] || 'Products';
+  try {
+    const url = new URL(window.location);
+    url.searchParams.set('cat', cat);
+    url.searchParams.delete('q');
+    window.history.replaceState({}, '', url);
+  } catch(e){}
+  renderShopGrid();
+}
+
+function applySort(){
+  const s = document.getElementById('shopSort');
+  if (s) currentSort = s.value;
+  renderShopGrid();
+}
+
+function getFiltered(){
+  const allProds = (typeof window.TAVUSHA_PRODUCTS !== 'undefined' && Array.isArray(window.TAVUSHA_PRODUCTS) && window.TAVUSHA_PRODUCTS.length)
+    ? window.TAVUSHA_PRODUCTS
+    : ((typeof TAVUSHA_PRODUCTS !== 'undefined' && Array.isArray(TAVUSHA_PRODUCTS)) ? TAVUSHA_PRODUCTS : []);
+    
+  let p = [...allProds];
+
+  if (currentQuery) {
+    const q = currentQuery.toLowerCase();
+    p = p.filter(x => x && (
+      (x.name && x.name.toLowerCase().includes(q)) ||
+      (x.brand && x.brand.toLowerCase().includes(q)) ||
+      (x.description && x.description.toLowerCase().includes(q)) ||
+      (Array.isArray(x.category) && x.category.some(c => c && c.toLowerCase().includes(q)))
+    ));
+  } else if (currentCat === 'sale') {
+    let matches = p.filter(x => x && (x.originalPrice || x.badge === 'sale' || x.badgeText === 'Sale'));
+    p = matches.length ? matches : p.slice(0, 16);
+  } else if (currentCat === 'new') {
+    let matches = p.filter(x => x && (x.isNew || x.badge === 'new' || x.badgeText === 'New'));
+    p = matches.length ? matches : p.slice(0, 16);
+  } else if (currentCat === 'ethnic') {
+    let matches = p.filter(x => x && (
+      (Array.isArray(x.category) && x.category.includes('ethnic')) ||
+      (x.name && /anarkali|saree|ethnic|lehenga|kurta|festive|traditional|gown|embroidered|gold|silk|velvet|ornate|pearl|beaded/i.test(x.name)) ||
+      (x.description && /anarkali|saree|ethnic|lehenga|kurta|festive|traditional|gown|embroidered|gold|silk|velvet|ornate|pearl|beaded/i.test(x.description))
+    ));
+    p = matches.length ? matches : p.filter((_, i) => i % 2 === 0);
+  } else if (currentCat === 'coord') {
+    let matches = p.filter(x => x && (
+      (Array.isArray(x.category) && x.category.includes('coord')) ||
+      (x.name && /set|co-ord|coord|jumpsuit|shorts|pajama|top and bottom|hoodie|leggings|crop|top|striped/i.test(x.name)) ||
+      (x.description && /set|co-ord|coord|jumpsuit|shorts|pajama|top and bottom|hoodie|leggings|crop|top|striped/i.test(x.description))
+    ));
+    p = matches.length ? matches : p.filter((_, i) => i % 3 === 0);
+  } else if (currentCat === 'party') {
+    let matches = p.filter(x => x && (
+      (Array.isArray(x.category) && x.category.includes('party')) ||
+      (x.name && /party|gown|mini|dress|sequin|velvet|slit|satin|shimmer|bodycon|bustier|cocktail|evening|wrap|draped/i.test(x.name)) ||
+      (x.description && /party|gown|mini|dress|sequin|velvet|slit|satin|shimmer|bodycon|bustier|cocktail|evening|wrap|draped/i.test(x.description))
+    ));
+    p = matches.length ? matches : p.filter((_, i) => i % 2 === 1);
+  } else if (currentCat === 'maxi') {
+    let matches = p.filter(x => x && (
+      (Array.isArray(x.category) && x.category.includes('maxi')) ||
+      (x.name && /maxi|gown|long|full length|ankle length|mermaid|drape/i.test(x.name)) ||
+      (x.description && /maxi|gown|long|full length|ankle length|mermaid|drape/i.test(x.description))
+    ));
+    p = matches.length ? matches : p.filter((_, i) => i % 3 === 1);
+  } else if (currentCat === 'workwear') {
+    let matches = p.filter(x => x && (
+      (Array.isArray(x.category) && x.category.includes('workwear')) ||
+      (x.name && /blazer|cardigan|shirt|top|tailored|office|work|knit/i.test(x.name)) ||
+      (x.description && /blazer|cardigan|shirt|top|tailored|office|work|knit/i.test(x.description))
+    ));
+    p = matches.length ? matches : p.filter((_, i) => i % 4 === 0);
+  } else if (currentCat === 'wedding' || currentCat === 'accessories') {
+    let matches = p.filter(x => x && (
+      (Array.isArray(x.category) && x.category.includes(currentCat)) ||
+      (x.name && /gown|anarkali|velvet|sequin|shimmer|embroidered|saree|dress|set/i.test(x.name))
+    ));
+    p = matches.length ? matches : p.filter((_, i) => i % 3 === 2);
+  } else if (currentCat !== 'all') {
+    let matches = p.filter(x => x && Array.isArray(x.category) && x.category.includes(currentCat));
+    p = matches.length ? matches : p.slice(0, 16);
+  }
+
+  if (!p.length && allProds.length) {
+    p = [...allProds];
+  }
+  
+  if (currentSort === 'price-asc') p.sort((a,b) => (a.price||0) - (b.price||0));
+  else if (currentSort === 'price-desc') p.sort((a,b) => (b.price||0) - (a.price||0));
+  else if (currentSort === 'rating') p.sort((a,b) => (b.rating||0) - (a.rating||0));
+  else if (currentSort === 'new') p.sort((a,b) => (b.isNew?1:0) - (a.isNew?1:0));
+  return p;
+}
+
+function renderShopGrid(){
+  const prods = getFiltered();
+  const countEl = document.getElementById('shopCount');
+  if (countEl) countEl.textContent = prods.length + ' item' + (prods.length !== 1 ? 's' : '') + ' found';
+  const g = document.getElementById('shopGrid');
+  if (!g) return;
+  
+  if (!prods.length) {
+    g.innerHTML = `<div class="shop-empty" style="grid-column:1/-1">
+      <div class="shop-empty__icon">&#128722;</div>
+      <div class="shop-empty__title">No items found</div>
+      <p>Try a different category or search term above.</p>
+      <button onclick="filterShop('all',document.querySelector('[data-cat=all]'))" style="margin-top:16px;padding:10px 24px;background:var(--black);color:white;border:none;border-radius:8px;cursor:pointer;font-family:var(--font-ui);font-weight:600">View All</button>
+    </div>`;
+    return;
+  }
+  
+  const cardColorsArr = (typeof CARD_COLORS !== 'undefined' && CARD_COLORS.length) ? CARD_COLORS : ['var(--card-rose)'];
+  const wishlistArr = (typeof TAVUSHA !== 'undefined' && TAVUSHA.wishlist) ? TAVUSHA.wishlist : [];
+  
+  g.innerHTML = prods.map((p, i) => {
+    const c = cardColorsArr[i % cardColorsArr.length];
+    const w = wishlistArr.includes(p.id);
+    const bd = p.badge ? `<span class="product-card__badge ${p.badge==='sale'?'badge badge--red':p.badge==='limited'?'badge badge--warm':p.badge==='bestseller'?'badge badge--gold':'badge'}">${p.badgeText||p.badge}</span>` : '';
+    const disc = (p.originalPrice && p.price) ? `<div style="font-size:0.68rem;font-weight:700;color:#B91C1C;margin-top:2px">${Math.round((1 - p.price / p.originalPrice) * 100)}% OFF</div>` : '';
+    
+    const imgSrc = p.image || p.imageAlt || '';
+    const driveIdMatch = imgSrc.match(/[?&]id=([^&]+)/);
+    const driveId = driveIdMatch ? driveIdMatch[1] : '';
+    const fallbackImg = driveId ? `https://lh3.googleusercontent.com/d/${driveId}=w800` : (p.imageAlt || imgSrc);
+    const safePrice = p.price ? p.price.toLocaleString('en-IN') : '0';
+    const safeOrigPrice = p.originalPrice ? p.originalPrice.toLocaleString('en-IN') : '';
+
+    return `<div class="product-card reveal visible" onclick="location.href='product.html?id=${p.id}'">
+      <div class="product-card__media" style="--card-bg:${c}">
+        <img class="product-card__img" src="${imgSrc}" alt="${p.name || 'Product'}" loading="lazy" onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='${fallbackImg}';}else{this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100%25\\' height=\\'100%25\\'><rect fill=\\'%23f5e2d6\\'/><text x=\\'50%25\\' y=\\'50%25\\' font-family=\\'serif\\' font-size=\\'14\\' fill=\\'%23a07840\\' text-anchor=\\'middle\\' dy=\\'.3em\\'>TAVUSHA</text></svg>';}">
+        ${bd}
+        <div class="product-card__actions">
+          <button class="product-card__action-btn ${w?'active':''}" onclick="event.stopPropagation();toggleWishlistCard(this,${p.id})" aria-label="Wishlist">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="${w?'currentColor':'none'}" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+          </button>
+          <button class="product-card__action-btn" onclick="event.stopPropagation();openQuickView(${p.id})" aria-label="Quick View">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          </button>
+        </div>
+      </div>
+      <div class="product-card__body">
+        <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--brand-dark);margin-bottom:2px">${p.brand || 'TAVUSHA'}</div>
+        <div class="product-card__name">${p.name || 'Product'}</div>
+        <div style="display:flex;align-items:center;gap:4px;margin:4px 0">
+          <span style="color:var(--star);font-size:0.7rem">${'&#9733;'.repeat(Math.round(p.rating || 5))}</span>
+          <span style="font-size:0.7rem;color:var(--warm-grey)">${p.rating || 5} (${p.reviewCount || 0})</span>
+        </div>
+        <div style="display:flex;align-items:baseline;gap:8px">
+          <span class="product-card__price">&#8377;${safePrice}</span>
+          ${p.originalPrice ? `<span class="product-card__price-orig">&#8377;${safeOrigPrice}</span>` : ''}
+        </div>
+        ${disc}
+      </div>
+    </div>`;
+  }).join('');
+
+  setTimeout(() => {
+    if (typeof IntersectionObserver !== 'undefined') {
+      const obs = new IntersectionObserver(en => {
+        en.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.add('visible');
+            obs.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.01, rootMargin: '0px 0px 100px 0px' });
+      document.querySelectorAll('.product-card.reveal').forEach(el => obs.observe(el));
+    }
+  }, 50);
+}
+
+// Patch openQuickView to update "View Full Details" link
+try {
+  const _origOQV = window.openQuickView;
+  window.openQuickView = function(id) {
+    if (_origOQV) _origOQV(id);
+    const l = document.getElementById('quickViewDetailLink');
+    if (l) l.href = 'product.html?id=' + id;
+  };
+} catch(e){}
+
+function bootShop() {
+  try { if (typeof initAnnouncement === 'function') initAnnouncement(); } catch(e){}
+  try { if (typeof updateCartUI === 'function') updateCartUI(); } catch(e){}
+  try { if (typeof updateWishlistUI === 'function') updateWishlistUI(); } catch(e){}
+  try { if (typeof initNav === 'function') initNav(); } catch(e){}
+  try { if (typeof initCursor === 'function') initCursor(); } catch(e){}
+  try { if (typeof initScrollReveal === 'function') initScrollReveal(); } catch(e){}
+  try { if (typeof initMobileMenu === 'function') initMobileMenu(); } catch(e){}
+  try { if (typeof initKeyboard === 'function') initKeyboard(); } catch(e){}
+  initShop();
+}
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  setTimeout(bootShop, 1);
+} else {
+  document.addEventListener('DOMContentLoaded', bootShop);
+}
 </script>
 </body>
 </html>

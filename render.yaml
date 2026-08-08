@@ -1,10 +1,11 @@
 services:
   - type: web
-    name: tavusha-staff-backend
+    name: tavusha2-backend
     runtime: node
     rootDir: backend
     buildCommand: npm install
     startCommand: node server.js
+    healthCheckPath: /api/health
     envVars:
       - key: SUPABASE_URL
         value: https://tbadcvbuxznataplchsv.supabase.co
@@ -14,6 +15,8 @@ services:
         sync: false
       - key: SUPABASE_KEY
         sync: false
+      - key: SUPABASE_JWKS_URL
+        value: https://tbadcvbuxznataplchsv.supabase.co/auth/v1/.well-known/jwks.json
       - key: JWT_SECRET
         sync: false
       - key: ADMIN_EMAIL
@@ -22,3 +25,17 @@ services:
         sync: false
       - key: PORT
         value: 5000
+      - key: RAZORPAY_KEY_ID
+        sync: false
+      - key: RAZORPAY_KEY_SECRET
+        sync: false
+      - key: RAZORPAY_WEBHOOK_SECRET
+        sync: false
+      - key: WHATSAPP_TOKEN
+        sync: false
+      - key: WHATSAPP_PHONE_NUMBER_ID
+        sync: false
+      - key: COD_ADVANCE_PCT
+        value: 20
+      - key: NODE_ENV
+        value: production

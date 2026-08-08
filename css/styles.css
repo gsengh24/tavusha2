@@ -408,7 +408,7 @@ ul { list-style: none; }
 .product-card__img {
   width: 100%; height: 100%; object-fit: cover;
   transition: transform 0.4s var(--ease-snap);
-  mix-blend-mode: multiply; /* cuts into the card color */
+  /* No mix-blend-mode so images display correctly */
 }
 .product-card:hover .product-card__img { transform: scale(1.06); }
 
@@ -1381,3 +1381,40 @@ ul { list-style: none; }
   .side-poster-card__img { width: 100%; height: 180px; }
 }
 
+/* ─── Scroll Reveal Animations ──────────────────────────────────
+   JS adds .visible when element enters viewport via IntersectionObserver */
+.reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-left {
+  opacity: 0;
+  transform: translateX(-28px);
+  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
+}
+.reveal-left.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+.reveal-right {
+  opacity: 0;
+  transform: translateX(28px);
+  transition: opacity 0.55s var(--ease-out), transform 0.55s var(--ease-out);
+}
+.reveal-right.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+/* Image fallback placeholder when Google Drive image fails to load */
+.product-card__img[data-error="1"] {
+  background: var(--card-rose);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

@@ -5,25 +5,33 @@ const cors = require('cors');
 const Staff = require('./models/Staff');
 const authRoutes = require('./routes/auth');
 const productRoutes = require('./routes/products');
+const cmsRoutes = require('./routes/cms');
+const shippingRoutes = require('./routes/shipping');
+const orderRoutes = require('./routes/orders');
 
 const app = express();
 
+// Webhook route must use raw body — mount BEFORE json middleware
+app.use('/api/orders/webhook', express.raw({ type: 'application/json' }));
+
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/cms', cmsRoutes);
+app.use('/api/shipping', shippingRoutes);
+app.use('/api/orders', orderRoutes);
 
-app.get('/api/health', (req, res) => res.json({ ok: true, database: 'supabase' }));
+app.get('/api/health', (req, res) => res.json({ ok: true, database: 'supabase', version: '2.0.0' }));
 
 async function ensureAdminAccount() {
   try {
     const existingAdmin = await Staff.findOne({ role: 'admin' });
     if (existingAdmin) {
-      console.log('✅ Admin account checked in Supabase');
+      console.log('✅ Admin account verified in Supabase');
       return;
     }
-
     const email = process.env.ADMIN_EMAIL || 'admin@example.com';
     const password = process.env.ADMIN_PASSWORD || 'ChangeMe123!';
     await Staff.create({
@@ -33,15 +41,20 @@ async function ensureAdminAccount() {
       role: 'admin',
       permissions: { canUpload: true, canEdit: true, canDelete: true, canUpdateStock: true }
     });
-    console.log(`✅ Admin account created -> loginId: ${email}`);
+    console.log(`✅ Admin account created → loginId: ${email}`);
   } catch (err) {
-    console.warn('⚠️ Could not verify/create admin account (ensure Supabase tables exist according to schema.sql):', err.message);
+    console.warn('⚠️ Could not verify/create admin account:', err.message);
   }
 }
 
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, async () => {
-  console.log(`🚀 Server running on port ${PORT} with Supabase backend`);
+  console.log(`🚀 Tavusha backend v2.0 running on port ${PORT}`);
+  console.log(`   ✓ CMS routes: /api/cms/*`);
+  console.log(`   ✓ Shipping routes: /api/shipping/*`);
+  console.log(`   ✓ Orders routes: /api/orders/*`);
+  console.log(`   ✓ Razorpay: ${process.env.RAZORPAY_KEY_ID ? 'Configured ✅' : 'Not configured ⚠️'}`);
+  console.log(`   ✓ WhatsApp: ${process.env.WHATSAPP_TOKEN ? 'Configured ✅' : 'Not configured ⚠️'}`);
   await ensureAdminAccount();
 });

@@ -5,10 +5,17 @@
    ============================================================ */
 'use strict';
 
-// ─── State ────────────────────────────────────────────────────
+let parsedCart = [];
+try { parsedCart = JSON.parse(localStorage.getItem('tavusha_cart')) || []; } catch(e) {}
+if (!Array.isArray(parsedCart)) parsedCart = [];
+
+let parsedWishlist = [];
+try { parsedWishlist = JSON.parse(localStorage.getItem('tavusha_wishlist')) || []; } catch(e) {}
+if (!Array.isArray(parsedWishlist)) parsedWishlist = [];
+
 const TAVUSHA = {
-  cart:     JSON.parse(localStorage.getItem('tavusha_cart')     || '[]'),
-  wishlist: JSON.parse(localStorage.getItem('tavusha_wishlist') || '[]'),
+  cart:     parsedCart,
+  wishlist: parsedWishlist,
   quickViewProduct: null,
   selectedSize:     null
 };
@@ -213,7 +220,8 @@ function renderProductCard(product, colorIdx) {
   return `
     <div class="product-card reveal" data-id="${product.id}" onclick="openQuickView(${product.id})">
       <div class="product-card__media" style="--card-bg:${color}">
-        <img class="product-card__img" src="${product.image}" alt="${product.name}" loading="lazy">
+        <img class="product-card__img" src="${product.image}" alt="${product.name}" loading="lazy"
+          onerror="if(!this.dataset.tried){this.dataset.tried='1';const m=this.src.match(/[?&]id=([^&]+)/);this.src=m?'https://lh3.googleusercontent.com/d/'+m[1]+'=w800':'${product.imageAlt||product.image}';}else{this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100%25\\' height=\\'100%25\\'><rect fill=\\'%23ede0c0\\'/><text x=\\'50%25\\' y=\\'50%25\\' font-family=\\'serif\\' font-size=\\'12\\' fill=\\'%23a07840\\' text-anchor=\\'middle\\' dy=\\'.3em\\'>TAVUSHA</text></svg>';}">
         ${product.badge ? `<span class="product-card__badge ${badgeMap[product.badge] || ''}">${badgeLabelMap[product.badge] || product.badge}</span>` : ''}
         <!-- Two action circles — reference pattern -->
         <div class="product-card__actions">
@@ -443,15 +451,15 @@ function updateCartUI() {
 }
 
 function openCart() {
-  document.getElementById('cartOverlay').classList.add('open');
-  document.getElementById('cartDrawer').classList.add('open');
+  document.getElementById('cartOverlay')?.classList.add('open');
+  document.getElementById('cartDrawer')?.classList.add('open');
   document.body.style.overflow = 'hidden';
   renderCartItems();
 }
 
 function closeCart() {
-  document.getElementById('cartOverlay').classList.remove('open');
-  document.getElementById('cartDrawer').classList.remove('open');
+  document.getElementById('cartOverlay')?.classList.remove('open');
+  document.getElementById('cartDrawer')?.classList.remove('open');
   document.body.style.overflow = '';
 }
 
@@ -544,12 +552,15 @@ function updateWishlistUI() {
 
 // ─── SEARCH ───────────────────────────────────────────────────
 function openSearch() {
-  document.getElementById('searchOverlay').classList.add('open');
+  const el = document.getElementById('searchOverlay');
+  if (!el) return;
+  el.classList.add('open');
   document.body.style.overflow = 'hidden';
   setTimeout(() => document.getElementById('searchInput')?.focus(), 180);
 }
 function closeSearch() {
-  document.getElementById('searchOverlay').classList.remove('open');
+  const el = document.getElementById('searchOverlay');
+  if (el) el.classList.remove('open');
   document.body.style.overflow = '';
 }
 function handleSearch(e) {
@@ -559,12 +570,11 @@ function handleSearch(e) {
 }
 function doSearch(q) {
   closeSearch();
-  const results = TAVUSHA_PRODUCTS.filter(p =>
-    p.name.toLowerCase().includes(q.toLowerCase()) ||
-    p.brand.toLowerCase().includes(q.toLowerCase()) ||
-    p.category.some(c => c.toLowerCase().includes(q.toLowerCase()))
-  );
-  showToast(`Found ${results.length} result${results.length !== 1 ? 's' : ''} for "${q}"`, results.length ? 'success' : 'info');
+  if (window.location.pathname.endsWith('shop.html') && typeof window.filterShopBySearch === 'function') {
+    window.filterShopBySearch(q);
+  } else {
+    window.location.href = 'shop.html?q=' + encodeURIComponent(q);
+  }
 }
 
 // ─── NEWSLETTER ───────────────────────────────────────────────
@@ -617,3 +627,371 @@ function initKeyboard() {
 const _s = document.createElement('style');
 _s.textContent = `@keyframes shakeX{0%,100%{transform:translateX(0)}20%{transform:translateX(-8px)}40%{transform:translateX(8px)}60%{transform:translateX(-6px)}80%{transform:translateX(6px)}}`;
 document.head.appendChild(_s);
+
+// ─── CHECKOUT ─────────────────────────────────────────────────
+const API_BASE = 'https://tavusha2-backend.onrender.com/api';
+
+// Shipping zone rules (client-side fallback matching backend ShippingZone.js)
+const SHIPPING_ZONES = [
+  { name: 'North India',           prefixes: ['11','12','13','14','15','16','17','18','19','20','21','22','23','24','25','26','27','28','29','30','31','32','33','34','35','36','37','38','39','40','41','42','43','44','45','46','47','48','49','50','51','52','53','54','55','56','57','58','59','60','61','62','63','64','65','66','67','68','69','70','71','72','73','74','75','76','77','78','79','80','81','82','83','84','85','86','87','88','89','90','91','92','93','94','95','96','97','98','99','100','101','102','103','104','105','106','107','108','109','110','120','121','122','123','124','125','126','127','128','129','130','131','132','133','134','135','136','137','138','139','140','141','142','143','144','145','146','147','148','149','150','151','152','153','154','155','156','157','158','159','160','161','162','163','164','165','166','167','168','169','170','171','172','173','174','175','176','177','178','179','180','181','182','183','184','185','186','187','188','189','190','191','192','193','194','195','196','197','198','199','200','201','202','203','204','205','206','207','208','209','210','211','212','213','214','215','216','217','218','219','220','221','222','223','224','225','226','227','228','229','230','231','232','233','234','235','236','237','238','239','240','241','242','243','244','245','246','247','248','249','250','251','252','253','254','255','256','257','258','259','260','261','262','263','264','265','266','267','268','269','270','271','272','273','274','275','276','277','278','279','280','281','282','283','284','285','286','287','288','289','290','291','292','293','294','295','296','297','298','299','301','302','303','304','305','306','307','308','309','310','311','312','313','314','315','316','317','318','319','320','321','322','323','324','325','326','327','328','329','330','331','332','333','334','335'],
+    rate: 60 },
+  { name: 'West Bengal & Assam',   prefixes: ['7','8'],  rate: 100 },
+  { name: 'North-East India',      prefixes: ['78','79','83','84','85','86','87','88','89','90','91','92','93','94','95','96','97'],  rate: 150 },
+  { name: 'Central & South India', prefixes: [],         rate: 100 }  // default
+];
+
+function calcShippingRate(pin) {
+  if (!pin || pin.length < 6) return { zone: '—', rate: 0 };
+  const prefix2 = pin.slice(0, 2);
+  const prefix1 = pin.slice(0, 1);
+
+  // North-East first (more specific)
+  const ne = ['78','79','83','84','85','86','87','88','89','90','91','92','93','94','95','96','97'];
+  if (ne.includes(prefix2)) return { zone: 'North-East India', rate: 150 };
+
+  // WB & Assam
+  if (prefix1 === '7' || prefix1 === '8') return { zone: 'West Bengal & Assam', rate: 100 };
+
+  // North India: PIN starts with 1-3 or specific ranges
+  const northStart = parseInt(prefix2, 10);
+  if (northStart >= 11 && northStart <= 34) return { zone: 'North India', rate: 60 };
+  if (northStart >= 40 && northStart <= 49) return { zone: 'North India', rate: 60 }; // J&K, HP, Punjab
+  if (northStart >= 50 && northStart <= 77) return { zone: 'North India', rate: 60 }; // UP, Uttarakhand, Delhi, Haryana, Rajasthan
+
+  // Default: Central & South
+  return { zone: 'Central & South India', rate: 100 };
+}
+
+function openCheckout() {
+  if (!TAVUSHA.cart.length) { showToast('Your bag is empty!', 'info'); return; }
+  closeCart();
+  // Reset screens
+  document.getElementById('checkoutForm').style.display = 'block';
+  document.getElementById('checkoutPayment').style.display = 'none';
+  document.getElementById('checkoutSuccess').style.display = 'none';
+  // Pre-fill order summary
+  updateCheckoutSummary();
+  // Show overlay
+  const overlay = document.getElementById('checkoutOverlay');
+  overlay.style.display = 'flex';
+  // Bind pincode input
+  const pinInput = document.getElementById('coPincode');
+  if (pinInput) {
+    pinInput._bound = true;
+    pinInput.oninput = () => {
+      if (pinInput.value.length === 6) updateCheckoutSummary(pinInput.value);
+    };
+  }
+}
+
+function updateCheckoutSummary(pin = '') {
+  const subtotal = TAVUSHA.cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
+  const { zone, rate } = pin.length === 6 ? calcShippingRate(pin) : { zone: '—', rate: 0 };
+  const shipping = pin.length === 6 ? (rate * totalPieces) : 0;
+  const total = subtotal + shipping;
+
+  document.getElementById('coSubtotal').textContent    = `₹${subtotal.toLocaleString('en-IN')}`;
+  document.getElementById('coShippingZone').textContent = zone;
+  document.getElementById('coShipping').textContent    = pin.length === 6 ? `₹${shipping.toLocaleString('en-IN')}` : 'Enter PIN';
+  document.getElementById('coTotal').textContent       = pin.length === 6 ? `₹${total.toLocaleString('en-IN')}` : '—';
+
+  // Auto-fill city placeholder using known prefix->city map
+  if (pin.length === 6) {
+    const cityGuess = guessCityFromPin(pin);
+    const cityEl = document.getElementById('coCity');
+    if (cityEl && cityGuess) cityEl.value = cityGuess;
+  }
+}
+
+function guessCityFromPin(pin) {
+  const p2 = pin.slice(0, 2);
+  const p3 = pin.slice(0, 3);
+  const map = {
+    '110': 'New Delhi', '400': 'Mumbai', '700': 'Kolkata', '600': 'Chennai',
+    '500': 'Hyderabad', '560': 'Bangalore', '380': 'Ahmedabad', '411': 'Pune',
+    '302': 'Jaipur', '226': 'Lucknow', '201': 'Noida', '122': 'Gurugram',
+    '160': 'Chandigarh', '380001': 'Ahmedabad',
+  };
+  return map[p3] || map[p2] || '';
+}
+
+// Shared state for payment flow
+let _pendingOrder = null;
+
+function placeOrder() {
+  const name    = document.getElementById('coName')?.value?.trim();
+  const phone   = document.getElementById('coPhone')?.value?.trim();
+  const address = document.getElementById('coAddress')?.value?.trim();
+  const pin     = document.getElementById('coPincode')?.value?.trim();
+  const email   = document.getElementById('coEmail')?.value?.trim();
+
+  if (!name || !phone || !address || !pin) {
+    showToast('Please fill in all required fields.', 'error'); return;
+  }
+  if (pin.length !== 6 || !/^\d{6}$/.test(pin)) {
+    showToast('Enter a valid 6-digit PIN code.', 'error'); return;
+  }
+  if (!/^\d{10}$/.test(phone)) {
+    showToast('Enter a valid 10-digit phone number.', 'error'); return;
+  }
+
+  const paymentType = document.querySelector('input[name="paymentType"]:checked')?.value || 'cod';
+  const subtotal    = TAVUSHA.cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
+  const { zone, rate } = calcShippingRate(pin);
+  const shipping    = rate * totalPieces;
+  const total       = subtotal + shipping;
+  const advanceAmt  = paymentType === 'cod' ? Math.ceil(total * 0.20) : total;
+  const orderNum    = 'TV' + Date.now().toString().slice(-8);
+
+  _pendingOrder = {
+    orderNum, name, phone, email, address, pin, zone,
+    items: [...TAVUSHA.cart], subtotal, shipping, total,
+    paymentType, advanceAmt
+  };
+
+  // Update QR code with actual amount
+  const qrImg = document.getElementById('qrImg');
+  if (qrImg) {
+    const upiData = encodeURIComponent(`upi://pay?pa=tavusha@okaxis&pn=TAVUSHA&am=${advanceAmt}&cu=INR&tn=Order+${orderNum}`);
+    qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${upiData}`;
+  }
+
+  const prompt = document.getElementById('paymentPrompt');
+  if (prompt) {
+    prompt.innerHTML = paymentType === 'cod'
+      ? `COD Order — Pay <strong>₹${advanceAmt.toLocaleString('en-IN')}</strong> (20% advance) via UPI QR below.<br/>Remaining ₹${(total - advanceAmt).toLocaleString('en-IN')} to be paid on delivery.`
+      : `Full Prepaid — Pay <strong>₹${advanceAmt.toLocaleString('en-IN')}</strong> via UPI QR below.`;
+  }
+
+  // Switch to QR screen
+  document.getElementById('checkoutForm').style.display    = 'none';
+  document.getElementById('checkoutPayment').style.display = 'block';
+}
+
+async function simulatePaymentCapture() {
+  if (!_pendingOrder) return;
+  const { orderNum, name, phone, email, address, pin, zone, items, subtotal, shipping, total, paymentType, advanceAmt } = _pendingOrder;
+
+  // Save order to backend or localStorage
+  const orderData = {
+    order_number: orderNum,
+    customer_name: name,
+    customer_phone: phone,
+    customer_email: email,
+    delivery_address: address + ', PIN ' + pin,
+    shipping_zone: zone,
+    items: JSON.stringify(items),
+    subtotal,
+    shipping_charge: shipping,
+    total_amount: total,
+    payment_type: paymentType,
+    advance_paid: advanceAmt,
+    payment_status: 'paid',
+    status: 'confirmed',
+    created_at: new Date().toISOString()
+  };
+
+  try {
+    await fetch(`${API_BASE}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData)
+    });
+  } catch {
+    // Save to localStorage as fallback
+    const orders = JSON.parse(localStorage.getItem('tavusha_orders') || '[]');
+    orders.push(orderData);
+    localStorage.setItem('tavusha_orders', JSON.stringify(orders));
+  }
+
+  // Show success screen
+  document.getElementById('successOrderNum').textContent = orderNum;
+  document.getElementById('successName').textContent     = name;
+  document.getElementById('successPaid').textContent     = `₹${advanceAmt.toLocaleString('en-IN')} ${paymentType === 'cod' ? '(Advance paid)' : '(Full payment)'}`;
+  document.getElementById('checkoutPayment').style.display = 'none';
+  document.getElementById('checkoutSuccess').style.display = 'block';
+
+  _pendingOrder = null;
+}
+
+function clearCart() {
+  TAVUSHA.cart = [];
+  saveCart();
+  updateCartUI();
+}
+
+// ─── CMS / BANNER LOADER ──────────────────────────────────────
+async function loadCmsContent() {
+  let cms = null;
+
+  // Try live API first
+  try {
+    const res = await fetch(`${API_BASE}/cms/public`);
+    if (res.ok) cms = await res.json();
+  } catch { /* backend offline */ }
+
+  // Fallback: read from localStorage (set by admin.html)
+  if (!cms) {
+    const stored = localStorage.getItem('cms_data');
+    cms = stored ? JSON.parse(stored) : null;
+  }
+
+  if (!cms) return; // no data — show static page as-is
+
+  // Announcement bar text
+  if (cms.announcement) {
+    const bar = document.getElementById('announcement');
+    if (bar) {
+      const textEl = bar.querySelector('.announcement__text');
+      if (textEl) textEl.textContent = cms.announcement;
+    }
+  }
+
+  // Hero banners (replace hero__right slides)
+  if (cms.heroBanners && cms.heroBanners.length) {
+    const heroImgs = document.querySelectorAll('.hero__right img, .hero__slides img');
+    cms.heroBanners.forEach((b, i) => {
+      if (heroImgs[i]) { heroImgs[i].src = b.image_url; heroImgs[i].alt = b.title || ''; }
+    });
+  }
+
+  // Festival / promo banners — inject into page if container exists
+  if (cms.festivalBanners && cms.festivalBanners.length) {
+    renderFestivalBanners(cms.festivalBanners);
+  }
+
+  // Section visibility
+  if (cms.sections) {
+    const list = Array.isArray(cms.sections) ? cms.sections : Object.entries(cms.sections).map(([key, s]) => ({ key, visible: s.visible, config: s.config }));
+    list.forEach(s => {
+      let id = s.key;
+      // Map section keys to actual element IDs if needed
+      if (id === 'poster_spread') id = 'poster-spread';
+      if (id === 'categories') id = 'cat-browser';
+      
+      const el = document.getElementById(id);
+      if (el) el.style.display = s.visible !== false ? '' : 'none';
+      
+      // Load campaign poster contents if this is the poster spread section
+      if (s.key === 'poster_spread' && s.visible !== false && s.config) {
+        const cfg = s.config;
+        const elEyebrow = document.getElementById('p_spread_eyebrow');
+        if (elEyebrow && cfg.eyebrow) elEyebrow.textContent = cfg.eyebrow;
+        
+        const elTitle = document.getElementById('p_spread_title');
+        if (elTitle && cfg.title) elTitle.textContent = cfg.title;
+
+        // Main
+        const elMainImg = document.getElementById('p_spread_main_img');
+        if (elMainImg && cfg.main_image) elMainImg.src = cfg.main_image;
+        
+        const elMainBadge = document.getElementById('p_spread_main_badge');
+        if (elMainBadge && cfg.main_badge) elMainBadge.textContent = cfg.main_badge;
+        
+        const elMainTitle = document.getElementById('p_spread_main_title');
+        if (elMainTitle && cfg.main_title) elMainTitle.textContent = cfg.main_title;
+        
+        const elMainDesc = document.getElementById('p_spread_main_desc');
+        if (elMainDesc && cfg.main_desc) elMainDesc.textContent = cfg.main_desc;
+        
+        const elMainAction = document.getElementById('p_spread_main_action');
+        if (elMainAction && cfg.main_link) elMainAction.setAttribute('onclick', `window.location.href='product.html?id=${cfg.main_link}'`);
+
+        // Side 1
+        const elSide1Img = document.getElementById('p_spread_side1_img');
+        if (elSide1Img && cfg.side1_image) elSide1Img.src = cfg.side1_image;
+        
+        const elSide1Badge = document.getElementById('p_spread_side1_badge');
+        if (elSide1Badge && cfg.side1_badge) elSide1Badge.textContent = cfg.side1_badge;
+        
+        const elSide1Title = document.getElementById('p_spread_side1_title');
+        if (elSide1Title && cfg.side1_title) elSide1Title.textContent = cfg.side1_title;
+        
+        const elSide1Quote = document.getElementById('p_spread_side1_quote');
+        if (elSide1Quote && cfg.side1_quote) elSide1Quote.textContent = cfg.side1_quote;
+        
+        const elSide1Action = document.getElementById('p_spread_side1_action');
+        if (elSide1Action && cfg.side1_link) elSide1Action.setAttribute('onclick', `window.location.href='product.html?id=${cfg.side1_link}'`);
+
+        // Side 2
+        const elSide2Img = document.getElementById('p_spread_side2_img');
+        if (elSide2Img && cfg.side2_image) elSide2Img.src = cfg.side2_image;
+        
+        const elSide2Badge = document.getElementById('p_spread_side2_badge');
+        if (elSide2Badge && cfg.side2_badge) elSide2Badge.textContent = cfg.side2_badge;
+        
+        const elSide2Title = document.getElementById('p_spread_side2_title');
+        if (elSide2Title && cfg.side2_title) elSide2Title.textContent = cfg.side2_title;
+        
+        const elSide2Quote = document.getElementById('p_spread_side2_quote');
+        if (elSide2Quote && cfg.side2_quote) elSide2Quote.textContent = cfg.side2_quote;
+        
+        const elSide2Action = document.getElementById('p_spread_side2_action');
+        if (elSide2Action && cfg.side2_link) elSide2Action.setAttribute('onclick', `window.location.href='product.html?id=${cfg.side2_link}'`);
+
+        // Quote Box
+        const elQuoteText = document.getElementById('p_spread_quote_text');
+        if (elQuoteText && cfg.quote_text) elQuoteText.textContent = cfg.quote_text;
+        
+        const elQuoteAuthor = document.getElementById('p_spread_quote_author');
+        if (elQuoteAuthor && cfg.quote_author) elQuoteAuthor.textContent = cfg.quote_author;
+      }
+    });
+  }
+
+  // Promo popup
+  if (cms.popup && cms.popup.enabled) {
+    setTimeout(() => showCmsPopup(cms.popup), (cms.popup.delay || 5) * 1000);
+  }
+}
+
+function renderFestivalBanners(banners) {
+  let container = document.getElementById('festivalBannersSection');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'festivalBannersSection';
+    container.style.cssText = 'padding:20px 0; overflow:hidden;';
+    const target = document.getElementById('cat-browser') || document.querySelector('.marquee-ribbon');
+    if (target) target.before(container);
+    else document.body.appendChild(container);
+  }
+
+  container.innerHTML = `
+    <div style="display:flex; gap:16px; padding:0 40px; overflow-x:auto; scroll-snap-type:x mandatory;">
+      ${banners.map(b => `
+        <div onclick="${b.link_url ? `window.location.href='${b.link_url}'` : ''}"
+             style="min-width:280px; border-radius:16px; overflow:hidden; cursor:${b.link_url ? 'pointer' : 'default'};
+                    background:linear-gradient(135deg,#1a0a2e,#5c1e4a); flex-shrink:0; scroll-snap-align:start;
+                    display:flex; align-items:center; gap:16px; padding:20px; color:#fff; position:relative;">
+          ${b.image_url ? `<img src="${b.image_url}" style="width:80px; height:80px; object-fit:cover; border-radius:10px; flex-shrink:0">` : ''}
+          <div>
+            <div style="font-size:0.65rem; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; opacity:0.7; margin-bottom:4px">Limited Offer</div>
+            <div style="font-size:1.1rem; font-weight:700; margin-bottom:4px">${b.title}</div>
+            ${b.subtitle ? `<div style="font-size:0.8rem; opacity:0.85">${b.subtitle}</div>` : ''}
+          </div>
+        </div>`).join('')}
+    </div>`;
+}
+
+function showCmsPopup(popup) {
+  let el = document.getElementById('cmsPopupOverlay');
+  if (el) el.remove();
+  el = document.createElement('div');
+  el.id = 'cmsPopupOverlay';
+  el.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.55);z-index:99999;display:flex;align-items:center;justify-content:center;';
+  el.innerHTML = `
+    <div style="background:#fff;border-radius:20px;padding:36px;max-width:400px;width:90%;text-align:center;position:relative;box-shadow:0 32px 80px rgba(0,0,0,0.2)">
+      <button onclick="document.getElementById('cmsPopupOverlay').remove()"
+              style="position:absolute;top:12px;right:16px;background:none;border:none;cursor:pointer;font-size:1.4rem;color:#888">&times;</button>
+      ${popup.image_url ? `<img src="${popup.image_url}" style="width:100%;border-radius:12px;margin-bottom:16px;object-fit:cover;max-height:180px">` : ''}
+      <h3 style="font-family:var(--font-display);font-size:1.4rem;font-weight:700;margin-bottom:8px">${popup.title || ''}</h3>
+      <p style="font-size:0.88rem;color:var(--warm-grey);margin-bottom:20px">${popup.body || ''}</p>
+      ${popup.cta_label ? `<a href="${popup.cta_url || '#'}" class="btn-pill btn-pill--gold" style="padding:10px 28px;font-size:0.8rem;display:inline-block">${popup.cta_label}</a>` : ''}
+    </div>`;
+  document.body.appendChild(el);
+}
+
+// Load CMS on page boot
+document.addEventListener('DOMContentLoaded', loadCmsContent);

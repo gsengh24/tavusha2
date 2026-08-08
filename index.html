@@ -3,11 +3,30 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="TAVUSHA — Your premium fashion destination. Curated collections for every occasion, every style, every woman.">
-  <meta name="keywords" content="TAVUSHA, fashion, women's clothing, party wear, ethnic wear, co-ords, maxi dresses, India">
+  <meta name="theme-color" content="#1a1209">
+  
+  <!-- Primary SEO -->
+  <title>TAVUSHA — Premium Women's Fashion | Party Wear, Ethnic & Designer Wear India</title>
+  <meta name="description" content="TAVUSHA — Shop premium women's fashion. Curated party wear, ethnic wear, co-ords, maxi dresses & designer collections. Free shipping on orders above ₹2,499. New arrivals every Friday.">
+  <meta name="keywords" content="women fashion India, party wear, ethnic wear, lehenga, anarkali, co-ord set, maxi dress, designer wear, TAVUSHA, online shopping">
+  <meta name="robots" content="index, follow">
+  <link rel="canonical" href="https://tavusha.com/">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://tavusha.com/">
   <meta property="og:title" content="TAVUSHA — Style Every Moment">
-  <meta property="og:description" content="Premium curated fashion for every occasion.">
-  <title>TAVUSHA — Style Every Moment</title>
+  <meta property="og:description" content="Premium curated fashion for every occasion. Free shipping above ₹2,499.">
+  <meta property="og:image" content="https://tavusha.com/assets/images/og-cover.jpg">
+  <meta property="og:locale" content="en_IN">
+  <meta property="og:site_name" content="TAVUSHA">
+  
+  <!-- Twitter Card -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="TAVUSHA — Style Every Moment">
+  <meta name="twitter:description" content="Premium curated fashion for every occasion. Free shipping above ₹2,499.">
+  <meta name="twitter:image" content="https://tavusha.com/assets/images/og-cover.jpg">
+  
   <link rel="stylesheet" href="css/styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='26' font-family='serif' font-weight='bold'>T</text></svg>">
 </head>
@@ -21,7 +40,7 @@
 
 <!-- ═══ ANNOUNCEMENT ════════════════════════════════════════════ -->
 <div class="announcement" id="announcement">
-  ✦ &nbsp;Free Shipping on Orders Above ₹2,499 &nbsp;·&nbsp; Code <strong>TAVUSHA10</strong> — 10% Off First Order &nbsp;·&nbsp; New Arrivals Every Friday &nbsp;✦
+  <span class="announcement__text">✦ &nbsp;Free Shipping on Orders Above ₹2,499 &nbsp;·&nbsp; Code <strong>TAVUSHA10</strong> — 10% Off First Order &nbsp;·&nbsp; New Arrivals Every Friday &nbsp;✦</span>
   <button class="announcement__close" id="announcementClose" aria-label="Close">
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
@@ -33,10 +52,10 @@
   <div class="nav__primary">
     <!-- Left links -->
     <div class="nav__left">
-      <a href="#" class="nav__link active">Women</a>
-      <a href="#" class="nav__link">Occasion</a>
-      <a href="#" class="nav__link">Wishlist</a>
-      <a href="#" class="nav__link">Ethnic</a>
+      <a href="shop.html?cat=all" class="nav__link active">Shop</a>
+      <a href="shop.html?cat=party" class="nav__link">Occasion</a>
+      <a href="shop.html?cat=ethnic" class="nav__link">Ethnic</a>
+      <a href="shop.html?cat=sale" class="nav__link" style="color:#B91C1C">Sale</a>
     </div>
 
     <!-- Center logo -->
@@ -69,12 +88,13 @@
 
   <!-- Secondary nav — Reference: category tabs below logo bar -->
   <div class="nav__secondary">
-    <a href="#" class="nav__secondary-link">Dresses</a>
-    <a href="#" class="nav__secondary-link">Ethnic Wear</a>
-    <a href="#" class="nav__secondary-link">Co-ords</a>
-    <a href="#" class="nav__secondary-link">New Arrivals</a>
-    <a href="#" class="nav__secondary-link">Accessories</a>
-    <a href="#" class="nav__secondary-link">Sale</a>
+    <a href="shop.html?cat=all" class="nav__secondary-link">All</a>
+    <a href="shop.html?cat=party" class="nav__secondary-link">Dresses</a>
+    <a href="shop.html?cat=ethnic" class="nav__secondary-link">Ethnic Wear</a>
+    <a href="shop.html?cat=coord" class="nav__secondary-link">Co-ords</a>
+    <a href="shop.html?cat=maxi" class="nav__secondary-link">Maxi</a>
+    <a href="shop.html?cat=new" class="nav__secondary-link">New Arrivals</a>
+    <a href="shop.html?cat=sale" class="nav__secondary-link" style="color:#B91C1C;font-weight:700">Sale</a>
   </div>
 </nav>
 
@@ -84,11 +104,11 @@
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
   </button>
   <nav class="mobile-menu__links">
-    <a href="#" class="mobile-menu__link">Women <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
-    <a href="#" class="mobile-menu__link">Occasion <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
-    <a href="#" class="mobile-menu__link">Ethnic Wear <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
-    <a href="#" class="mobile-menu__link">Trending <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
-    <a href="#" class="mobile-menu__link">Sale <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
+    <a href="shop.html?cat=all" class="mobile-menu__link">All Products <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
+    <a href="shop.html?cat=party" class="mobile-menu__link">Occasion Wear <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
+    <a href="shop.html?cat=ethnic" class="mobile-menu__link">Ethnic Wear <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
+    <a href="shop.html?cat=coord" class="mobile-menu__link">Co-ord Sets <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
+    <a href="shop.html?cat=sale" class="mobile-menu__link" style="color:#B91C1C">Sale <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg></a>
   </nav>
 </div>
 
@@ -319,14 +339,14 @@
 ═══════════════════════════════════════════════════════════════ -->
 <section class="poster-spread" id="poster-spread">
   <div class="poster-spread__header">
-    <div class="poster-spread__eyebrow">Editorial Campaign 2026</div>
-    <h2 class="poster-spread__title reveal">The Couture &amp; Cocktail Edit</h2>
+    <div class="poster-spread__eyebrow" id="p_spread_eyebrow">Editorial Campaign 2026</div>
+    <h2 class="poster-spread__title reveal" id="p_spread_title">The Couture &amp; Cocktail Edit</h2>
   </div>
 
   <div class="poster-spread__grid">
     <!-- Main Magazine Feature Poster -->
-    <div class="main-poster reveal" onclick="openQuickView(1)">
-      <img class="main-poster__bg" src="assets/images/party_wear.jpg" alt="Campaign Poster" loading="lazy">
+    <div class="main-poster reveal" id="p_spread_main_action" onclick="window.location.href='product.html?id=1'">
+      <img class="main-poster__bg" id="p_spread_main_img" src="assets/images/party_wear.jpg" alt="Campaign Poster" loading="lazy">
       <div class="main-poster__overlay"></div>
 
       <!-- Rotating Circular Seal Stamp -->
@@ -340,39 +360,39 @@
       </div>
 
       <div class="main-poster__content">
-        <span class="main-poster__tag">Limited Run — 250 Pieces</span>
-        <h3 class="main-poster__headline">Ivory Silk Evening Gown</h3>
-        <p class="main-poster__sub">Fluid cowl neckline and open back draped in pure mulberry silk. A masterclass in quiet luxury.</p>
+        <span class="main-poster__tag" id="p_spread_main_badge">Limited Run — 250 Pieces</span>
+        <h3 class="main-poster__headline" id="p_spread_main_title">Ivory Silk Evening Gown</h3>
+        <p class="main-poster__sub" id="p_spread_main_desc">Fluid cowl neckline and open back draped in pure mulberry silk. A masterclass in quiet luxury.</p>
         <button class="btn-pill btn-pill--gold">Shop The Campaign →</button>
       </div>
     </div>
 
     <!-- Side Poster Stack + Quote Filler -->
     <div class="poster-side">
-      <div class="side-poster-card reveal delay-1" onclick="openQuickView(9)">
-        <img class="side-poster-card__img" src="assets/images/ethnic.jpg" alt="Ethnic Feature" loading="lazy">
+      <div class="side-poster-card reveal delay-1" id="p_spread_side1_action" onclick="window.location.href='product.html?id=9'">
+        <img class="side-poster-card__img" id="p_spread_side1_img" src="assets/images/ethnic.jpg" alt="Ethnic Feature" loading="lazy">
         <div>
-          <div class="side-poster-card__badge">Heritage Couture</div>
-          <h4 class="side-poster-card__title">Gold Embroidered Anarkali</h4>
-          <p class="side-poster-card__quote">"Ceremonial splendour crafted for modern celebrations."</p>
+          <div class="side-poster-card__badge" id="p_spread_side1_badge">Heritage Couture</div>
+          <h4 class="side-poster-card__title" id="p_spread_side1_title">Gold Embroidered Anarkali</h4>
+          <p class="side-poster-card__quote" id="p_spread_side1_quote">"Ceremonial splendour crafted for modern celebrations."</p>
           <span style="font-size:0.75rem;font-weight:700;color:var(--brand-dark)">Explore Heritage →</span>
         </div>
       </div>
 
-      <div class="side-poster-card reveal delay-2" onclick="openQuickView(7)">
-        <img class="side-poster-card__img" src="assets/images/workwear.jpg" alt="Power Dressing" loading="lazy">
+      <div class="side-poster-card reveal delay-2" id="p_spread_side2_action" onclick="window.location.href='product.html?id=7'">
+        <img class="side-poster-card__img" id="p_spread_side2_img" src="assets/images/workwear.jpg" alt="Power Dressing" loading="lazy">
         <div>
-          <div class="side-poster-card__badge">Power Tailoring</div>
-          <h4 class="side-poster-card__title">Ivory Oversized Blazer</h4>
-          <p class="side-poster-card__quote">"Boardroom precision meets effortless evening allure."</p>
+          <div class="side-poster-card__badge" id="p_spread_side2_badge">Power Tailoring</div>
+          <h4 class="side-poster-card__title" id="p_spread_side2_title">Ivory Oversized Blazer</h4>
+          <p class="side-poster-card__quote" id="p_spread_side2_quote">"Boardroom precision meets effortless evening allure."</p>
           <span style="font-size:0.75rem;font-weight:700;color:var(--brand-dark)">Explore Tailoring →</span>
         </div>
       </div>
 
       <!-- Quote Box Filler -->
       <div class="designer-quote-box reveal delay-3">
-        <p class="designer-quote-box__text">"Fashion is not something that exists in dresses only. Fashion is in the sky, in the street; fashion has to do with ideas."</p>
-        <p class="designer-quote-box__author">— TAVUSHA EDITORIAL DIRECTORY</p>
+        <p class="designer-quote-box__text" id="p_spread_quote_text">"Fashion is not something that exists in dresses only. Fashion is in the sky, in the street; fashion has to do with ideas."</p>
+        <p class="designer-quote-box__author" id="p_spread_quote_author">— TAVUSHA EDITORIAL DIRECTORY</p>
       </div>
     </div>
   </div>
@@ -450,28 +470,28 @@
   </div>
 
   <div class="moodboard-grid">
-    <div class="polaroid-card reveal" onclick="openQuickView(1)">
+    <div class="polaroid-card reveal" onclick="window.location.href='product.html?id=1'">
       <div class="polaroid-tape"></div>
       <img class="polaroid-card__img" src="assets/images/party_wear.jpg" alt="Lookbook 1" loading="lazy">
       <div class="polaroid-card__caption">Evening Glamour</div>
       <span class="polaroid-card__tag">@priya_sharma</span>
     </div>
 
-    <div class="polaroid-card reveal delay-1" onclick="openQuickView(3)">
+    <div class="polaroid-card reveal delay-1" onclick="window.location.href='product.html?id=3'">
       <div class="polaroid-tape"></div>
       <img class="polaroid-card__img" src="assets/images/vacation.jpg" alt="Lookbook 2" loading="lazy">
       <div class="polaroid-card__caption">Resort Sunset</div>
       <span class="polaroid-card__tag">@ananya_k</span>
     </div>
 
-    <div class="polaroid-card reveal delay-2" onclick="openQuickView(9)">
+    <div class="polaroid-card reveal delay-2" onclick="window.location.href='product.html?id=9'">
       <div class="polaroid-tape"></div>
       <img class="polaroid-card__img" src="assets/images/ethnic.jpg" alt="Lookbook 3" loading="lazy">
       <div class="polaroid-card__caption">Heritage Sangeet</div>
       <span class="polaroid-card__tag">@radhika_m</span>
     </div>
 
-    <div class="polaroid-card reveal delay-3" onclick="openQuickView(7)">
+    <div class="polaroid-card reveal delay-3" onclick="window.location.href='product.html?id=7'">
       <div class="polaroid-tape"></div>
       <img class="polaroid-card__img" src="assets/images/workwear.jpg" alt="Lookbook 4" loading="lazy">
       <div class="polaroid-card__caption">Power Hour</div>
@@ -634,14 +654,14 @@
     <div>
       <div class="footer-ref__col-title">Shop</div>
       <ul class="footer-ref__links">
-        <li><a href="#" class="footer-ref__link">New Arrivals</a></li>
-        <li><a href="#" class="footer-ref__link">Party Wear</a></li>
-        <li><a href="#" class="footer-ref__link">Ethnic Wear</a></li>
-        <li><a href="#" class="footer-ref__link">Co-ord Sets</a></li>
-        <li><a href="#" class="footer-ref__link">Maxi Dresses</a></li>
-        <li><a href="#" class="footer-ref__link">Office Wear</a></li>
-        <li><a href="#" class="footer-ref__link">Wedding Guest</a></li>
-        <li><a href="#" class="footer-ref__link">Accessories</a></li>
+        <li><a href="shop.html" class="footer-ref__link">New Arrivals</a></li>
+        <li><a href="shop.html?cat=party" class="footer-ref__link">Party Wear</a></li>
+        <li><a href="shop.html?cat=ethnic" class="footer-ref__link">Ethnic Wear</a></li>
+        <li><a href="shop.html?cat=coord" class="footer-ref__link">Co-ord Sets</a></li>
+        <li><a href="shop.html?cat=maxi" class="footer-ref__link">Maxi Dresses</a></li>
+        <li><a href="shop.html?cat=workwear" class="footer-ref__link">Office Wear</a></li>
+        <li><a href="shop.html?cat=wedding" class="footer-ref__link">Wedding Guest</a></li>
+        <li><a href="shop.html?cat=accessories" class="footer-ref__link">Accessories</a></li>
       </ul>
     </div>
 
@@ -704,8 +724,96 @@
       <span class="cart-drawer__total" id="cartTotal">₹0</span>
     </div>
     <p class="cart-drawer__shipping">✦ Free shipping on your order!</p>
-    <button class="cart-drawer__checkout" onclick="showToast('Checkout coming soon!','info')">Proceed to Checkout</button>
+    <button class="cart-drawer__checkout" onclick="openCheckout()">Proceed to Checkout</button>
     <button class="cart-drawer__continue" onclick="closeCart()">Continue Shopping</button>
+  </div>
+</div>
+
+<!-- ═══ CHECKOUT MODAL ════════════════════════════════════════════ -->
+<div class="modal-overlay" id="checkoutOverlay" style="display:none; justify-content:center; align-items:center; z-index:9999;">
+  <div class="quick-view" style="max-width:480px; width:90%; height:auto; max-height:90vh; overflow-y:auto; display:block; padding:24px; box-sizing:border-box;">
+    <div class="quick-view__close" onclick="document.getElementById('checkoutOverlay').style.display='none'" style="top:16px; right:16px; position:absolute; cursor:pointer; font-size:1.5rem; font-weight:700">
+      &times;
+    </div>
+    <h2 style="font-family:var(--font-display); font-size:1.5rem; font-weight:700; margin-bottom:16px">Checkout</h2>
+    <div id="checkoutForm">
+      <label style="font-size:0.75rem; font-weight:700; text-transform:uppercase; margin-bottom:4px; display:block">Full Name</label>
+      <input type="text" id="coName" style="width:100%; border:1.5px solid var(--border); border-radius:8px; padding:10px; margin-bottom:12px; font-family:var(--font-ui); box-sizing:border-box" placeholder="e.g. Radhika Sharma" required/>
+
+      <label style="font-size:0.75rem; font-weight:700; text-transform:uppercase; margin-bottom:4px; display:block">Phone Number</label>
+      <input type="tel" id="coPhone" style="width:100%; border:1.5px solid var(--border); border-radius:8px; padding:10px; margin-bottom:12px; font-family:var(--font-ui); box-sizing:border-box" placeholder="10-digit number" required/>
+
+      <label style="font-size:0.75rem; font-weight:700; text-transform:uppercase; margin-bottom:4px; display:block">Email Address</label>
+      <input type="email" id="coEmail" style="width:100%; border:1.5px solid var(--border); border-radius:8px; padding:10px; margin-bottom:12px; font-family:var(--font-ui); box-sizing:border-box" placeholder="e.g. radhika@example.com"/>
+
+      <label style="font-size:0.75rem; font-weight:700; text-transform:uppercase; margin-bottom:4px; display:block">Delivery Address</label>
+      <input type="text" id="coAddress" style="width:100%; border:1.5px solid var(--border); border-radius:8px; padding:10px; margin-bottom:12px; font-family:var(--font-ui); box-sizing:border-box" placeholder="Flat, building, street name" required/>
+
+      <div style="display:flex; gap:10px; margin-bottom:12px">
+        <div style="flex:1">
+          <label style="font-size:0.75rem; font-weight:700; text-transform:uppercase; margin-bottom:4px; display:block">PIN Code</label>
+          <input type="text" id="coPincode" style="width:100%; border:1.5px solid var(--border); border-radius:8px; padding:10px; font-family:var(--font-ui); box-sizing:border-box" placeholder="6-digit PIN" required maxlength="6"/>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:0.75rem; font-weight:700; text-transform:uppercase; margin-bottom:4px; display:block">City</label>
+          <input type="text" id="coCity" style="width:100%; border:1.5px solid var(--border); border-radius:8px; padding:10px; font-family:var(--font-ui); box-sizing:border-box; background:#faf8f6" placeholder="Auto-filled" readonly/>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:4px">
+        <span>Subtotal</span>
+        <span id="coSubtotal">₹0</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-size:0.85rem; margin-bottom:4px">
+        <span>Shipping Charge (<span id="coShippingZone">—</span>)</span>
+        <span id="coShipping">₹0</span>
+      </div>
+      <div style="display:flex; justify-content:space-between; font-weight:700; font-size:1rem; margin-bottom:16px; border-top:1px solid var(--border); padding-top:8px">
+        <span>Order Total</span>
+        <span id="coTotal">₹0</span>
+      </div>
+
+      <label style="font-size:0.75rem; font-weight:700; text-transform:uppercase; margin-bottom:4px; display:block">Payment Method</label>
+      <div style="display:flex; gap:10px; margin-bottom:20px">
+        <label style="flex:1; border:1.5px solid var(--border); border-radius:8px; padding:10px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:600">
+          <input type="radio" name="paymentType" value="cod" checked style="margin-right:6px"/> COD (20% Advance)
+        </label>
+        <label style="flex:1; border:1.5px solid var(--border); border-radius:8px; padding:10px; text-align:center; cursor:pointer; font-size:0.85rem; font-weight:600">
+          <input type="radio" name="paymentType" value="prepaid" style="margin-right:6px"/> Full Prepaid
+        </label>
+      </div>
+
+      <button onclick="placeOrder()" class="quick-view__add" style="width:100%; border:none; cursor:pointer">Proceed to Pay</button>
+    </div>
+
+    <!-- QR Payment Screen -->
+    <div id="checkoutPayment" style="display:none; text-align:center">
+      <h3 style="font-weight:700; font-size:1.1rem; margin-bottom:8px">Scan UPI QR to Pay</h3>
+      <p id="paymentPrompt" style="font-size:0.85rem; color:var(--warm-grey); margin-bottom:16px"></p>
+      
+      <div id="qrcode" style="margin:20px auto; padding:16px; border:1px solid var(--border); width:180px; height:180px; border-radius:12px; background:white; display:flex; align-items:center; justify-content:center">
+        <!-- Google Pay / PhonePe mock merchant scanner -->
+        <img id="qrImg" src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=upi://pay?pa=tavusha@okaxis%26pn=TAVUSHA%26am=100%26cu=INR" style="width:100%; height:100%"/>
+      </div>
+      
+      <p style="font-size:0.75rem; color:var(--brand-dark); font-weight:600; margin-bottom:20px">⚠️ Do not close this screen. System is checking for payment confirmation...</p>
+      
+      <button onclick="simulatePaymentCapture()" class="quick-view__add" style="width:100%; background:#1e7a34; border:none; cursor:pointer">Simulate Payment Confirmation (API Webhook)</button>
+    </div>
+
+    <!-- Order Success Screen -->
+    <div id="checkoutSuccess" style="display:none; text-align:center; padding:12px 0">
+      <div style="font-size:2.5rem; color:#1e7a34; margin-bottom:12px">✓</div>
+      <h3 style="font-weight:700; font-size:1.25rem; margin-bottom:6px">Order Confirmed!</h3>
+      <p style="font-size:0.85rem; color:var(--warm-grey); margin-bottom:20px">Thank you for your order. We will process it shortly!</p>
+      <div style="background:#faf8f6; border-radius:12px; padding:16px; margin-bottom:24px; text-align:left; font-size:0.82rem; line-height:1.6">
+        <strong>Order Number:</strong> <span id="successOrderNum">—</span><br/>
+        <strong>Customer:</strong> <span id="successName">—</span><br/>
+        <strong>Amount Paid:</strong> <span id="successPaid">—</span><br/>
+        <strong>Delivery:</strong> Shipments arrive in 3-5 days.
+      </div>
+      <button onclick="document.getElementById('checkoutOverlay').style.display='none'; clearCart()" class="quick-view__add" style="width:100%; border:none; cursor:pointer">Continue Shopping</button>
+    </div>
   </div>
 </div>
 

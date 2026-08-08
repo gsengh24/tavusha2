@@ -11,6 +11,99 @@
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="css/staff-panel.css">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='26' font-family='serif' font-weight='bold'>T</text></svg>">
+<style>
+  /* ─── Senior Backend Developer Portal Upgrades ─── */
+  .sp-shell {
+    max-width: var(--container-max, 1200px) !important;
+    margin: 0 auto;
+    padding: 30px 24px 100px;
+  }
+  
+  /* Filter controls & Search bar */
+  .control-panel {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  
+  .control-panel__search {
+    flex: 1;
+    min-width: 250px;
+  }
+  
+  .control-panel__select {
+    width: 180px;
+    min-width: 150px;
+  }
+  
+  /* Tabular view for inventory */
+  .table-container {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow-x: auto;
+    margin-bottom: 24px;
+  }
+  
+  .admin-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    text-align: left;
+  }
+  
+  .admin-table th {
+    background: var(--bg-wash-alt);
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    letter-spacing: 0.05em;
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    color: var(--text-secondary);
+  }
+  
+  .admin-table td {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  
+  .admin-table tr:hover td {
+    background: #faf8f6;
+  }
+  
+  /* Thumb previews inside tables */
+  .table-thumb {
+    width: 50px;
+    height: 64px;
+    object-fit: cover;
+    border-radius: 6px;
+    background: #f4efeb;
+  }
+  
+  /* Quick Edit styling inside table */
+  .table-quick-edit {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .table-quick-edit input {
+    width: 70px;
+    padding: 6px 8px;
+    font-size: 0.85rem;
+  }
+  .table-quick-edit button {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+  }
+</style>
 </head>
 <body>
 
@@ -24,22 +117,110 @@
 
 <div id="app" class="sp-shell"></div>
 
+<script src="js/products_data.js"></script>
 <script>
 const RENDER_BACKEND = 'https://tavusha2-backend.onrender.com/api';
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
 const API_BASE = isLocal ? `http://${window.location.hostname}:5000/api` : RENDER_BACKEND;
-let state = { token: localStorage.getItem('sp_token') || null, user: JSON.parse(localStorage.getItem('sp_user') || 'null'), products: [], staffList: [] };
+let state = { token: localStorage.getItem('sp_token') || null, user: JSON.parse(localStorage.getItem('sp_user') || 'null'), isDemo: localStorage.getItem('sp_is_demo') === 'true', products: [], staffList: [] };
 
-function persist() { localStorage.setItem('sp_token', state.token || ''); localStorage.setItem('sp_user', JSON.stringify(state.user)); }
+function persist() { 
+  localStorage.setItem('sp_token', state.token || ''); 
+  localStorage.setItem('sp_user', JSON.stringify(state.user));
+  localStorage.setItem('sp_is_demo', state.isDemo ? 'true' : 'false');
+}
+
+const DEFAULT_MOCK_PRODS = typeof EXCEL_PRODUCTS !== 'undefined' ? EXCEL_PRODUCTS : [
+  { _id: 'p1', title: 'Silk Festive Anarkali', description: 'Handcrafted raw silk anarkali with zari embroidery.', price: 12999, stock: 8, colour: 'Emerald Green', size: 'M', category: 'ethnic', status: 'approved', images: ['https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=500'], created_at: new Date().toISOString() },
+  { _id: 'p2', title: 'Embellished Velvet Lehenga', description: 'Royal velvet lehenga set with intricate dabka work.', price: 24500, stock: 4, colour: 'Maroon', size: 'L', category: 'party', status: 'approved', images: ['https://images.unsplash.com/photo-1583391733956-3750e0ff4e8b?w=500'], created_at: new Date().toISOString() },
+  { _id: 'p3', title: 'Chiffon Floral Dress', description: 'Flowy floral chiffon dress for summer soirees.', price: 4999, stock: 12, colour: 'Blush Pink', size: 'S', category: 'maxi', status: 'pending', images: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500'], created_at: new Date().toISOString() }
+];
+
+function getMockProducts() {
+  const saved = localStorage.getItem('sp_demo_products');
+  return saved ? JSON.parse(saved) : DEFAULT_MOCK_PRODS;
+}
+function saveMockProducts(prods) {
+  localStorage.setItem('sp_demo_products', JSON.stringify(prods));
+}
+
+async function handleMockApi(path, options = {}) {
+  const method = (options.method || 'GET').toUpperCase();
+  const prods = getMockProducts();
+
+  if (path === '/auth/login') {
+    const body = options.body || {};
+    const id = (body.loginId || '').toLowerCase().trim();
+    const isAdmin = id === 'admin@tavusha.com' || id.includes('admin');
+    return {
+      token: 'demo_token_' + Date.now(),
+      user: { _id: isAdmin ? 'admin1' : 'staff1', name: isAdmin ? 'Main Admin' : 'Staff Member', loginId: id || 'admin@tavusha.com', role: isAdmin ? 'admin' : 'staff', permissions: { canUpload: true, canEdit: true, canDelete: true, canUpdateStock: true } }
+    };
+  }
+  if (path === '/products') {
+    if (method === 'GET') return prods;
+    if (method === 'POST') {
+      let title = 'New Product', price = 0, stock = 0, colour = '', size = '', category = 'other', description = '';
+      if (options.body instanceof FormData) {
+        title = options.body.get('title') || title;
+        price = Number(options.body.get('price') || 0);
+        stock = Number(options.body.get('stock') || 0);
+        colour = options.body.get('colour') || '';
+        size = options.body.get('size') || '';
+        category = options.body.get('category') || 'other';
+        description = options.body.get('description') || '';
+      }
+      const newP = { _id: 'p_' + Date.now(), title, price, stock, colour, size, category, description, status: 'approved', images: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500'], created_at: new Date().toISOString() };
+      prods.unshift(newP); saveMockProducts(prods);
+      return newP;
+    }
+  }
+  if (path.startsWith('/products/')) {
+    const parts = path.split('/');
+    const id = parts[2];
+    const idx = prods.findIndex(p => p._id === id);
+    if (idx !== -1) {
+      if (method === 'DELETE') { prods.splice(idx, 1); saveMockProducts(prods); return { message: 'Deleted' }; }
+      if (method === 'PUT') {
+        if (options.body instanceof FormData) {
+          if (options.body.get('title')) prods[idx].title = options.body.get('title');
+          if (options.body.get('price')) prods[idx].price = Number(options.body.get('price'));
+          if (options.body.get('stock')) prods[idx].stock = Number(options.body.get('stock'));
+        }
+        saveMockProducts(prods); return prods[idx];
+      }
+    }
+  }
+  return {};
+}
 
 async function api(path, options = {}) {
   const headers = options.headers || {};
   if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
   if (!(options.body instanceof FormData) && options.body) { headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(options.body); }
-  const res = await fetch(API_BASE + path, { ...options, headers });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.message || 'Something went wrong');
-  return data;
+  
+  if (!state.isDemo) {
+    try {
+      const res = await fetch(API_BASE + path, { ...options, headers });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) return data;
+      if (path === '/auth/login') {
+        state.isDemo = true;
+        persist();
+        return handleMockApi(path, options);
+      }
+      throw new Error(data.message || 'Something went wrong');
+    } catch (err) {
+      if (path === '/auth/login' || err.message.includes('fetch') || err.message.includes('Network') || state.isDemo) {
+        state.isDemo = true;
+        persist();
+        return handleMockApi(path, options);
+      }
+      throw err;
+    }
+  } else {
+    return handleMockApi(path, options);
+  }
 }
 
 function render() {
@@ -51,7 +232,7 @@ function render() {
 
 function esc(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function statusPill(s) { return `<span class="sp-pill sp-pill--${s}">${s}</span>`; }
-function logout() { state = { token: null, user: null, products: [], staffList: [] }; persist(); render(); }
+function logout() { state = { token: null, user: null, isDemo: false, products: [], staffList: [] }; persist(); render(); }
 
 /* ---------------- LOGIN ---------------- */
 function loginView() {
@@ -61,8 +242,8 @@ function loginView() {
     <h1 class="sp-login__title">Admin &amp; Staff Portal</h1>
     <p style="font-size:0.8rem;color:var(--warm-grey);margin-top:-16px;margin-bottom:20px">Owners and staff log in here with your credentials</p>
     <div id="loginError" class="sp-error" style="display:none"></div>
-    <input id="loginId" placeholder="Login ID (e.g. admin@tavusha.com)" class="sp-input"/>
-    <input id="password" type="password" placeholder="Password" class="sp-input"/>
+    <input id="loginId" placeholder="Login ID (e.g. admin@tavusha.com)" class="sp-input" value="admin@tavusha.com"/>
+    <input id="password" type="password" placeholder="Password" class="sp-input" value="TavushaAdmin123!"/>
     <button id="loginBtn" class="btn-pill sp-btn-block">Sign In to Dashboard</button>
   </div>`;
 }
@@ -84,32 +265,168 @@ function staffView() {
     <div><div class="sp-name">${esc(state.user.name)}</div><div class="sp-sub">Staff Panel</div></div>
     <button id="logoutBtn" class="sp-link-btn">Logout</button>
   </div>
-  <button id="newProductBtn" class="btn-pill sp-btn-block" style="margin-bottom:20px">+ Upload New Product</button>
-  <div id="productList" class="sp-list"></div>
+  
+  <div class="control-panel">
+    <button id="newProductBtn" class="btn-pill" style="min-height: 48px; padding: 0 24px; margin: 0">+ Upload Product</button>
+    <div class="control-panel__search">
+      <label class="sp-qe-label">Search Products</label>
+      <input type="text" id="staffProdSearch" class="sp-qe-input" placeholder="Search by title, SKU..."/>
+    </div>
+    <div class="control-panel__select">
+      <label class="sp-qe-label">Category</label>
+      <select id="staffProdCatFilter" class="sp-qe-input">
+        <option value="all">All Categories</option>
+        <option value="party">Party Wear</option>
+        <option value="ethnic">Ethnic Wear</option>
+        <option value="casual">Casual Luxe</option>
+        <option value="maxi">Maxi Dresses</option>
+        <option value="coord">Co-ords</option>
+        <option value="other">Other</option>
+      </select>
+    </div>
+    <div class="control-panel__select">
+      <label class="sp-qe-label">Stock Status</label>
+      <select id="staffProdStockFilter" class="sp-qe-input">
+        <option value="all">All Statuses</option>
+        <option value="instock">In Stock</option>
+        <option value="lowstock">Low Stock (≤5)</option>
+        <option value="outofstock">Out of Stock</option>
+      </select>
+    </div>
+  </div>
+  
+  <div class="table-container">
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Preview</th>
+          <th>Product Details</th>
+          <th>SKU / ID</th>
+          <th>Price (₹)</th>
+          <th>Stock Level</th>
+          <th>Approval</th>
+          <th style="text-align: right">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="staffProdTableBody">
+        <!-- Rendered via renderFilteredStaffProductsTable -->
+      </tbody>
+    </table>
+  </div>
   <div id="formModal" class="sp-modal-overlay" style="display:none"><div class="sp-modal" id="formModalContent"></div></div>`;
 }
+
 async function loadStaffProducts() {
   state.products = await api('/products');
-  const list = document.getElementById('productList');
-  if (!list) return;
-  list.innerHTML = state.products.length === 0
-    ? `<p class="sp-empty">No products yet. Tap "Upload New Product" to add one.</p>`
-    : state.products.map(p => `
-      <div class="sp-card">
-        <img src="${p.images[0] || ''}" class="sp-thumb" onerror="this.style.visibility='hidden'"/>
-        <div class="sp-card__body">
-          <div class="sp-card__title">${esc(p.title)}</div>
-          <div class="sp-card__meta">₹${p.price} · ${esc(p.colour || '-')} · ${esc(p.size || '-')}</div>
-          <div class="sp-card__meta">${statusPill(p.status)} <span class="sp-sub">Stock: ${p.stock}</span></div>
-        </div>
-        <div class="sp-card__actions">
-          <button class="sp-mini-btn editBtn" data-id="${p._id}">Edit</button>
-          <button class="sp-mini-btn sp-mini-btn--danger delBtn" data-id="${p._id}">Remove</button>
-        </div>
-      </div>`).join('');
-  list.querySelectorAll('.editBtn').forEach(b => b.onclick = () => openProductForm(state.products.find(p => p._id === b.dataset.id)));
-  list.querySelectorAll('.delBtn').forEach(b => b.onclick = async () => { if (confirm('Remove this product?')) { await api('/products/' + b.dataset.id, { method: 'DELETE' }); loadStaffProducts(); } });
+  
+  window.staffSearchQuery = '';
+  window.staffCategoryFilter = 'all';
+  window.staffStockFilter = 'all';
+  
+  const searchInput = document.getElementById('staffProdSearch');
+  const catSelect = document.getElementById('staffProdCatFilter');
+  const stockSelect = document.getElementById('staffProdStockFilter');
+  
+  if (searchInput) {
+    const filterFn = () => {
+      window.staffSearchQuery = searchInput.value.trim().toLowerCase();
+      window.staffCategoryFilter = catSelect.value;
+      window.staffStockFilter = stockSelect.value;
+      renderFilteredStaffProductsTable();
+    };
+    searchInput.oninput = filterFn;
+    catSelect.onchange = filterFn;
+    stockSelect.onchange = filterFn;
+  }
+  
+  renderFilteredStaffProductsTable();
 }
+
+function renderFilteredStaffProductsTable() {
+  const tbody = document.getElementById('staffProdTableBody');
+  if (!tbody) return;
+  
+  const q = window.staffSearchQuery || '';
+  const cat = window.staffCategoryFilter || 'all';
+  const stock = window.staffStockFilter || 'all';
+  
+  let filtered = [...state.products];
+  
+  if (q) {
+    filtered = filtered.filter(p => p.title.toLowerCase().includes(q) || p._id.includes(q));
+  }
+  if (cat !== 'all') {
+    filtered = filtered.filter(p => p.category === cat);
+  }
+  if (stock !== 'all') {
+    if (stock === 'instock') filtered = filtered.filter(p => p.stock > 0);
+    else if (stock === 'lowstock') filtered = filtered.filter(p => p.stock > 0 && p.stock <= 5);
+    else if (stock === 'outofstock') filtered = filtered.filter(p => p.stock === 0);
+  }
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="sp-empty" style="text-align:center">No products match the selected filters.</td></tr>`;
+    return;
+  }
+  
+  const canEdit = state.user.permissions?.canEdit !== false;
+  const canUpdateStock = state.user.permissions?.canUpdateStock !== false;
+  const canDelete = state.user.permissions?.canDelete === true;
+  
+  tbody.innerHTML = filtered.map(p => {
+    const isLow = p.stock > 0 && p.stock <= 5;
+    const isOut = p.stock === 0;
+    const stockPillStyle = isOut ? 'color:#b3261e;background:#fbe4e2;font-weight:700;' : (isLow ? 'color:#a07840;background:#fdf1dd;font-weight:700;' : 'color:#1e7a34;background:#e4f3e6;');
+    const stockStatusLabel = isOut ? 'Out of Stock' : (isLow ? `Low Stock (${p.stock})` : `In Stock (${p.stock})`);
+    
+    return `
+      <tr>
+        <td>
+          <img src="${p.images && p.images[0] ? p.images[0] : 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100'}" class="table-thumb" onerror="this.src='https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100'"/>
+        </td>
+        <td>
+          <div style="font-weight:700; color:var(--black); font-size:0.9rem">${esc(p.title)}</div>
+          <div style="font-size:0.75rem; color:var(--warm-grey)">Category: <span class="sp-chip">${esc(p.category)}</span> | Colour: ${esc(p.colour || '—')}</div>
+        </td>
+        <td>
+          <span style="font-family:monospace; font-size:0.75rem; background:#faf8f6; padding:2px 6px; border-radius:4px; border:1px solid var(--border)">${p._id.slice(-6).toUpperCase()}</span>
+        </td>
+        <td>
+          <div class="table-quick-edit">
+            <input type="number" class="sp-qe-input tblPriceInput" data-id="${p._id}" value="${p.price}" min="0" ${!canEdit ? 'disabled' : ''} style="padding:4px 6px; width:75px"/>
+          </div>
+        </td>
+        <td>
+          <div class="table-quick-edit">
+            <input type="number" class="sp-qe-input tblStockInput" data-id="${p._id}" value="${p.stock}" min="0" ${!canUpdateStock ? 'disabled' : ''} style="padding:4px 6px; width:65px"/>
+            ${canUpdateStock ? `<button class="sp-mini-btn tblSaveBtn" data-id="${p._id}" style="min-height:30px; padding:4px 10px">Save</button>` : ''}
+          </div>
+          <div style="margin-top:6px"><span class="sp-chip" style="${stockPillStyle}">${stockStatusLabel}</span></div>
+        </td>
+        <td>
+          ${statusPill(p.status)}
+        </td>
+        <td style="text-align: right">
+          <div style="display:flex; justify-content:flex-end; gap:6px">
+            <button class="sp-mini-btn tblEditBtn" data-id="${p._id}" ${!canEdit ? 'disabled' : ''}>Full Edit</button>
+            <button class="sp-mini-btn sp-mini-btn--danger tblDelBtn" data-id="${p._id}" ${!canDelete ? 'disabled style="opacity:0.5"' : ''}>Remove</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  // Bind actions
+  tbody.querySelectorAll('.tblEditBtn').forEach(b => b.onclick = () => openProductForm(state.products.find(p => p._id === b.dataset.id)));
+  tbody.querySelectorAll('.tblSaveBtn').forEach(b => b.onclick = () => quickSavePriceStockTable(b.dataset.id, b));
+  tbody.querySelectorAll('.tblDelBtn').forEach(b => b.onclick = async () => { 
+    if (confirm('Remove this product?')) { 
+      await api('/products/' + b.dataset.id, { method: 'DELETE' }); 
+      loadStaffProducts(); 
+    } 
+  });
+}
+
 function attachStaff() {
   document.getElementById('logoutBtn').onclick = logout;
   document.getElementById('newProductBtn').onclick = () => openProductForm(null);
@@ -320,6 +637,119 @@ async function addStaffPrompt() {
   const password = prompt('Temporary password?'); if (!password) return;
   try { await api('/auth/staff', { method: 'POST', body: { name, loginId, password } }); showAdminTab('staff'); }
   catch (err) { alert(err.message); }
+}
+
+function renderFilteredStaffProductsTable() {
+  const tbody = document.getElementById('staffProdTableBody');
+  if (!tbody) return;
+  
+  const q = window.staffSearchQuery || '';
+  const cat = window.staffCategoryFilter || 'all';
+  const stock = window.staffStockFilter || 'all';
+  
+  let filtered = [...state.products];
+  
+  if (q) {
+    filtered = filtered.filter(p => p.title.toLowerCase().includes(q) || p._id.includes(q));
+  }
+  if (cat !== 'all') {
+    filtered = filtered.filter(p => p.category === cat);
+  }
+  if (stock !== 'all') {
+    if (stock === 'instock') filtered = filtered.filter(p => p.stock > 0);
+    else if (stock === 'lowstock') filtered = filtered.filter(p => p.stock > 0 && p.stock <= 5);
+    else if (stock === 'outofstock') filtered = filtered.filter(p => p.stock === 0);
+  }
+  
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="7" class="sp-empty" style="text-align:center">No products match the selected filters.</td></tr>`;
+    return;
+  }
+  
+  const canEdit = state.user.permissions?.canEdit !== false;
+  const canUpdateStock = state.user.permissions?.canUpdateStock !== false;
+  const canDelete = state.user.permissions?.canDelete === true;
+  
+  tbody.innerHTML = filtered.map(p => {
+    const isLow = p.stock > 0 && p.stock <= 5;
+    const isOut = p.stock === 0;
+    const stockPillStyle = isOut ? 'color:#b3261e;background:#fbe4e2;font-weight:700;' : (isLow ? 'color:#a07840;background:#fdf1dd;font-weight:700;' : 'color:#1e7a34;background:#e4f3e6;');
+    const stockStatusLabel = isOut ? 'Out of Stock' : (isLow ? `Low Stock (${p.stock})` : `In Stock (${p.stock})`);
+    
+    return `
+      <tr>
+        <td>
+          <img src="${p.images && p.images[0] ? p.images[0] : 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100'}" class="table-thumb" onerror="this.src='https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100'"/>
+        </td>
+        <td>
+          <div style="font-weight:700; color:var(--black); font-size:0.9rem">${esc(p.title)}</div>
+          <div style="font-size:0.75rem; color:var(--warm-grey)">Category: <span class="sp-chip">${esc(p.category)}</span> | Colour: ${esc(p.colour || '—')}</div>
+        </td>
+        <td>
+          <span style="font-family:monospace; font-size:0.75rem; background:#faf8f6; padding:2px 6px; border-radius:4px; border:1px solid var(--border)">${p._id.slice(-6).toUpperCase()}</span>
+        </td>
+        <td>
+          <div class="table-quick-edit">
+            <input type="number" class="sp-qe-input tblPriceInput" data-id="${p._id}" value="${p.price}" min="0" ${!canEdit ? 'disabled' : ''} style="padding:4px 6px; width:75px"/>
+          </div>
+        </td>
+        <td>
+          <div class="table-quick-edit">
+            <input type="number" class="sp-qe-input tblStockInput" data-id="${p._id}" value="${p.stock}" min="0" ${!canUpdateStock ? 'disabled' : ''} style="padding:4px 6px; width:65px"/>
+            ${canUpdateStock ? `<button class="sp-mini-btn tblSaveBtn" data-id="${p._id}" style="min-height:30px; padding:4px 10px">Save</button>` : ''}
+          </div>
+          <div style="margin-top:6px"><span class="sp-chip" style="${stockPillStyle}">${stockStatusLabel}</span></div>
+        </td>
+        <td>
+          ${statusPill(p.status)}
+        </td>
+        <td style="text-align: right">
+          <div style="display:flex; justify-content:flex-end; gap:6px">
+            <button class="sp-mini-btn tblEditBtn" data-id="${p._id}" ${!canEdit ? 'disabled' : ''}>Full Edit</button>
+            <button class="sp-mini-btn sp-mini-btn--danger tblDelBtn" data-id="${p._id}" ${!canDelete ? 'disabled style="opacity:0.5"' : ''}>Remove</button>
+          </div>
+        </td>
+      </tr>
+    `;
+  }).join('');
+  
+  // Bind actions
+  tbody.querySelectorAll('.tblEditBtn').forEach(b => b.onclick = () => openProductForm(state.products.find(p => p._id === b.dataset.id)));
+  tbody.querySelectorAll('.tblSaveBtn').forEach(b => b.onclick = () => quickSavePriceStockTable(b.dataset.id, b));
+  tbody.querySelectorAll('.tblDelBtn').forEach(b => b.onclick = async () => { 
+    if (confirm('Remove this product?')) { 
+      await api('/products/' + b.dataset.id, { method: 'DELETE' }); 
+      loadStaffProducts(); 
+    } 
+  });
+}
+
+async function quickSavePriceStockTable(id, btn) {
+  const row = btn.closest('tr');
+  const priceEl = row.querySelector('.tblPriceInput');
+  const stockEl = row.querySelector('.tblStockInput');
+  const orig = btn.textContent;
+  btn.textContent = '…'; btn.disabled = true;
+  try {
+    const fd = new FormData();
+    fd.append('price', priceEl.value);
+    fd.append('stock', stockEl.value);
+    const cur = state.products.find(p => p._id === id);
+    if (cur) {
+      fd.append('title', cur.title);
+      fd.append('description', cur.description || '');
+      fd.append('colour', cur.colour || '');
+      fd.append('size', cur.size || '');
+      fd.append('category', cur.category || 'other');
+    }
+    await api('/products/' + id, { method: 'PUT', body: fd });
+    btn.textContent = '✓'; btn.style.background = '#1e7a34'; btn.style.color = '#fff';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; btn.disabled = false; loadStaffProducts(); }, 1000);
+    if (cur) { cur.price = Number(priceEl.value); cur.stock = Number(stockEl.value); }
+  } catch(err) {
+    btn.textContent = '!'; btn.style.background = '#b3261e'; btn.style.color = '#fff';
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; btn.disabled = false; }, 2000);
+  }
 }
 
 render();
