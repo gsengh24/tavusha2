@@ -356,6 +356,7 @@
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Subtotal</span><span id="coSubtotal">&#8377;0</span></div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Shipping (<span id="coShippingZone">&#8212;</span>)</span><span id="coShipping">Enter PIN</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Tax / GST (12%)</span><span id="coTax">&#8377;0</span></div>
       <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1rem;border-top:1px solid var(--border);padding-top:8px;margin-bottom:16px"><span>Total</span><span id="coTotal">&#8212;</span></div>
       <div style="display:flex;gap:10px;margin-bottom:20px">
         <label style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:0.85rem;font-weight:600"><input type="radio" name="paymentType" value="cod" checked style="margin-right:6px"/> COD (20% advance)</label>
@@ -454,6 +455,9 @@ function initPDP() {
 
 function renderPDP(p) {
   document.title = p.name+' \u2014 TAVUSHA';
+  const qvImg = document.getElementById('quickViewImg');
+  qvImg.src = (typeof fixDriveUrl === 'function') ? fixDriveUrl(p.image) : p.image;
+  qvImg.onerror = function() { if(typeof tavushaImgError==='function') tavushaImgError(this); };
   document.getElementById('bcName').textContent = p.name;
   const catLink = document.getElementById('bcCat');
   catLink.textContent = (p.category[0]||'shop').replace(/^\w/,c=>c.toUpperCase());
@@ -605,7 +609,8 @@ function renderReviews(p){
 }
 function scrollToReviews(){ document.getElementById('reviewsSection').scrollIntoView({behavior:'smooth'}); }
 function openLightbox(){
-  document.getElementById('lightboxImg').src=document.getElementById('galleryMain').src;
+  const qvImg = document.getElementById('lightboxImg');
+  qvImg.src = (typeof fixDriveUrl === 'function') ? fixDriveUrl(pdpProduct.image) : pdpProduct.image;
   document.getElementById('pdpLightbox').classList.add('open');
   document.body.style.overflow='hidden';
 }
@@ -670,6 +675,7 @@ document.addEventListener('DOMContentLoaded',()=>{
       </div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Subtotal</span><span id="coSubtotal">&#8377;0</span></div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Shipping (<span id="coShippingZone">&#8212;</span>)</span><span id="coShipping">Enter PIN</span></div>
+      <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Tax / GST (12%)</span><span id="coTax">&#8377;0</span></div>
       <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1rem;border-top:1px solid var(--border);padding-top:8px;margin-bottom:16px"><span>Total</span><span id="coTotal">&#8212;</span></div>
       <div style="display:flex;gap:10px;margin-bottom:20px">
         <label style="flex:1;border:1.5px solid var(--border);border-radius:8px;padding:10px;text-align:center;cursor:pointer;font-size:0.85rem;font-weight:600"><input type="radio" name="paymentType" value="cod" checked style="margin-right:6px"/> COD (20% advance)</label>
