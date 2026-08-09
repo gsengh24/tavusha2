@@ -236,6 +236,25 @@
 
 <script src="js/products.js"></script>
 <script src="js/main.js"></script>
+<!-- Load admin-uploaded products from backend (adds to TAVUSHA_PRODUCTS) -->
+<script>
+(function() {
+  const BACKEND = 'https://tavusha2-backend.onrender.com/api';
+  // Dynamically load backend-approved products and merge into TAVUSHA_PRODUCTS
+  fetch(BACKEND + '/products/storefront.js')
+    .then(r => r.text())
+    .then(code => {
+      try {
+        // Execute the returned JS (it pushes into TAVUSHA_PRODUCTS)
+        // eslint-disable-next-line no-new-func
+        new Function(code)();
+        // Re-render grid if already initialized
+        if (typeof renderShopGrid === 'function') renderShopGrid();
+      } catch(e) { console.warn('storefront.js exec error:', e); }
+    })
+    .catch(() => {}); // Silently fail if backend offline
+})();
+</script>
 <script>
 let currentCat='all', currentSort='default', currentQuery='';
 const CAT_LABELS={all:'All Products',party:'Dresses & Party Wear',ethnic:'Ethnic Wear',coord:'Co-ord Sets',maxi:'Maxi Dresses',new:'New Arrivals',sale:'Sale Items',workwear:'Office & Workwear',accessories:'Accessories',wedding:'Wedding Guest'};
