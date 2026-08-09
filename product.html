@@ -444,8 +444,10 @@ const FAKE_REVIEWS = [
 let pdpProduct=null, pdpSelectedColor=null, pdpSelectedSize=null, pdpQtyVal=1;
 
 function initPDP() {
-  const id = parseInt(new URLSearchParams(window.location.search).get('id'),10);
-  if (!id || typeof TAVUSHA_PRODUCTS==='undefined') return;
+  const idParam = new URLSearchParams(window.location.search).get('id');
+  if (!idParam || typeof TAVUSHA_PRODUCTS==='undefined') return;
+  const id = /^\d+$/.test(idParam) ? parseInt(idParam, 10) : idParam;
+  
   pdpProduct = TAVUSHA_PRODUCTS.find(p=>p.id===id);
   if (!pdpProduct) { document.getElementById('infoName').textContent='Product not found'; return; }
   renderPDP(pdpProduct);
@@ -455,9 +457,6 @@ function initPDP() {
 
 function renderPDP(p) {
   document.title = p.name+' \u2014 TAVUSHA';
-  const qvImg = document.getElementById('quickViewImg');
-  qvImg.src = (typeof fixDriveUrl === 'function') ? fixDriveUrl(p.image) : p.image;
-  qvImg.onerror = function() { if(typeof tavushaImgError==='function') tavushaImgError(this); };
   document.getElementById('bcName').textContent = p.name;
   const catLink = document.getElementById('bcCat');
   catLink.textContent = (p.category[0]||'shop').replace(/^\w/,c=>c.toUpperCase());
@@ -636,9 +635,23 @@ function isLight(hex){
   const r=parseInt(c.slice(0,2),16),g=parseInt(c.slice(2,4),16),b=parseInt(c.slice(4,6),16);
   return (r*0.299+g*0.587+b*0.114)>186;
 }
-document.addEventListener('DOMContentLoaded',()=>{
+document.addEventListener('DOMContentLoaded', () => {
   initAnnouncement(); updateCartUI(); updateWishlistUI(); initNav(); initCursor(); initScrollReveal(); initKeyboard();
-  initPDP();
+  const BACKEND = 'https://tavusha2-backend.onrender.com/api';
+  fetch(BACKEND + '/products/storefront.js')
+    .then(r => r.text())
+    .then(code => {
+      try {
+        // eslint-disable-next-line no-new-func
+        new Function('TAVUSHA_PRODUCTS', code)(TAVUSHA_PRODUCTS);
+      } catch (e) {
+        console.error('Failed to parse backend products', e);
+      }
+    })
+    .catch(() => console.warn('Backend unavailable or could not fetch products'))
+    .finally(() => {
+      initPDP();
+    });
 });
 </script>
 <!-- CART DRAWER -->
