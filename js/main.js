@@ -674,6 +674,7 @@ function openCheckout() {
   // Show overlay
   const overlay = document.getElementById('checkoutOverlay');
   overlay.style.display = 'flex';
+  setTimeout(() => overlay.classList.add('open'), 10);
   // Bind pincode input
   const pinInput = document.getElementById('coPincode');
   if (pinInput) {
@@ -681,6 +682,14 @@ function openCheckout() {
     pinInput.oninput = () => {
       if (pinInput.value.length === 6) updateCheckoutSummary(pinInput.value);
     };
+  }
+}
+
+function closeCheckout() {
+  const overlay = document.getElementById('checkoutOverlay');
+  if (overlay) {
+    overlay.classList.remove('open');
+    setTimeout(() => overlay.style.display = 'none', 300);
   }
 }
 
