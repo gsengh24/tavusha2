@@ -404,17 +404,14 @@ function renderShopGrid(){
     const w = wishlistArr.includes(p.id);
     const bd = p.badge ? `<span class="product-card__badge ${p.badge==='sale'?'badge badge--red':p.badge==='limited'?'badge badge--warm':p.badge==='bestseller'?'badge badge--gold':'badge'}">${p.badgeText||p.badge}</span>` : '';
     const disc = (p.originalPrice && p.price) ? `<div style="font-size:0.68rem;font-weight:700;color:#B91C1C;margin-top:2px">${Math.round((1 - p.price / p.originalPrice) * 100)}% OFF</div>` : '';
-    
-    const imgSrc = p.image || p.imageAlt || '';
-    const driveIdMatch = imgSrc.match(/[?&]id=([^&]+)/);
-    const driveId = driveIdMatch ? driveIdMatch[1] : '';
-    const fallbackImg = driveId ? `https://lh3.googleusercontent.com/d/${driveId}=w800` : (p.imageAlt || imgSrc);
+    const rawImg = p.image || p.imageAlt || '';
+    const imgSrc = (typeof fixDriveUrl === 'function') ? fixDriveUrl(rawImg) : rawImg;
     const safePrice = p.price ? p.price.toLocaleString('en-IN') : '0';
     const safeOrigPrice = p.originalPrice ? p.originalPrice.toLocaleString('en-IN') : '';
 
     return `<div class="product-card reveal visible" onclick="location.href='product.html?id=${p.id}'">
       <div class="product-card__media" style="--card-bg:${c}">
-        <img class="product-card__img" src="${imgSrc}" alt="${p.name || 'Product'}" loading="lazy" onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='${fallbackImg}';}else{this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100%25\\' height=\\'100%25\\'><rect fill=\\'%23f5e2d6\\'/><text x=\\'50%25\\' y=\\'50%25\\' font-family=\\'serif\\' font-size=\\'14\\' fill=\\'%23a07840\\' text-anchor=\\'middle\\' dy=\\'.3em\\'>TAVUSHA</text></svg>';}">
+        <img class="product-card__img" src="${imgSrc}" data-orig-src="${rawImg}" alt="${p.name || 'Product'}" loading="lazy" onerror="if(typeof tavushaImgError==='function'){tavushaImgError(this);}">
         ${bd}
         <div class="product-card__actions">
           <button class="product-card__action-btn ${w?'active':''}" onclick="event.stopPropagation();toggleWishlistCard(this,${p.id})" aria-label="Wishlist">

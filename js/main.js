@@ -220,8 +220,8 @@ function renderProductCard(product, colorIdx) {
   return `
     <div class="product-card reveal" data-id="${product.id}" onclick="openQuickView(${product.id})">
       <div class="product-card__media" style="--card-bg:${color}">
-        <img class="product-card__img" src="${product.image}" alt="${product.name}" loading="lazy"
-          onerror="if(!this.dataset.tried){this.dataset.tried='1';const m=this.src.match(/[?&]id=([^&]+)/);this.src=m?'https://lh3.googleusercontent.com/d/'+m[1]+'=w800':'${product.imageAlt||product.image}';}else{this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100%25\\' height=\\'100%25\\'><rect fill=\\'%23ede0c0\\'/><text x=\\'50%25\\' y=\\'50%25\\' font-family=\\'serif\\' font-size=\\'12\\' fill=\\'%23a07840\\' text-anchor=\\'middle\\' dy=\\'.3em\\'>TAVUSHA</text></svg>';}">
+        <img class="product-card__img" src="${typeof fixDriveUrl==='function'?fixDriveUrl(product.image):product.image}" data-orig-src="${product.image}" alt="${product.name}" loading="lazy"
+          onerror="if(typeof tavushaImgError==='function'){tavushaImgError(this);}">
         ${product.badge ? `<span class="product-card__badge ${badgeMap[product.badge] || ''}">${badgeLabelMap[product.badge] || product.badge}</span>` : ''}
         <!-- Two action circles — reference pattern -->
         <div class="product-card__actions">
