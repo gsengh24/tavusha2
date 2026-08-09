@@ -689,11 +689,13 @@ function updateCheckoutSummary(pin = '') {
   const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
   const { zone, rate } = pin.length === 6 ? calcShippingRate(pin) : { zone: '—', rate: 0 };
   const shipping = pin.length === 6 ? (rate * totalPieces) : 0;
-  const total = subtotal + shipping;
+  const tax      = Math.round(subtotal * 0.12);
+  const total    = subtotal + shipping + tax;
 
   document.getElementById('coSubtotal').textContent    = `₹${subtotal.toLocaleString('en-IN')}`;
   document.getElementById('coShippingZone').textContent = zone;
   document.getElementById('coShipping').textContent    = pin.length === 6 ? `₹${shipping.toLocaleString('en-IN')}` : 'Enter PIN';
+  if (document.getElementById('coTax')) document.getElementById('coTax').textContent = `₹${tax.toLocaleString('en-IN')}`;
   document.getElementById('coTotal').textContent       = pin.length === 6 ? `₹${total.toLocaleString('en-IN')}` : '—';
 
   // Auto-fill city placeholder using known prefix->city map
@@ -739,15 +741,16 @@ function placeOrder() {
   const paymentType = document.querySelector('input[name="paymentType"]:checked')?.value || 'cod';
   const subtotal    = TAVUSHA.cart.reduce((s, i) => s + i.price * i.qty, 0);
   const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
+  const tax         = Math.round(subtotal * 0.12);
   const { zone, rate } = calcShippingRate(pin);
   const shipping    = rate * totalPieces;
-  const total       = subtotal + shipping;
+  const total       = subtotal + shipping + tax;
   const advanceAmt  = paymentType === 'cod' ? Math.ceil(total * 0.20) : total;
   const orderNum    = 'TV' + Date.now().toString().slice(-8);
 
   _pendingOrder = {
     orderNum, name, phone, email, address, pin, zone,
-    items: [...TAVUSHA.cart], subtotal, shipping, total,
+    items: [...TAVUSHA.cart], subtotal, shipping, tax, total,
     paymentType, advanceAmt
   };
 
@@ -772,7 +775,7 @@ function placeOrder() {
 
 async function simulatePaymentCapture() {
   if (!_pendingOrder) return;
-  const { orderNum, name, phone, email, address, pin, zone, items, subtotal, shipping, total, paymentType, advanceAmt } = _pendingOrder;
+  const { orderNum, name, phone, email, address, pin, zone, items, subtotal, shipping, tax, total, paymentType, advanceAmt } = _pendingOrder;
 
   // Save order to backend or localStorage
   const orderData = {
@@ -785,6 +788,7 @@ async function simulatePaymentCapture() {
     items: JSON.stringify(items),
     subtotal,
     shipping_charge: shipping,
+    tax_amount: tax,
     total_amount: total,
     payment_type: paymentType,
     advance_paid: advanceAmt,
