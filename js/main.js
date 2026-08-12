@@ -730,7 +730,7 @@ function guessCityFromPin(pin) {
 // Shared state for payment flow
 let _pendingOrder = null;
 
-function placeOrder() {
+async function placeOrder() {
   const name    = document.getElementById('coName')?.value?.trim();
   const phone   = document.getElementById('coPhone')?.value?.trim();
   const address = document.getElementById('coAddress')?.value?.trim();
@@ -748,6 +748,78 @@ function placeOrder() {
   }
 
   const paymentType = document.querySelector('input[name="paymentType"]:checked')?.value || 'cod';
+  const btn = document.querySelector('#checkoutForm button.quick-view__add');
+  if (btn) { btn.disabled = true; btn.textContent = 'Initiating Payment...'; }
+
+  const orderPayload = {
+    customer_name: name,
+    customer_phone: phone,
+    customer_email: email,
+    delivery_address: address,
+    pincode: pin,
+    payment_type: paymentType,
+    items: TAVUSHA.cart.map(i => ({
+      id: i.id,
+      title: i.title || i.name,
+      price: i.price,
+      qty: i.qty,
+      size: i.size || '',
+      color: i.color || ''
+    }))
+  };
+
+  try {
+    const res = await fetch(`${API_BASE}/orders`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderPayload)
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.razorpay && data.razorpay.order_id && typeof Razorpay !== 'undefined') {
+      const options = {
+        ...data.razorpay,
+        handler: async function (response) {
+          showToast('Verifying payment...', 'info');
+          try {
+            const verifyRes = await fetch(`${API_BASE}/orders/verify-payment`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature
+              })
+            });
+            const verifyData = await verifyRes.json();
+            if (verifyData.success) {
+              showOrderSuccessScreen(verifyData.order || data.order);
+            } else {
+              showToast(verifyData.message || 'Payment verification failed', 'error');
+            }
+          } catch (err) {
+            showToast('Network error during verification', 'error');
+          }
+        },
+        modal: {
+          ondismiss: function() {
+            showToast('Payment popup closed.', 'info');
+            if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
+          }
+        }
+      };
+      const rzp = new Razorpay(options);
+      rzp.open();
+      if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
+      return;
+    }
+  } catch (err) {
+    console.warn('Razorpay backend order creation notice:', err);
+  }
+
+  // Fallback to QR code screen if backend is offline or fallback requested
+  if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
   const subtotal    = TAVUSHA.cart.reduce((s, i) => s + i.price * i.qty, 0);
   const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
   const tax         = Math.round(subtotal * 0.12);
@@ -763,7 +835,6 @@ function placeOrder() {
     paymentType, advanceAmt
   };
 
-  // Update QR code with actual amount
   const qrImg = document.getElementById('qrImg');
   if (qrImg) {
     const upiData = encodeURIComponent(`upi://pay?pa=tavusha@okaxis&pn=TAVUSHA&am=${advanceAmt}&cu=INR&tn=Order+${orderNum}`);
@@ -777,16 +848,25 @@ function placeOrder() {
       : `Full Prepaid — Pay <strong>₹${advanceAmt.toLocaleString('en-IN')}</strong> via UPI QR below.`;
   }
 
-  // Switch to QR screen
   document.getElementById('checkoutForm').style.display    = 'none';
   document.getElementById('checkoutPayment').style.display = 'block';
+}
+
+function showOrderSuccessScreen(order) {
+  document.getElementById('successOrderNum').textContent = order.order_number || order.orderNum || ('TV' + Date.now().toString().slice(-8));
+  document.getElementById('successName').textContent     = order.customer_name || order.name || '';
+  const paidVal = order.advance_required || order.advance_paid || order.total || order.total_amount || 0;
+  document.getElementById('successPaid').textContent     = `₹${Number(paidVal).toLocaleString('en-IN')} ${order.payment_type === 'cod' ? '(Advance paid)' : '(Full payment)'}`;
+  document.getElementById('checkoutForm').style.display    = 'none';
+  document.getElementById('checkoutPayment').style.display = 'none';
+  document.getElementById('checkoutSuccess').style.display = 'block';
+  clearCart();
 }
 
 async function simulatePaymentCapture() {
   if (!_pendingOrder) return;
   const { orderNum, name, phone, email, address, pin, zone, items, subtotal, shipping, tax, total, paymentType, advanceAmt } = _pendingOrder;
 
-  // Save order to backend or localStorage
   const orderData = {
     order_number: orderNum,
     customer_name: name,
@@ -813,19 +893,12 @@ async function simulatePaymentCapture() {
       body: JSON.stringify(orderData)
     });
   } catch {
-    // Save to localStorage as fallback
     const orders = JSON.parse(localStorage.getItem('tavusha_orders') || '[]');
     orders.push(orderData);
     localStorage.setItem('tavusha_orders', JSON.stringify(orders));
   }
 
-  // Show success screen
-  document.getElementById('successOrderNum').textContent = orderNum;
-  document.getElementById('successName').textContent     = name;
-  document.getElementById('successPaid').textContent     = `₹${advanceAmt.toLocaleString('en-IN')} ${paymentType === 'cod' ? '(Advance paid)' : '(Full payment)'}`;
-  document.getElementById('checkoutPayment').style.display = 'none';
-  document.getElementById('checkoutSuccess').style.display = 'block';
-
+  showOrderSuccessScreen(orderData);
   _pendingOrder = null;
 }
 
