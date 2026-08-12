@@ -9,7 +9,24 @@ const cmsRoutes = require('./routes/cms');
 const shippingRoutes = require('./routes/shipping');
 const orderRoutes = require('./routes/orders');
 
+let compression;
+try { compression = require('compression'); } catch(e) {}
+
 const app = express();
+
+if (compression) app.use(compression());
+
+// Performance Caching Headers for Public GET Requests
+app.use((req, res, next) => {
+  if (req.method === 'GET') {
+    if (req.path.includes('/storefront.js')) {
+      res.setHeader('Cache-Control', 'public, max-age=60, s-maxage=300, stale-while-revalidate=600');
+    } else if (req.path.includes('/cms')) {
+      res.setHeader('Cache-Control', 'public, max-age=120, s-maxage=600, stale-while-revalidate=1200');
+    }
+  }
+  next();
+});
 
 // Webhook route must use raw body — mount BEFORE json middleware
 app.use('/api/orders/webhook', express.raw({ type: 'application/json' }));

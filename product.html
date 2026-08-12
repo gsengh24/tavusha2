@@ -10,7 +10,12 @@
   <meta property="og:site_name" content="TAVUSHA">
   <meta id="pdp-og-title" property="og:title" content="Product — TAVUSHA">
   <meta id="pdp-og-desc" property="og:description" content="Premium women's fashion at TAVUSHA.">
-  <meta id="pdp-og-image" property="og:image" content="https://tavusha.com/assets/images/og-cover.jpg">
+  <!-- Preconnect & Fonts Performance Optimizations -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preconnect" href="https://lh3.googleusercontent.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
   <link rel="stylesheet" href="css/styles.css">
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='24' font-size='26' font-family='serif' font-weight='bold'>T</text></svg>">
   <style>
@@ -416,9 +421,9 @@
 <div class="cursor__dot" id="cursorDot"></div>
 <div class="cursor__ring" id="cursorRing"></div>
 
-<script src="js/products.js"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
-<script src="js/main.js"></script>
+<script src="js/products.js" defer></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+<script src="js/main.js" defer></script>
 <script>
 'use strict';
 const COLOUR_NAMES = {

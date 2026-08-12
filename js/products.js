@@ -9,48 +9,29 @@
    ──────────────────────────────────────────────────────────── */
 function fixDriveUrl(url) {
   if (!url) return url;
-  // Extract ID from any Drive URL format
-  var m = url.match(/[?&]id=([^&]+)/);
-  if (m) {
-    return 'https://drive.google.com/uc?export=view&id=' + m[1];
-  }
-  // If it's already a direct drive URL like /file/d/ID/view
-  var m2 = url.match(/\/file\/d\/([^/]+)/);
-  if (m2) {
-    return 'https://drive.google.com/uc?export=view&id=' + m2[1];
+  if (url.indexOf('data:image') === 0 || url.indexOf('lh3.googleusercontent.com') !== -1) return url;
+  var m = url.match(/[?&]id=([^&]+)/) || url.match(/\/file\/d\/([^/]+)/) || url.match(/\/d\/([^/]+)/);
+  if (m && m[1]) {
+    return 'https://lh3.googleusercontent.com/d/' + m[1] + '=w800';
   }
   return url;
 }
 
-/* ─── Image Error Handler (global, used by all product images) ─
-   Tries multiple fallback formats in sequence:
-   1. uc?export=view
-   2. lh3.googleusercontent.com (CDN)
-   3. Inline placeholder SVG
-   ──────────────────────────────────────────────────────────── */
 window.tavushaImgError = function(img) {
   var tried = parseInt(img.dataset.tried || '0', 10);
   var origSrc = img.dataset.origSrc || img.src;
   if (!img.dataset.origSrc) img.dataset.origSrc = img.src;
 
-  // Extract Google Drive file ID
-  var m = origSrc.match(/[?&]id=([^&]+)/);
-  if (!m) { m = origSrc.match(/\/d\/([^/]+)/); }
+  var m = origSrc.match(/[?&]id=([^&]+)/) || origSrc.match(/\/d\/([^/]+)/) || origSrc.match(/\/file\/d\/([^/]+)/);
   var fileId = m ? m[1] : '';
 
   if (tried === 0 && fileId) {
-    // Try uc?export=view format
     img.dataset.tried = '1';
     img.src = 'https://drive.google.com/uc?export=view&id=' + fileId;
-  } else if (tried === 1 && fileId) {
-    // Try lh3 CDN format
-    img.dataset.tried = '2';
-    img.src = 'https://lh3.googleusercontent.com/d/' + fileId + '=w800';
   } else {
-    // Show placeholder
-    img.dataset.tried = '3';
+    img.dataset.tried = '2';
     img.onerror = null;
-    img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'%3E%3Crect fill='%23f5e2d6' width='400' height='500'/%3E%3Ctext x='50%25' y='46%25' font-family='Georgia,serif' font-size='16' fill='%23a07840' text-anchor='middle'%3ETAVUSHA%3C/text%3E%3Ctext x='50%25' y='54%25' font-family='Georgia,serif' font-size='11' fill='%23c9a87c' text-anchor='middle'%3EImage Loading...%3C/text%3E%3C/svg%3E";
+    img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'%3E%3Crect fill='%23f5e2d6' width='400' height='500'/%3E%3Ctext x='50%25' y='46%25' font-family='Georgia,serif' font-size='16' fill='%23a07840' text-anchor='middle'%3ETAVUSHA%3C/text%3E%3Ctext x='50%25' y='54%25' font-family='Georgia,serif' font-size='11' fill='%23c9a87c' text-anchor='middle'%3ETAVUSHA%3C/text%3E%3C/svg%3E";
   }
 };
 

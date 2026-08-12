@@ -227,3 +227,13 @@ CREATE POLICY "Public read active popups" ON cms_popups
 -- Public can read active shipping zones
 CREATE POLICY "Public read shipping zones" ON shipping_zones
   FOR SELECT TO anon, authenticated USING (is_active = true);
+
+-- ───────────────────────────────────────────────────────────────────────
+-- 9. PERFORMANCE INDEXES
+-- ───────────────────────────────────────────────────────────────────────
+CREATE INDEX IF NOT EXISTS idx_products_status_deleted ON products (status, is_deleted) WHERE is_deleted = false;
+CREATE INDEX IF NOT EXISTS idx_products_category ON products (category);
+CREATE INDEX IF NOT EXISTS idx_orders_number ON orders (order_number);
+CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_staff_login_id ON staff (login_id);
+

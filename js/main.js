@@ -50,13 +50,18 @@ document.addEventListener('DOMContentLoaded', () => {
 function initLoader() {
   const loader = document.getElementById('loader');
   if (!loader) return;
-  document.body.style.overflow = 'hidden';
-  setTimeout(() => {
+  const hide = () => {
+    if (loader.classList.contains('hidden')) return;
     loader.classList.add('hidden');
     document.body.style.overflow = '';
-    // Animate hero elements after load
     triggerHeroAnimation();
-  }, 1800);
+  };
+  if (document.readyState === 'complete') {
+    setTimeout(hide, 50);
+  } else {
+    window.addEventListener('load', hide, { once: true });
+    setTimeout(hide, 250); // Fast safety fallback
+  }
 }
 
 function triggerHeroAnimation() {

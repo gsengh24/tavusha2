@@ -5,8 +5,6 @@
    Fonts: Cormorant (700) + Inter
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Cormorant:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,600;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
-
 /* ─── Design Tokens (from Reference Analysis) ────────────────── */
 :root {
   /* Page Background — THE Brand Canvas (replaces lavender wash) */
