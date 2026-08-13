@@ -942,10 +942,11 @@ async function loadCmsContent() {
 
   // Hero banners (replace hero__right slides)
   if (cms.heroBanners && cms.heroBanners.length) {
-    const heroImgs = document.querySelectorAll('.hero__right img, .hero__slides img');
-    cms.heroBanners.forEach((b, i) => {
-      if (heroImgs[i]) { heroImgs[i].src = b.image_url; heroImgs[i].alt = b.title || ''; }
-    });
+    const heroImg = document.querySelector('.hero__model-img');
+    if (heroImg && cms.heroBanners[0]) {
+      heroImg.src = cms.heroBanners[0].image_url;
+      heroImg.alt = cms.heroBanners[0].title || '';
+    }
   }
 
   // Festival / promo banners — inject into page if container exists
@@ -1052,8 +1053,8 @@ function renderFestivalBanners(banners) {
   container.innerHTML = `
     <div style="display:flex; gap:16px; padding:0 40px; overflow-x:auto; scroll-snap-type:x mandatory;">
       ${banners.map(b => `
-        <div onclick="${b.link_url ? `window.location.href='${b.link_url}'` : ''}"
-             style="min-width:280px; border-radius:16px; overflow:hidden; cursor:${b.link_url ? 'pointer' : 'default'};
+        <div onclick="${b.cta_url ? `window.location.href='${b.cta_url}'` : ''}"
+             style="min-width:280px; border-radius:16px; overflow:hidden; cursor:${b.cta_url ? 'pointer' : 'default'};
                     background:linear-gradient(135deg,#1a0a2e,#5c1e4a); flex-shrink:0; scroll-snap-align:start;
                     display:flex; align-items:center; gap:16px; padding:20px; color:#fff; position:relative;">
           ${b.image_url ? `<img src="${b.image_url}" style="width:80px; height:80px; object-fit:cover; border-radius:10px; flex-shrink:0">` : ''}
