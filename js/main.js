@@ -703,7 +703,7 @@ function updateCheckoutSummary(pin = '') {
   const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
   const { zone, rate } = pin.length === 6 ? calcShippingRate(pin) : { zone: '—', rate: 0 };
   const shipping = pin.length === 6 ? (rate * totalPieces) : 0;
-  const tax      = Math.round(subtotal * 0.12);
+  const tax      = Math.round(subtotal * 0.05);
   const total    = subtotal + shipping + tax;
 
   document.getElementById('coSubtotal').textContent    = `₹${subtotal.toLocaleString('en-IN')}`;
@@ -827,7 +827,7 @@ async function placeOrder() {
   if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
   const subtotal    = TAVUSHA.cart.reduce((s, i) => s + i.price * i.qty, 0);
   const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
-  const tax         = Math.round(subtotal * 0.12);
+  const tax         = Math.round(subtotal * 0.05);
   const { zone, rate } = calcShippingRate(pin);
   const shipping    = rate * totalPieces;
   const total       = subtotal + shipping + tax;
