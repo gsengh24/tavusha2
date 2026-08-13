@@ -223,7 +223,7 @@ function renderProductCard(product, colorIdx) {
   const isWishlisted = TAVUSHA.wishlist.includes(product.id);
 
   return `
-    <div class="product-card reveal" data-id="${product.id}" onclick="openQuickView(${product.id})">
+    <div class="product-card reveal" data-id="${product.id}" onclick="openQuickView('${product.id}')">
       <div class="product-card__media" style="--card-bg:${color}">
         <img class="product-card__img" src="${typeof fixDriveUrl==='function'?fixDriveUrl(product.image):product.image}" data-orig-src="${product.image}" alt="${product.name}" loading="lazy"
           onerror="if(typeof tavushaImgError==='function'){tavushaImgError(this);}">
@@ -231,12 +231,12 @@ function renderProductCard(product, colorIdx) {
         <!-- Two action circles — reference pattern -->
         <div class="product-card__actions">
           <button class="product-card__action-btn ${isWishlisted ? 'active' : ''}"
-            onclick="event.stopPropagation(); toggleWishlistCard(this, ${product.id})"
+            onclick="event.stopPropagation(); toggleWishlistCard(this, '${product.id}')"
             aria-label="Wishlist">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="${isWishlisted ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </button>
           <button class="product-card__action-btn"
-            onclick="event.stopPropagation(); openQuickView(${product.id})"
+            onclick="event.stopPropagation(); openQuickView('${product.id}')"
             aria-label="Quick View">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
@@ -310,7 +310,7 @@ function filterAndGo(cat) {
 
 // ─── QUICK VIEW ───────────────────────────────────────────────
 function openQuickView(id) {
-  const product = TAVUSHA_PRODUCTS.find(p => p.id === id);
+  const product = TAVUSHA_PRODUCTS.find(p => p.id == id);
   if (!product) return;
   TAVUSHA.quickViewProduct = product;
   TAVUSHA.selectedSize = null;
@@ -420,7 +420,7 @@ function addToCartFromQuickView() {
 }
 
 function addToCart(product, size) {
-  const existing = TAVUSHA.cart.find(i => i.id === product.id && i.size === size);
+  const existing = TAVUSHA.cart.find(i => i.id == product.id && i.size === size);
   if (existing) { existing.qty += 1; }
   else {
     TAVUSHA.cart.push({ id: product.id, name: product.name, price: product.price, image: product.image, brand: product.brand, size, qty: 1 });
@@ -432,12 +432,12 @@ function addToCart(product, size) {
 }
 
 function removeFromCart(id, size) {
-  TAVUSHA.cart = TAVUSHA.cart.filter(i => !(i.id === id && i.size === size));
+  TAVUSHA.cart = TAVUSHA.cart.filter(i => !(i.id == id && i.size === size));
   saveCart(); updateCartUI(); renderCartItems();
 }
 
 function updateCartQty(id, size, delta) {
-  const item = TAVUSHA.cart.find(i => i.id === id && i.size === size);
+  const item = TAVUSHA.cart.find(i => i.id == id && i.size === size);
   if (!item) return;
   item.qty += delta;
   if (item.qty <= 0) { removeFromCart(id, size); return; }
