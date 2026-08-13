@@ -484,7 +484,8 @@ function renderPDP(p) {
     document.getElementById('infoPriceSave').style.display='';
   }
   document.getElementById('infoDesc').textContent=p.description;
-  const imgs=[p.image,p.imageAlt,...EXTRA_IMAGES.slice(0,2)];
+  let imgs = [p.image];
+  if(p.imageAlt && p.imageAlt !== p.image) imgs.push(p.imageAlt);
   const bgs=['var(--card-champagne)','var(--card-rose)','var(--card-sage)','var(--card-blush)'];
   const gMain=document.getElementById('galleryMain');
   const mainDriveId = p.image.match(/[?&]id=([^&]+)/);
