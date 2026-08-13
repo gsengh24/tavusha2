@@ -292,7 +292,7 @@ ul { list-style: none; }
 .hero__stat {
   display: flex; flex-direction: column; align-items: flex-end; gap: 8px;
   padding: 16px 20px; border-radius: var(--radius-card);
-  background: rgba(255,255,255,0.6); backdrop-filter: blur(8px);
+  background: rgba(255,255,255,0.85);
   border: 1px solid rgba(201,169,110,0.2); align-self: flex-end;
   width: fit-content;
 }
@@ -431,7 +431,7 @@ ul { list-style: none; }
 .product-card:hover .product-card__actions { opacity: 1; transform: translateX(0); }
 .product-card__action-btn {
   width: 32px; height: 32px; border-radius: 50%;
-  background: rgba(255,255,255,0.92); backdrop-filter: blur(6px);
+  background: rgba(255,255,255,0.95);
   display: flex; align-items: center; justify-content: center;
   cursor: pointer; color: var(--black); font-size: 13px;
   transition: background var(--dur-fast), color var(--dur-fast);
@@ -701,14 +701,13 @@ ul { list-style: none; }
 
 /* ─── CART DRAWER ────────────────────────────────────────────── */
 .cart-overlay {
-  position: fixed; inset: 0; background: rgba(12,10,9,0.5); z-index: 600;
+  position: fixed; inset: 0; background: rgba(12,10,9,0.55); z-index: 9000;
   opacity: 0; pointer-events: none; transition: opacity var(--dur-mid);
-  backdrop-filter: blur(4px);
 }
 .cart-overlay.open { opacity: 1; pointer-events: all; }
 .cart-drawer {
-  position: fixed; top: 0; right: 0; bottom: 0; width: 400px;
-  background: var(--white); z-index: 700; display: flex; flex-direction: column;
+  position: fixed; top: 0; right: 0; bottom: 0; width: 400px; max-width: 100vw;
+  background: var(--white); z-index: 9001; display: flex; flex-direction: column;
   transform: translateX(100%); transition: transform var(--dur-slow) var(--ease-snap);
   border-left: 1px solid var(--border);
 }
@@ -764,10 +763,9 @@ ul { list-style: none; }
 
 /* ─── SEARCH OVERLAY ─────────────────────────────────────────── */
 .search-overlay {
-  position: fixed; inset: 0; background: rgba(250,245,238,0.97); z-index: 750;
+  position: fixed; inset: 0; background: rgba(250,245,238,0.98); z-index: 8500;
   display: flex; flex-direction: column; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity var(--dur-mid);
-  backdrop-filter: blur(20px);
 }
 .search-overlay.open { opacity: 1; pointer-events: all; }
 .search-overlay__close { position: absolute; top: 28px; right: 36px; cursor: pointer; color: var(--warm-grey); transition: color var(--dur-fast); }
@@ -795,10 +793,10 @@ ul { list-style: none; }
 
 /* ─── QUICK VIEW ─────────────────────────────────────────────── */
 .modal-overlay {
-  position: fixed; inset: 0; background: rgba(12,10,9,0.55); z-index: 800;
+  position: fixed; inset: 0; background: rgba(12,10,9,0.55); z-index: 8000;
   display: flex; align-items: center; justify-content: center;
   opacity: 0; pointer-events: none; transition: opacity var(--dur-mid);
-  padding: 40px; backdrop-filter: blur(8px);
+  padding: 40px;
 }
 .modal-overlay.open { opacity: 1; pointer-events: all; }
 .quick-view {
@@ -814,8 +812,8 @@ ul { list-style: none; }
 .quick-view__img { width: 100%; aspect-ratio: 3/4; object-fit: cover; }
 .quick-view__close {
   position: absolute; top: 14px; right: 14px; width: 34px; height: 34px;
-  background: rgba(250,245,238,0.92); border-radius: 50%; display: flex; align-items: center; justify-content: center;
-  cursor: pointer; color: var(--black); transition: all var(--dur-fast); backdrop-filter: blur(6px);
+  background: rgba(250,245,238,0.95); border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  cursor: pointer; color: var(--black); transition: all var(--dur-fast);
 }
 .quick-view__close:hover { background: var(--black); color: #fff; }
 .quick-view__info { padding: 40px 32px; display: flex; flex-direction: column; }
@@ -1264,8 +1262,7 @@ ul { list-style: none; }
   transform: translateX(-50%);
   width: 70px;
   height: 22px;
-  background: rgba(201,169,110,0.4);
-  backdrop-filter: blur(2px);
+  background: rgba(201,169,110,0.6);
   z-index: 10;
   box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }

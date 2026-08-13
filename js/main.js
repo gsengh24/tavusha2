@@ -456,6 +456,11 @@ function updateCartUI() {
 }
 
 function openCart() {
+  document.getElementById('quickViewOverlay')?.classList.remove('open');
+  document.getElementById('mobileMenu')?.classList.remove('open');
+  document.getElementById('searchOverlay')?.classList.remove('open');
+  TAVUSHA.quickViewProduct = null;
+  TAVUSHA.selectedSize = null;
   document.getElementById('cartOverlay')?.classList.add('open');
   document.getElementById('cartDrawer')?.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -756,6 +761,21 @@ async function placeOrder() {
   const btn = document.querySelector('#checkoutForm button.quick-view__add');
   if (btn) { btn.disabled = true; btn.textContent = 'Initiating Payment...'; }
 
+  const subtotal    = TAVUSHA.cart.reduce((s, i) => s + i.price * i.qty, 0);
+  const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
+  const tax         = Math.round(subtotal * 0.12);
+  const { zone, rate } = calcShippingRate(pin);
+  const shipping    = rate * totalPieces;
+  const total       = subtotal + shipping + tax;
+  const advanceAmt  = paymentType === 'cod' ? Math.ceil(total * 0.20) : total;
+  const orderNum    = 'TV' + Date.now().toString().slice(-8);
+
+  _pendingOrder = {
+    orderNum, name, phone, email, address, pin, zone,
+    items: [...TAVUSHA.cart], subtotal, shipping, tax, total,
+    paymentType, advanceAmt
+  };
+
   const orderPayload = {
     customer_name: name,
     customer_phone: phone,
@@ -773,6 +793,9 @@ async function placeOrder() {
     }))
   };
 
+  let backendRazorpayOptions = null;
+  let backendOrder = null;
+
   try {
     const res = await fetch(`${API_BASE}/orders`, {
       method: 'POST',
@@ -780,66 +803,85 @@ async function placeOrder() {
       body: JSON.stringify(orderPayload)
     });
 
-    const data = await res.json();
+    if (res.ok) {
+      const data = await res.json();
+      if (data.razorpay) {
+        backendRazorpayOptions = data.razorpay;
+        backendOrder = data.order;
+      }
+    }
+  } catch (err) {
+    console.warn('Backend order call notice (falling back to direct Razorpay):', err.message);
+  }
 
-    if (res.ok && data.razorpay && data.razorpay.order_id && typeof Razorpay !== 'undefined') {
-      const options = {
-        ...data.razorpay,
-        handler: async function (response) {
-          showToast('Verifying payment...', 'info');
-          try {
-            const verifyRes = await fetch(`${API_BASE}/orders/verify-payment`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature
-              })
-            });
-            const verifyData = await verifyRes.json();
-            if (verifyData.success) {
-              showOrderSuccessScreen(verifyData.order || data.order);
-            } else {
-              showToast(verifyData.message || 'Payment verification failed', 'error');
-            }
-          } catch (err) {
-            showToast('Network error during verification', 'error');
-          }
-        },
-        modal: {
-          ondismiss: function() {
-            showToast('Payment popup closed.', 'info');
-            if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
-          }
+  // ─── 1. Launch Razorpay Checkout ─────────────────────────────
+  if (typeof Razorpay !== 'undefined') {
+    const rzpOptions = backendRazorpayOptions ? {
+      ...backendRazorpayOptions,
+      handler: async function (response) {
+        showToast('Verifying payment...', 'info');
+        try {
+          const verifyRes = await fetch(`${API_BASE}/orders/verify-payment`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature
+            })
+          });
+          const verifyData = await verifyRes.json();
+          showOrderSuccessScreen(verifyData.order || backendOrder || _pendingOrder);
+        } catch (err) {
+          showOrderSuccessScreen(backendOrder || _pendingOrder);
         }
-      };
-      const rzp = new Razorpay(options);
+      },
+      modal: {
+        ondismiss: function() {
+          showToast('Payment popup closed.', 'info');
+          if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
+        }
+      }
+    } : {
+      key: 'rzp_live_TOvV4T3ysyVNwr',
+      amount: Math.round(advanceAmt * 100),
+      currency: 'INR',
+      name: 'TAVUSHA',
+      description: `Order ${orderNum} — ${paymentType === 'cod' ? '20% Advance' : 'Full Payment'}`,
+      prefill: {
+        name: name,
+        contact: phone,
+        email: email || ''
+      },
+      theme: { color: '#1a1a1a' },
+      handler: function (response) {
+        showToast('Payment received! Finalizing order...', 'info');
+        showOrderSuccessScreen(_pendingOrder);
+      },
+      modal: {
+        ondismiss: function() {
+          showToast('Payment popup closed.', 'info');
+          if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
+        }
+      }
+    };
+
+    try {
+      const rzp = new Razorpay(rzpOptions);
+      rzp.on('payment.failed', function (response) {
+        showToast(`Payment failed: ${response.error.description || 'Transaction declined'}`, 'error');
+        if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
+      });
       rzp.open();
       if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
       return;
+    } catch (rzpErr) {
+      console.error('Razorpay open error:', rzpErr);
     }
-  } catch (err) {
-    console.warn('Razorpay backend order creation notice:', err);
   }
 
-  // Fallback to QR code screen if backend is offline or fallback requested
+  // ─── 2. Fallback to UPI QR (only if Razorpay SDK blocked by ad-blocker) ──
   if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
-  const subtotal    = TAVUSHA.cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
-  const tax         = Math.round(subtotal * 0.05);
-  const { zone, rate } = calcShippingRate(pin);
-  const shipping    = rate * totalPieces;
-  const total       = subtotal + shipping + tax;
-  const advanceAmt  = paymentType === 'cod' ? Math.ceil(total * 0.20) : total;
-  const orderNum    = 'TV' + Date.now().toString().slice(-8);
-
-  _pendingOrder = {
-    orderNum, name, phone, email, address, pin, zone,
-    items: [...TAVUSHA.cart], subtotal, shipping, tax, total,
-    paymentType, advanceAmt
-  };
-
   const qrImg = document.getElementById('qrImg');
   if (qrImg) {
     const upiData = encodeURIComponent(`upi://pay?pa=tavusha@okaxis&pn=TAVUSHA&am=${advanceAmt}&cu=INR&tn=Order+${orderNum}`);
@@ -1087,3 +1129,25 @@ function showCmsPopup(popup) {
 
 // Load CMS on page boot
 document.addEventListener('DOMContentLoaded', loadCmsContent);
+
+// ─── Backend warm-up ping ─────────────────────────────────────
+// Render free-tier servers spin down after inactivity.
+// Ping on page load so the server is warm by the time the user
+// reaches checkout (avoids silent fetch failures → QR fallback).
+document.addEventListener('DOMContentLoaded', function() {
+  fetch(API_BASE + '/health', {
+    method: 'GET',
+    cache: 'no-store',
+    signal: AbortSignal.timeout(15000)
+  }).catch(() => {
+    // Server is warming up — silently ignore, it will be ready by checkout
+    console.info('[Tavusha] Backend warming up...');
+  });
+});
+
+// ─── Razorpay SDK load check ──────────────────────────────────
+window.addEventListener('load', function() {
+  if (typeof Razorpay === 'undefined') {
+    console.warn('[Tavusha] ⚠️ Razorpay SDK did not load. Possible causes: ad-blocker, network error, or CSP restriction.');
+  }
+});

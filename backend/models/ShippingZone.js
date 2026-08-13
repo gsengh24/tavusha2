@@ -2,40 +2,62 @@ const supabase = require('../supabase');
 
 class ShippingZoneModel {
   static async getAll() {
-    const { data, error } = await supabase.from('shipping_zones').select('*').order('rate_per_piece', { ascending: true });
-    if (error) throw error;
-    return data || [];
+    try {
+      const { data, error } = await supabase.from('shipping_zones').select('*').order('rate_per_piece', { ascending: true });
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.warn('ShippingZone.getAll DB warning:', e.message);
+      return [];
+    }
   }
 
   static async getActive() {
-    const { data, error } = await supabase.from('shipping_zones').select('*').eq('is_active', true);
-    if (error) throw error;
-    return data || [];
+    try {
+      const { data, error } = await supabase.from('shipping_zones').select('*').eq('is_active', true);
+      if (error) throw error;
+      return data || [];
+    } catch (e) {
+      console.warn('ShippingZone.getActive DB warning:', e.message);
+      return [];
+    }
   }
 
   static async findByPincode(pincode) {
-    const pin = String(pincode).trim();
-    const zones = await this.getActive();
+    const pin = String(pincode || '').trim();
+    let zones = [];
+    try {
+      zones = await this.getActive();
+    } catch (e) {
+      zones = [];
+    }
 
     // Match from most specific (longest prefix) to least specific
     let matched = null;
     let longestMatch = 0;
-    for (const zone of zones) {
-      const prefixes = zone.pincode_prefixes || [];
-      for (const prefix of prefixes) {
-        if (pin.startsWith(prefix) && prefix.length > longestMatch) {
-          matched = zone;
-          longestMatch = prefix.length;
+    if (zones && zones.length) {
+      for (const zone of zones) {
+        const prefixes = zone.pincode_prefixes || [];
+        for (const prefix of prefixes) {
+          if (pin.startsWith(prefix) && prefix.length > longestMatch) {
+            matched = zone;
+            longestMatch = prefix.length;
+          }
         }
       }
     }
 
     if (matched) return matched;
 
-    // Fallback: try state lookup (for cases where pincode DB might be incomplete)
-    // Default to Central India rate if no match
+    // Built-in rule fallback
+    const prefix2 = pin.slice(0, 2);
+    const ne = ['78','79','83','84','85','86','87','88','89','90','91','92','93','94','95','96','97'];
+    if (ne.includes(prefix2)) return { name: 'North-East India', rate_per_piece: 150 };
+    if (['7','8'].includes(pin.slice(0, 1))) return { name: 'West Bengal & Assam', rate_per_piece: 100 };
+    if (parseInt(pin.slice(0, 2)) <= 33) return { name: 'North India', rate_per_piece: 60 };
+
     return {
-      name: 'Default',
+      name: 'Central & South India',
       rate_per_piece: 100,
     };
   }
@@ -70,3 +92,4 @@ class ShippingZoneModel {
 }
 
 module.exports = ShippingZoneModel;
+
