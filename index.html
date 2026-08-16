@@ -874,12 +874,25 @@
 // Avoids blocking the page on Render.com cold starts
 (function() {
   const BACKEND = 'https://tavusha2-backend.onrender.com/api';
-  const CACHE_KEY = 'tv_storefront_cache';
+  const CACHE_KEY = 'tv_storefront_cache_v2'; // bumped to bust stale cache that had openWishlist override
   const CACHE_TTL = 5 * 60 * 1000;
+  // Remove old stale cache key if present
+  try { localStorage.removeItem('tv_storefront_cache'); } catch(e) {}
+  function runStorefrontCode(code) {
+    try {
+      new Function(code)();
+    } catch(e) {}
+    // Protect critical UI functions from being overridden by the storefront bundle
+    if (typeof openWishlist === 'function' && openWishlist.toString().indexOf('injectWishlistHTML') === -1) {
+      // Storefront code overrode openWishlist — restore from main.js version is deferred,
+      // so just delete the bad version; main.js will re-define it
+      delete window.openWishlist;
+    }
+  }
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
     if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.code) {
-      try { new Function(cached.code)(); } catch(e) {}
+      runStorefrontCode(cached.code);
     }
   } catch(e) {}
   const controller = new AbortController();
@@ -889,7 +902,7 @@
     .then(code => {
       try {
         localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), code }));
-        new Function(code)();
+        runStorefrontCode(code);
         if (typeof renderHeroProductRow === 'function') renderHeroProductRow();
       } catch(e) {}
     })

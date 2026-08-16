@@ -18,6 +18,8 @@ if (!Array.isArray(parsedCart)) parsedCart = [];
 let parsedWishlist = [];
 try { parsedWishlist = JSON.parse(localStorage.getItem('tavusha_wishlist')) || []; } catch(e) {}
 if (!Array.isArray(parsedWishlist)) parsedWishlist = [];
+// Normalize all wishlist IDs to strings to avoid strict-equality mismatches
+parsedWishlist = parsedWishlist.map(String);
 
 const TAVUSHA = {
   cart:     parsedCart,
@@ -668,10 +670,11 @@ function animateCartIcon() {
 
 // ─── WISHLIST ─────────────────────────────────────────────────
 function toggleWishlistCard(btn, id) {
-  const idx = TAVUSHA.wishlist.indexOf(id);
+  const sid = String(id); // normalize to string — avoids 1 !== '1' mismatch
+  const idx = TAVUSHA.wishlist.indexOf(sid);
   const svg = btn ? btn.querySelector('svg') : null;
   if (idx === -1) {
-    TAVUSHA.wishlist.push(id);
+    TAVUSHA.wishlist.push(sid);
     if (btn) btn.classList.add('active');
     if (svg) svg.setAttribute('fill', 'currentColor');
     showToast('Added to wishlist', 'success');
@@ -688,7 +691,7 @@ function toggleWishlistCard(btn, id) {
 function injectWishlistHTML() {
   if (document.getElementById('wishlistOverlay')) return;
   const overlay = document.createElement('div');
-  overlay.className = 'overlay';
+  overlay.className = 'cart-overlay'; // must match CSS: .cart-overlay.open
   overlay.id = 'wishlistOverlay';
   overlay.onclick = closeWishlist;
   
@@ -774,11 +777,11 @@ function renderWishlistItems() {
 
 function toggleWishlistQuickView() {
   if (!TAVUSHA.quickViewProduct) return;
-  const id  = TAVUSHA.quickViewProduct.id;
-  const idx = TAVUSHA.wishlist.indexOf(id);
+  const sid = String(TAVUSHA.quickViewProduct.id); // normalize to string
+  const idx = TAVUSHA.wishlist.indexOf(sid);
   const wishBtn = document.getElementById('quickViewWishBtn');
   if (idx === -1) {
-    TAVUSHA.wishlist.push(id);
+    TAVUSHA.wishlist.push(sid);
     if (wishBtn) wishBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg> Remove from Wishlist`;
     showToast('Added to wishlist', 'success');
   } else {
@@ -853,7 +856,7 @@ function showToast(message, type = 'info') {
 function initKeyboard() {
   document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
-      closeCart(); closeSearch();
+      closeCart(); closeSearch(); closeWishlist();
       document.getElementById('quickViewOverlay')?.classList.remove('open');
       document.getElementById('mobileMenu')?.classList.remove('open');
       document.body.style.overflow = '';

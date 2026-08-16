@@ -763,8 +763,9 @@ function pdpAddToCart(){
 
 function pdpToggleWishlist(){
   if(!pdpProduct)return;
-  const idx=TAVUSHA.wishlist.indexOf(pdpProduct.id);
-  if(idx===-1){TAVUSHA.wishlist.push(pdpProduct.id);showToast('Added to wishlist','success');}
+  const sid = String(pdpProduct.id); // normalize to string — consistent with main.js
+  const idx=TAVUSHA.wishlist.indexOf(sid);
+  if(idx===-1){TAVUSHA.wishlist.push(sid);showToast('Added to wishlist','success');}
   else{TAVUSHA.wishlist.splice(idx,1);showToast('Removed from wishlist','info');}
   localStorage.setItem('tavusha_wishlist',JSON.stringify(TAVUSHA.wishlist));
   updateWishlistUI(); updatePdpWishBtn();
@@ -773,7 +774,7 @@ function pdpToggleWishlist(){
 function updatePdpWishBtn(){
   const btn=document.getElementById('pdpWishBtn');
   if(!btn||!pdpProduct)return;
-  const w=TAVUSHA.wishlist.includes(pdpProduct.id);
+  const w=TAVUSHA.wishlist.includes(String(pdpProduct.id)); // string comparison
   btn.classList.toggle('active',w);
   btn.querySelector('svg').setAttribute('fill',w?'currentColor':'none');
 }
@@ -869,12 +870,20 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Load backend products in background (non-blocking)
-  const CACHE_KEY = 'tv_storefront_cache';
+  const CACHE_KEY = 'tv_storefront_cache_v2'; // bumped to bust stale cache
   const CACHE_TTL = 5 * 60 * 1000;
+  try { localStorage.removeItem('tv_storefront_cache'); } catch(e) {}
+  function runStorefrontCode(code) {
+    try { new Function(code)(); } catch(e) {}
+    // Guard: if storefront code overrode openWishlist with a stub, remove it so main.js version stays
+    if (typeof openWishlist === 'function' && openWishlist.toString().indexOf('injectWishlistHTML') === -1) {
+      delete window.openWishlist;
+    }
+  }
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
     if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.code) {
-      try { new Function(cached.code)(); } catch(e) {}
+      runStorefrontCode(cached.code);
     }
   } catch(e) {}
 
@@ -885,7 +894,7 @@ document.addEventListener('DOMContentLoaded', () => {
     .then(code => {
       try {
         localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), code }));
-        new Function(code)();
+        runStorefrontCode(code);
         // Re-render only if product wasn't already found in local data
       } catch(e) {}
     })
