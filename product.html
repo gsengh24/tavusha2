@@ -681,8 +681,6 @@ function updatePdpWishBtn(){
   btn.classList.toggle('active',w);
   btn.querySelector('svg').setAttribute('fill',w?'currentColor':'none');
 }
-  btn.querySelector('svg').setAttribute('fill',w?'currentColor':'none');
-}
 function renderRelated(p){
   const others=TAVUSHA_PRODUCTS.filter(x=>x.id!==p.id&&x.category.some(c=>p.category.includes(c)));
   const picks=others.length>=4?others.slice(0,4):TAVUSHA_PRODUCTS.filter(x=>x.id!==p.id).slice(0,4);
