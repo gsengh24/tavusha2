@@ -651,10 +651,33 @@ function selSize(s,el){
   el.classList.add('active');
 }
 
+// Inline stock helper — does NOT depend on main.js (which is deferred)
+// Uses pdpSelectedColorStock first (set by selColorVariant), then TAVUSHA_PRODUCTS
+function getLocalStock() {
+  // pdpSelectedColorStock is always set when a colour is selected — use it as primary source
+  if (typeof pdpSelectedColorStock !== 'undefined' && pdpSelectedColorStock > 0) {
+    return pdpSelectedColorStock;
+  }
+  // Fallback: read directly from pdpProduct
+  if (pdpProduct && pdpProduct.stock !== undefined) return Math.max(0, Number(pdpProduct.stock));
+  // Last resort: check localStorage admin overrides
+  try {
+    const stored = JSON.parse(localStorage.getItem('sp_demo_products') || '[]');
+    const pid = String(pdpProduct ? pdpProduct.id : '').replace(/\D/g, '');
+    const match = stored.find(p => String(p._id || p.id || '').replace(/\D/g, '') === pid);
+    if (match && match.stock !== undefined) return Math.max(0, Number(match.stock));
+  } catch(e) {}
+  return 99; // No data → uncapped
+}
+
 function changeQty(d){
-  const maxStock = (typeof getProductStock === 'function' && pdpProduct) ? getProductStock(pdpProduct.id) : 99;
-  pdpQtyVal=Math.min(maxStock, Math.max(1,pdpQtyVal+d));
-  document.getElementById('pdpQtyDisplay').textContent=pdpQtyVal;
+  // Use pdpSelectedColorStock as the authoritative cap (set by selColorVariant)
+  // Fall back to getLocalStock() only if color hasn't been selected yet
+  const maxStock = (typeof pdpSelectedColorStock !== 'undefined' && pdpSelectedColorStock > 0)
+    ? pdpSelectedColorStock
+    : getLocalStock();
+  pdpQtyVal = Math.min(maxStock, Math.max(1, pdpQtyVal + d));
+  document.getElementById('pdpQtyDisplay').textContent = pdpQtyVal;
   if (d > 0 && pdpQtyVal >= maxStock) {
     showToast(`Only ${maxStock} piece${maxStock !== 1 ? 's' : ''} available`, 'info');
   }
@@ -666,19 +689,37 @@ function pdpAddToCart(){
     return;
   }
   if(!pdpSelectedSize){showToast('Please select a size first','error');return;}
-  const maxStock = (typeof getProductStock === 'function' && pdpProduct) ? getProductStock(pdpProduct.id) : 99;
+  // Use pdpSelectedColorStock as the definitive stock cap — it's always up to date
+  const maxStock = (typeof pdpSelectedColorStock !== 'undefined' && pdpSelectedColorStock > 0)
+    ? pdpSelectedColorStock
+    : getLocalStock();
   const alreadyInCart = (TAVUSHA.cart.find(i => String(i.id) === String(pdpProduct.id) && i.size === pdpSelectedSize && (i.colour || '') === (pdpSelectedColorName || '')) || {qty: 0}).qty;
   const canAdd = Math.max(0, maxStock - alreadyInCart);
   if (canAdd <= 0) {
     showToast(`You already have the maximum available stock (${maxStock}) in your bag`, 'info');
     return;
   }
+  // Clamp qty to what's actually available
   const toAdd = Math.min(pdpQtyVal, canAdd);
   if (toAdd < pdpQtyVal) {
     showToast(`Only ${canAdd} more piece${canAdd !== 1 ? 's' : ''} can be added (${maxStock} in stock)`, 'info');
   }
-  for(let i=0;i<toAdd;i++) addToCart(pdpProduct, pdpSelectedSize, pdpSelectedColorName);
-  setTimeout(openCart,300);
+  // Reset qty display to 1 after adding
+  pdpQtyVal = 1;
+  document.getElementById('pdpQtyDisplay').textContent = pdpQtyVal;
+  for(let i=0;i<toAdd;i++) {
+    // Call addToCart if available (main.js loaded), otherwise push directly
+    if (typeof addToCart === 'function') {
+      addToCart(pdpProduct, pdpSelectedSize, pdpSelectedColorName);
+    } else {
+      const col = pdpSelectedColorName || '';
+      const existing = TAVUSHA.cart.find(x => String(x.id) === String(pdpProduct.id) && x.size === pdpSelectedSize && (x.colour || '') === col);
+      if (existing) { existing.qty = Math.min(existing.qty + 1, maxStock); }
+      else { TAVUSHA.cart.push({ id: pdpProduct.id, name: pdpProduct.name, price: pdpProduct.price, image: pdpProduct.image, brand: pdpProduct.brand || 'TAVUSHA', size: pdpSelectedSize, colour: col, qty: 1, stock: maxStock }); }
+      localStorage.setItem('tavusha_cart', JSON.stringify(TAVUSHA.cart));
+    }
+  }
+  setTimeout(openCart, 300);
 }
 
 function pdpToggleWishlist(){
