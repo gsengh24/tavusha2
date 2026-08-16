@@ -88,12 +88,19 @@ class CmsModel {
   }
 
   static async updateSection(key, fields) {
-    const update = { updated_at: new Date().toISOString() };
+    const update = {
+      key,
+      updated_at: new Date().toISOString()
+    };
     if (fields.visible !== undefined) update.visible = fields.visible;
     if (fields.sort_order !== undefined) update.sort_order = fields.sort_order;
     if (fields.config !== undefined) update.config = fields.config;
     if (fields.label !== undefined) update.label = fields.label;
-    const { data, error } = await supabase.from('cms_sections').update(update).eq('key', key).select().single();
+    const { data, error } = await supabase
+      .from('cms_sections')
+      .upsert(update, { onConflict: 'key' })
+      .select()
+      .single();
     if (error) throw error;
     return data;
   }

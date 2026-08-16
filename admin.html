@@ -446,11 +446,22 @@ async function handleMockApi(path, options = {}) {
     const key = path.split('/')[4];
     const secs = getLocal('sp_demo_sections', DEFAULT_MOCK_SECTIONS);
     const idx = secs.findIndex(s => s.key === key);
-    if (idx !== -1 && method === 'PUT') {
-      const body = options.body || {};
-      if (body.visible !== undefined) secs[idx].visible = body.visible;
-      if (body.config !== undefined) secs[idx].config = { ...secs[idx].config, ...body.config };
-      setLocal('sp_demo_sections', secs); return secs[idx];
+    if (method === 'PUT') {
+      let body = options.body || {};
+      if (typeof body === 'string') {
+        try { body = JSON.parse(body); } catch (e) {}
+      }
+      if (idx !== -1) {
+        if (body.visible !== undefined) secs[idx].visible = body.visible;
+        if (body.config !== undefined) secs[idx].config = { ...secs[idx].config, ...body.config };
+        setLocal('sp_demo_sections', secs);
+        return secs[idx];
+      } else {
+        const newSec = { key, visible: body.visible !== false, config: body.config || {} };
+        secs.push(newSec);
+        setLocal('sp_demo_sections', secs);
+        return newSec;
+      }
     }
   }
 
@@ -1367,8 +1378,14 @@ async function showAdminTab(tab) {
             <div class="poster-card">
               <div class="poster-card__title">1. Main Featured Poster</div>
               
-              <label class="sp-field-label">Background Image URL</label>
-              <input type="text" id="cp_main_image" class="sp-input" value="${esc(posterCfg.main_image || 'assets/images/party_wear.jpg')}"/>
+              <label class="sp-field-label">Background Image</label>
+              <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+                <img id="cp_main_image_preview" src="${esc(posterCfg.main_image || 'assets/images/party_wear.jpg')}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #ccc; flex-shrink:0;">
+                <div style="flex:1;">
+                  <input type="file" id="cp_main_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:4px;" onchange="if(this.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('cp_main_image_preview').src=e.target.result; }; r.readAsDataURL(this.files[0]); }"/>
+                  <input type="text" id="cp_main_image" class="sp-input" placeholder="Or paste image URL" value="${esc(posterCfg.main_image || 'assets/images/party_wear.jpg')}" oninput="document.getElementById('cp_main_image_preview').src=this.value"/>
+                </div>
+              </div>
               
               <label class="sp-field-label">Tag / Badge Text</label>
               <input type="text" id="cp_main_badge" class="sp-input" value="${esc(posterCfg.main_badge || 'Limited Run — 250 Pieces')}"/>
@@ -1390,8 +1407,14 @@ async function showAdminTab(tab) {
             <div class="poster-card">
               <div class="poster-card__title">2. Side Poster Card 1</div>
               
-              <label class="sp-field-label">Image URL</label>
-              <input type="text" id="cp_side1_image" class="sp-input" value="${esc(posterCfg.side1_image || 'assets/images/ethnic.jpg')}"/>
+              <label class="sp-field-label">Card Image</label>
+              <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+                <img id="cp_side1_image_preview" src="${esc(posterCfg.side1_image || 'assets/images/ethnic.jpg')}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #ccc; flex-shrink:0;">
+                <div style="flex:1;">
+                  <input type="file" id="cp_side1_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:4px;" onchange="if(this.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('cp_side1_image_preview').src=e.target.result; }; r.readAsDataURL(this.files[0]); }"/>
+                  <input type="text" id="cp_side1_image" class="sp-input" placeholder="Or paste image URL" value="${esc(posterCfg.side1_image || 'assets/images/ethnic.jpg')}" oninput="document.getElementById('cp_side1_image_preview').src=this.value"/>
+                </div>
+              </div>
               
               <label class="sp-field-label">Badge Text</label>
               <input type="text" id="cp_side1_badge" class="sp-input" value="${esc(posterCfg.side1_badge || 'Heritage Couture')}"/>
@@ -1413,8 +1436,14 @@ async function showAdminTab(tab) {
             <div class="poster-card">
               <div class="poster-card__title">3. Side Poster Card 2</div>
               
-              <label class="sp-field-label">Image URL</label>
-              <input type="text" id="cp_side2_image" class="sp-input" value="${esc(posterCfg.side2_image || 'assets/images/workwear.jpg')}"/>
+              <label class="sp-field-label">Card Image</label>
+              <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+                <img id="cp_side2_image_preview" src="${esc(posterCfg.side2_image || 'assets/images/workwear.jpg')}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #ccc; flex-shrink:0;">
+                <div style="flex:1;">
+                  <input type="file" id="cp_side2_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:4px;" onchange="if(this.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('cp_side2_image_preview').src=e.target.result; }; r.readAsDataURL(this.files[0]); }"/>
+                  <input type="text" id="cp_side2_image" class="sp-input" placeholder="Or paste image URL" value="${esc(posterCfg.side2_image || 'assets/images/workwear.jpg')}" oninput="document.getElementById('cp_side2_image_preview').src=this.value"/>
+                </div>
+              </div>
               
               <label class="sp-field-label">Badge Text</label>
               <input type="text" id="cp_side2_badge" class="sp-input" value="${esc(posterCfg.side2_badge || 'Power Tailoring')}"/>
@@ -1523,37 +1552,64 @@ async function showAdminTab(tab) {
         showAdminTab('cms');
       };
       document.getElementById('saveCmsPoster').onclick = async () => {
-        const visible = document.getElementById('cmsPosterVis').checked;
-        const config = {
-          eyebrow: document.getElementById('cp_eyebrow').value,
-          title: document.getElementById('cp_title').value,
-          
-          main_image: document.getElementById('cp_main_image').value,
-          main_badge: document.getElementById('cp_main_badge').value,
-          main_title: document.getElementById('cp_main_title').value,
-          main_desc: document.getElementById('cp_main_desc').value,
-          main_link: document.getElementById('cp_main_link').value,
-          
-          side1_image: document.getElementById('cp_side1_image').value,
-          side1_badge: document.getElementById('cp_side1_badge').value,
-          side1_title: document.getElementById('cp_side1_title').value,
-          side1_quote: document.getElementById('cp_side1_quote').value,
-          side1_link: document.getElementById('cp_side1_link').value,
-          
-          side2_image: document.getElementById('cp_side2_image').value,
-          side2_badge: document.getElementById('cp_side2_badge').value,
-          side2_title: document.getElementById('cp_side2_title').value,
-          side2_quote: document.getElementById('cp_side2_quote').value,
-          side2_link: document.getElementById('cp_side2_link').value,
-          
-          quote_text: document.getElementById('cp_quote_text').value,
-          quote_author: document.getElementById('cp_quote_author').value,
-        };
-        
-        await api('/cms/admin/sections/poster_spread', { method: 'PUT', body: { visible, config } });
-        await syncOfflineCmsData();
-        alert('Campaign Poster Spread configuration saved!');
-        showAdminTab('cms');
+        const btn = document.getElementById('saveCmsPoster');
+        btn.disabled = true;
+        btn.textContent = 'Saving Poster Configuration...';
+
+        try {
+          const visible = document.getElementById('cmsPosterVis').checked;
+          const config = {
+            eyebrow: document.getElementById('cp_eyebrow').value,
+            title: document.getElementById('cp_title').value,
+            
+            main_image: document.getElementById('cp_main_image').value,
+            main_badge: document.getElementById('cp_main_badge').value,
+            main_title: document.getElementById('cp_main_title').value,
+            main_desc: document.getElementById('cp_main_desc').value,
+            main_link: document.getElementById('cp_main_link').value,
+            
+            side1_image: document.getElementById('cp_side1_image').value,
+            side1_badge: document.getElementById('cp_side1_badge').value,
+            side1_title: document.getElementById('cp_side1_title').value,
+            side1_quote: document.getElementById('cp_side1_quote').value,
+            side1_link: document.getElementById('cp_side1_link').value,
+            
+            side2_image: document.getElementById('cp_side2_image').value,
+            side2_badge: document.getElementById('cp_side2_badge').value,
+            side2_title: document.getElementById('cp_side2_title').value,
+            side2_quote: document.getElementById('cp_side2_quote').value,
+            side2_link: document.getElementById('cp_side2_link').value,
+            
+            quote_text: document.getElementById('cp_quote_text').value,
+            quote_author: document.getElementById('cp_quote_author').value,
+          };
+
+          const mainFile = document.getElementById('cp_main_image_file')?.files?.[0];
+          const side1File = document.getElementById('cp_side1_image_file')?.files?.[0];
+          const side2File = document.getElementById('cp_side2_image_file')?.files?.[0];
+
+          if (mainFile || side1File || side2File) {
+            const formData = new FormData();
+            formData.append('visible', visible);
+            formData.append('config', JSON.stringify(config));
+            if (mainFile) formData.append('main_image', mainFile);
+            if (side1File) formData.append('side1_image', side1File);
+            if (side2File) formData.append('side2_image', side2File);
+
+            await api('/cms/admin/sections/poster_spread', { method: 'PUT', body: formData });
+          } else {
+            await api('/cms/admin/sections/poster_spread', { method: 'PUT', body: { visible, config } });
+          }
+
+          await syncOfflineCmsData();
+          alert('Campaign Poster Spread configuration saved!');
+          showAdminTab('cms');
+        } catch (err) {
+          alert('Error saving poster configuration: ' + (err.message || 'Server error'));
+        } finally {
+          btn.disabled = false;
+          btn.textContent = 'Save Campaign Poster Configuration';
+        }
       };
       content.querySelectorAll('.secToggle').forEach(cb => cb.onchange = async () => {
         await api('/cms/admin/sections/' + cb.dataset.key, { method: 'PUT', body: { visible: cb.checked } });

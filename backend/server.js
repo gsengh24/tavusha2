@@ -74,4 +74,17 @@ app.listen(PORT, async () => {
   console.log(`   ✓ Razorpay: ${process.env.RAZORPAY_KEY_ID ? 'Configured ✅' : 'Not configured ⚠️'}`);
   console.log(`   ✓ WhatsApp: ${process.env.WHATSAPP_TOKEN ? 'Configured ✅' : 'Not configured ⚠️'}`);
   await ensureAdminAccount();
+
+  // ─── Keep-Alive Ping (prevents Render free tier cold starts) ──────────────
+  const SELF_URL = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+  setInterval(async () => {
+    try {
+      const { default: fetch } = await import('node-fetch').catch(() => ({ default: null }));
+      if (fetch) {
+        await fetch(`${SELF_URL}/api/health`);
+        console.log('🏓 Keep-alive ping sent');
+      }
+    } catch (_) { /* silent — ping failure is non-critical */ }
+  }, 4 * 60 * 1000); // every 4 minutes
+  console.log(`   ✓ Keep-alive: pinging every 4 min to prevent cold starts`);
 });

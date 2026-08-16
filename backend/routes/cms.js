@@ -187,9 +187,34 @@ router.put('/admin/banners/reorder', protect, adminOnly, async (req, res) => {
 
 // ── Sections ──────────────────────────────────────────────────────────────────
 // PUT /api/cms/admin/sections/:key
-router.put('/admin/sections/:key', protect, adminOnly, async (req, res) => {
+router.put('/admin/sections/:key', protect, adminOnly, upload.fields([
+  { name: 'main_image', maxCount: 1 },
+  { name: 'side1_image', maxCount: 1 },
+  { name: 'side2_image', maxCount: 1 }
+]), async (req, res) => {
   try {
-    const section = await CmsContent.updateSection(req.params.key, req.body);
+    let fields = { ...req.body };
+    if (typeof fields.config === 'string') {
+      try { fields.config = JSON.parse(fields.config); } catch (e) {}
+    }
+    if (typeof fields.visible === 'string') {
+      fields.visible = fields.visible === 'true';
+    }
+
+    if (req.files) {
+      if (!fields.config) fields.config = {};
+      if (req.files.main_image?.[0]) {
+        fields.config.main_image = await uploadBannerImage(req.files.main_image[0].buffer, 'poster');
+      }
+      if (req.files.side1_image?.[0]) {
+        fields.config.side1_image = await uploadBannerImage(req.files.side1_image[0].buffer, 'poster');
+      }
+      if (req.files.side2_image?.[0]) {
+        fields.config.side2_image = await uploadBannerImage(req.files.side2_image[0].buffer, 'poster');
+      }
+    }
+
+    const section = await CmsContent.updateSection(req.params.key, fields);
     res.json(section);
   } catch (err) {
     res.status(500).json({ message: 'Failed to update section', error: err.message });
