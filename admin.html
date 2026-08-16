@@ -466,7 +466,6 @@ async function handleMockApi(path, options = {}) {
               if (newImgs.length) prods[idx].images = [...(prods[idx].images || []), ...newImgs];
             } catch(e) {}
           }
-        }
         } else if (options.body) {
           if (options.body.title) prods[idx].title = options.body.title;
           if (options.body.price) prods[idx].price = Number(options.body.price);
