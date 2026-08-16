@@ -875,10 +875,36 @@
 <div class="cursor__dot" id="cursorDot"></div>
 <div class="cursor__ring" id="cursorRing"></div>
 
-<script src="js/products.js" defer></script>
-<script src="https://tavusha2-backend.onrender.com/api/products/storefront.js" async onerror="console.log('Backend offline')"></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!-- products.js must NOT be deferred so TAVUSHA_PRODUCTS is available for inline scripts -->
+<script src="js/products.js"></script>
 <script src="js/main.js" defer></script>
 <script src="js/auth.js" defer></script>
+<script>
+// Load backend-approved products in background with cache + timeout
+// Avoids blocking the page on Render.com cold starts
+(function() {
+  const BACKEND = 'https://tavusha2-backend.onrender.com/api';
+  const CACHE_KEY = 'tv_storefront_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.code) {
+      try { new Function(cached.code)(); } catch(e) {}
+    }
+  } catch(e) {}
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 5000);
+  fetch(BACKEND + '/products/storefront.js', { signal: controller.signal })
+    .then(r => { clearTimeout(tid); return r.text(); })
+    .then(code => {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), code }));
+        new Function(code)();
+        if (typeof renderHeroProductRow === 'function') renderHeroProductRow();
+      } catch(e) {}
+    })
+    .catch(() => { clearTimeout(tid); });
+})();
+</script>
 </body>
 </html>

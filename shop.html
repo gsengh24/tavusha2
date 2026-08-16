@@ -235,27 +235,44 @@
 <div class="cursor__dot" id="cursorDot"></div>
 <div class="cursor__ring" id="cursorRing"></div>
 
-<script src="js/products.js" defer></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!-- products.js must NOT be deferred so TAVUSHA_PRODUCTS is available immediately -->
+<script src="js/products.js"></script>
 <script src="js/main.js" defer></script>
 <script src="js/auth.js" defer></script>
 <!-- Load admin-uploaded products from backend (adds to TAVUSHA_PRODUCTS) -->
 <script>
 (function() {
   const BACKEND = 'https://tavusha2-backend.onrender.com/api';
-  // Dynamically load backend-approved products and merge into TAVUSHA_PRODUCTS
-  fetch(BACKEND + '/products/storefront.js')
-    .then(r => r.text())
+  const CACHE_KEY = 'tv_storefront_cache';
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // Try to use cached storefront data first so page loads instantly
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.code) {
+      try { new Function(cached.code)(); } catch(e) {}
+    }
+  } catch(e) {}
+
+  // Fetch fresh data from backend with a 5-second timeout
+  // Render.com free tier has ~30s cold starts — we must not block UI
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  fetch(BACKEND + '/products/storefront.js', { signal: controller.signal })
+    .then(r => { clearTimeout(timeoutId); return r.text(); })
     .then(code => {
       try {
-        // Execute the returned JS (it pushes into TAVUSHA_PRODUCTS)
-        // eslint-disable-next-line no-new-func
+        // Cache for next visit
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), code }));
         new Function(code)();
-        // Re-render grid if already initialized
-        if (typeof renderShopGrid === 'function') renderShopGrid();
+        // Re-render only if grid is already shown (background refresh)
+        if (typeof renderShopGrid === 'function' && document.getElementById('shopGrid') && document.getElementById('shopGrid').children.length > 0) {
+          renderShopGrid();
+        }
       } catch(e) { console.warn('storefront.js exec error:', e); }
     })
-    .catch(() => {}); // Silently fail if backend offline
+    .catch(() => { clearTimeout(timeoutId); }); // Silently fail — local products still show
 })();
 </script>
 <script>

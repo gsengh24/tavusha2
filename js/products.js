@@ -1,4 +1,4 @@
-/* ============================================================
+﻿/* ============================================================
    TAVUSHA - Auto-generated Products Data from Excel
    ============================================================ */
 
@@ -61,7 +61,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1gepi1hzgkPuRj3PuUAvT00hcFqmlI7hZ&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1ElWTFia4Y6YIqUdqSP3tdk8Er5ns08QP&sz=w800",
-        "reviewCount":  43
+        "reviewCount":  43,
+        "stock":  10
     },
     {
         "badge":  null,
@@ -88,7 +89,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1u9ENkiNrmo24sRYrAn8es3zIlOE14kKd&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1u9ENkiNrmo24sRYrAn8es3zIlOE14kKd&sz=w800",
-        "reviewCount":  66
+        "reviewCount":  66,
+        "stock":  3
     },
     {
         "badge":  null,
@@ -115,7 +117,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=19SHfjMP9tvAQNhcTMceEjGnsm-poGOWC&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=19SHfjMP9tvAQNhcTMceEjGnsm-poGOWC&sz=w800",
-        "reviewCount":  89
+        "reviewCount":  89,
+        "stock":  6
     },
     {
         "badge":  null,
@@ -142,7 +145,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1izejEzfif0CC9IgLU4P3e6WvW9WyH-0R&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1izejEzfif0CC9IgLU4P3e6WvW9WyH-0R&sz=w800",
-        "reviewCount":  112
+        "reviewCount":  112,
+        "stock":  2
     },
     {
         "badge":  "sale",
@@ -169,7 +173,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  3090,
         "image":  "https://drive.google.com/thumbnail?id=1v1LVpyo0IAtcQH45xZAengxCabSCB0Sg&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1QydG-WdeNrgIiZP4YOGa02KXlb2a9YwN&sz=w800",
-        "reviewCount":  135
+        "reviewCount":  135,
+        "stock":  10
     },
     {
         "badge":  null,
@@ -196,7 +201,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1IyjzwaHlcK6nbocqmdXvGoFOfpfl4h7n&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1pVBq4tdTwiZjubmVFF8aTSmowsCNSkfu&sz=w800",
-        "reviewCount":  158
+        "reviewCount":  158,
+        "stock":  0
     },
     {
         "badge":  "new",
@@ -223,7 +229,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1iGktcbD4hbykG2CDcw0rxDBATSLgNGAg&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=153W1pJQ039ewz97blP2ReQlll1wxFPGd&sz=w800",
-        "reviewCount":  181
+        "reviewCount":  181,
+        "stock":  4
     },
     {
         "badge":  null,
@@ -250,7 +257,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1vIQjO9f8FKWFIxoxzDL2kQrhTv-Z4i2f&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1paOAMungZk4-47Z8jTfsg0ivZo_Ev_mP&sz=w800",
-        "reviewCount":  204
+        "reviewCount":  204,
+        "stock":  5
     },
     {
         "badge":  "bestseller",
@@ -277,7 +285,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1ODWKiEJ4hrii8-e102kr5JLuKqGgr-gN&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1BWMmEiiNB5UrN7JJg-29TfBbiEC1a3u0&sz=w800",
-        "reviewCount":  227
+        "reviewCount":  227,
+        "stock":  5
     },
     {
         "badge":  "sale",
@@ -304,7 +313,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  1690,
         "image":  "https://drive.google.com/thumbnail?id=13oxIIGy12mJ95fvGpJTDOeIGdaze-Vsr&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1Rb-E237-vEFbbEd7x0t-8I20azABxoec&sz=w800",
-        "reviewCount":  250
+        "reviewCount":  250,
+        "stock":  6
     },
     {
         "badge":  null,
@@ -331,7 +341,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1TOMt-IagKnECsPD2JMHQhNs3g1fdStuw&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1dLbi35q7GYsFnq5ow-n3h1hRKYZnXSXC&sz=w800",
-        "reviewCount":  273
+        "reviewCount":  273,
+        "stock":  7
     },
     {
         "badge":  null,
@@ -358,7 +369,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1X-S_kl0G277wQOPSIMgqcB0bpaHWqaxD&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1-loB03VGeyrr7SSk_RpgoGsBMdo5jHnc&sz=w800",
-        "reviewCount":  296
+        "reviewCount":  296,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -385,7 +397,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1eCkeu4Ou6mQb9puOXuQDQWwcewKkCr7k&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1GArof3STiOegOvPFarv8pBKYa4do6rp7&sz=w800",
-        "reviewCount":  20
+        "reviewCount":  20,
+        "stock":  4
     },
     {
         "badge":  "new",
@@ -412,7 +425,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1GJlyE-j3QyQw6jrJvulYv6VGOQudyWoz&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1uRxZuhlBHONfzZqIZp231loQBSqMU_JR&sz=w800",
-        "reviewCount":  43
+        "reviewCount":  43,
+        "stock":  3
     },
     {
         "badge":  "sale",
@@ -439,7 +453,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  2890,
         "image":  "https://drive.google.com/thumbnail?id=1ScXSfdELAEiAktV2CxNTRHoSko7ZPs91&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1HTgAFAQ6KQc1eTxogGaoU3xc665Gg_6Q&sz=w800",
-        "reviewCount":  66
+        "reviewCount":  66,
+        "stock":  4
     },
     {
         "badge":  null,
@@ -466,7 +481,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1d6CfTj39uK4GU5SxnWfj3PWyt1T1xb3Z&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1ezh8CdAhzVQgkojQupsZj9VBvE2kvsep&sz=w800",
-        "reviewCount":  89
+        "reviewCount":  89,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -493,7 +509,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1Blq74zTAlp53PNgR3vWu_vLZcKmmTrMp&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1we9ERJF7CwIinVMV1CtMs_Iw-87Es9p1&sz=w800",
-        "reviewCount":  112
+        "reviewCount":  112,
+        "stock":  10
     },
     {
         "badge":  "bestseller",
@@ -520,7 +537,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1uEGw0E1O8AxpQY3-fRbNmAjm6ivtRQ8v&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1_wZHuy-trdFFvrMrqY89QwUZvq1XKNOF&sz=w800",
-        "reviewCount":  135
+        "reviewCount":  135,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -547,7 +565,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1T7y2CwpIWnqGyAm6mm7oAKMxOee5BOL5&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1j2ZF66grxw6eOziXjglPW4kLYSvynJDv&sz=w800",
-        "reviewCount":  158
+        "reviewCount":  158,
+        "stock":  3
     },
     {
         "badge":  "sale",
@@ -574,7 +593,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  1890,
         "image":  "https://drive.google.com/thumbnail?id=1axV_LYcWDDZ3CgiV68HHtJoS4-LO4Cmi&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1yqnuTLGP8E6J8xB1yEl4gI_tBW6lVz6S&sz=w800",
-        "reviewCount":  181
+        "reviewCount":  181,
+        "stock":  5
     },
     {
         "badge":  "new",
@@ -601,7 +621,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1q0xUyivnpJ9JhE1h-m_uUbAguGljNjrE&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1VEogoNJnUIFPlGNAouq4GtxJOl_zr20d&sz=w800",
-        "reviewCount":  204
+        "reviewCount":  204,
+        "stock":  2
     },
     {
         "badge":  null,
@@ -628,7 +649,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1SZBKUJY57xaVX4A52xVHlLdDv_njlHZS&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1DNBgN7PDO0FG7YGgrzZcBThdDzIQN7Fk&sz=w800",
-        "reviewCount":  227
+        "reviewCount":  227,
+        "stock":  3
     },
     {
         "badge":  null,
@@ -655,7 +677,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1xW1Pg9hawQeIEizM-G28uTLBw3e1iIaM&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1OYlay-RqLz4t0arOEJWiWhmgW-q00nzC&sz=w800",
-        "reviewCount":  250
+        "reviewCount":  250,
+        "stock":  25
     },
     {
         "badge":  null,
@@ -682,7 +705,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1rK9xgVZCwYetjqPdjVAc8edNWDYlkDbL&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1jO-fJnqc0KjYy8_0R36Uo2ihjggh83lr&sz=w800",
-        "reviewCount":  273
+        "reviewCount":  273,
+        "stock":  0
     },
     {
         "badge":  "sale",
@@ -709,7 +733,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  2050,
         "image":  "https://drive.google.com/thumbnail?id=16bopiqiFyljZ4WaGhS4ADFqY7ems51XL&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1o-0S9ywswV5qbDxD3jt33bSkxCg1G1iL&sz=w800",
-        "reviewCount":  296
+        "reviewCount":  296,
+        "stock":  5
     },
     {
         "badge":  null,
@@ -736,7 +761,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1mbscwdbYWfbPEHtCxQuU6HX1-MMaroPC&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1Wr6utFhWXOiitIOyf0QuvXF8HxJY-3qz&sz=w800",
-        "reviewCount":  20
+        "reviewCount":  20,
+        "stock":  6
     },
     {
         "badge":  "bestseller",
@@ -763,7 +789,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1kGrx9ZspDoL8-G7UJvESmP2N9aLEuoWM&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1OSe3aaC-Zqday-Nnd1NkZEyhunX-L1nA&sz=w800",
-        "reviewCount":  43
+        "reviewCount":  43,
+        "stock":  2
     },
     {
         "badge":  "new",
@@ -790,7 +817,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1autgojK8rVuVaV1urL5f0GdKQBTLO9AO&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1oTAZEUh9fHBLEy8_3yJsEjUK9vESG0CQ&sz=w800",
-        "reviewCount":  66
+        "reviewCount":  66,
+        "stock":  15
     },
     {
         "badge":  null,
@@ -817,7 +845,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1MxzOg20SGcXGTWGpU2CDNDqZQpy3bYXu&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1SDfwm_wAzZO6F9Q1eZgOG5Y9g7lHzLhN&sz=w800",
-        "reviewCount":  89
+        "reviewCount":  89,
+        "stock":  3
     },
     {
         "badge":  "sale",
@@ -844,7 +873,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  4290,
         "image":  "https://drive.google.com/thumbnail?id=1tlwdpfq5s74ALxmZN7qOXxtX2Mh-WKET&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1WXnDROzHd-k0i5iEyTJMqxkPSCdPZRPZ&sz=w800",
-        "reviewCount":  112
+        "reviewCount":  112,
+        "stock":  4
     },
     {
         "badge":  null,
@@ -871,7 +901,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1uzsxoIRAmjeKG-eWSkhuklU5BSwoPm9W&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1ZN-HQ3J2Lx2sriarZpSdvxEanDWth7yO&sz=w800",
-        "reviewCount":  135
+        "reviewCount":  135,
+        "stock":  4
     },
     {
         "badge":  null,
@@ -898,7 +929,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=17HZU206uxSJk-h_sMQWSXM10IesCAoPU&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1ZvlGtCRdyEoFXrnXgMXZEbJsxuGuqevp&sz=w800",
-        "reviewCount":  158
+        "reviewCount":  158,
+        "stock":  13
     },
     {
         "badge":  null,
@@ -925,7 +957,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1mzmZEGmQD5P2b45NblsTZeC9qEeNc9pL&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=12EBXGHpLqYkLUjFciN6dIFiotfAKofW8&sz=w800",
-        "reviewCount":  181
+        "reviewCount":  181,
+        "stock":  3
     },
     {
         "badge":  null,
@@ -952,7 +985,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1tL3ted0y_GZCavOgj7jRDfjXRxdli2Yh&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1BPIvrSVbntBJ7loHWoKHyTvq3Dpq9Adh&sz=w800",
-        "reviewCount":  204
+        "reviewCount":  204,
+        "stock":  20
     },
     {
         "badge":  "sale",
@@ -979,7 +1013,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  4690,
         "image":  "https://drive.google.com/thumbnail?id=18rTHUg8RVG6GQ_wyNyhSvCfyzbAL0u-2&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=11HAqtuolarz2WPuLUjT11tHaxkQLQV-_&sz=w800",
-        "reviewCount":  227
+        "reviewCount":  227,
+        "stock":  5
     },
     {
         "badge":  "bestseller",
@@ -1006,7 +1041,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1k8md-xWVsyvS_11DwgPfO40iNLVrUwXw&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1xeI9eMRR79U8qHNEEmWyQgzGh0B97jFQ&sz=w800",
-        "reviewCount":  250
+        "reviewCount":  250,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1033,7 +1069,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=19cx_NNyYOdlNqCljsrTnxvRUI5dMAZFz&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1uiH_Uk0ep0nc8tKkUttY2V-6-BUDX2nU&sz=w800",
-        "reviewCount":  273
+        "reviewCount":  273,
+        "stock":  4
     },
     {
         "badge":  null,
@@ -1060,7 +1097,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1X7m_Fw7C7UaIFV5V6jK9L4TAQGAjY5tb&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1s0iDfkN-k0P_4RS4ZauCVHQ2NeZ9P_x3&sz=w800",
-        "reviewCount":  296
+        "reviewCount":  296,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1087,7 +1125,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1y5cGgt8D4CiezqKA0nbNF7undERI8I2j&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1BIakPIxoVPMfFkkcpREj7l_MFiKvUva8&sz=w800",
-        "reviewCount":  20
+        "reviewCount":  20,
+        "stock":  1
     },
     {
         "badge":  "sale",
@@ -1114,7 +1153,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  4890,
         "image":  "https://drive.google.com/thumbnail?id=106tYo-8DvmhcVLXlbzLUxIM6NbJ4aJQZ&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1HyVvnybhxyO8slM9VB06eAw476pOzcvj&sz=w800",
-        "reviewCount":  43
+        "reviewCount":  43,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1141,7 +1181,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1h17U3cO91zudUnhhmDVo9ZR_cAufO3NP&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=18gbWxSgo-7r-Rfigfux0ayKEz2sC88Vt&sz=w800",
-        "reviewCount":  66
+        "reviewCount":  66,
+        "stock":  0
     },
     {
         "badge":  "new",
@@ -1168,7 +1209,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1xiaZAsoA7IA-VbFQAoKUL4hIj7y1GBu1&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1_Xsp-NtdA3Zuby98xLVpJ6Nf52U2FU5M&sz=w800",
-        "reviewCount":  89
+        "reviewCount":  89,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1195,7 +1237,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1izncoFoelgGQhk1QB3BUAjXB-mUfkZSO&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1kojAwtaLWrp_kf4q1gzEn9viXr93j76g&sz=w800",
-        "reviewCount":  112
+        "reviewCount":  112,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1222,7 +1265,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1g-mN6svUM-sRk8yg1FphJPmXC6iv6p9z&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1QC8h1-AG3oTTWZOyIf6KBEB8rHPT578a&sz=w800",
-        "reviewCount":  135
+        "reviewCount":  135,
+        "stock":  3
     },
     {
         "badge":  "sale",
@@ -1249,7 +1293,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  4890,
         "image":  "https://drive.google.com/thumbnail?id=1aNvS4q3gh6HEEyhpSZ1CCRNdPtWxuWnD&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=12AhFTiqrcdI6DHJo7Nd2HVAKQAeT74wH&sz=w800",
-        "reviewCount":  158
+        "reviewCount":  158,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1276,7 +1321,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=18Xhvl09ULj9_SjMf_PrfkG0dXW6sJiam&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1WfgtwRFXCnytLY-k30aObjYBaphUwH9i&sz=w800",
-        "reviewCount":  181
+        "reviewCount":  181,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1303,7 +1349,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1LHf0pCDjcucP27gWzV6fg7QZMqkOyQ0X&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1tjLgvy-5uc2Sm6o8ywwtut9TZx4nwKc9&sz=w800",
-        "reviewCount":  204
+        "reviewCount":  204,
+        "stock":  3
     },
     {
         "badge":  null,
@@ -1330,7 +1377,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1uTu4tH2m4Xd2VHuhe0YGg663hEixNy_8&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1WPeHoxbJr4-KDczNAOocR2V3B6DKfYmX&sz=w800",
-        "reviewCount":  227
+        "reviewCount":  227,
+        "stock":  0
     },
     {
         "badge":  "new",
@@ -1357,7 +1405,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1T8j4D1lBYlNSTXzlOuAP3-qy4w9zsHop&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1joRScmVY1GNorcRTKpMe-1u0ZX2Duafw&sz=w800",
-        "reviewCount":  250
+        "reviewCount":  250,
+        "stock":  0
     },
     {
         "badge":  "sale",
@@ -1384,7 +1433,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  7490,
         "image":  "https://drive.google.com/thumbnail?id=1k_ue4XADEENjWfxg6pMmTa6bp1rPRXlN&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1-jaI8TYU3DtXKLGNDfCb4UtZY3DNiZdQ&sz=w800",
-        "reviewCount":  273
+        "reviewCount":  273,
+        "stock":  3
     },
     {
         "badge":  null,
@@ -1411,7 +1461,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1XQr1yg07u3yignOqDi8tQo41yGZfcyLS&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1fF70fDSYAqRE4tP5E-dih2Gv6v4fdefL&sz=w800",
-        "reviewCount":  296
+        "reviewCount":  296,
+        "stock":  3
     },
     {
         "badge":  null,
@@ -1438,7 +1489,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1Unh1_Gdu9pgUk-hplaFmzrPe5oJ1gATg&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1QW4ybtSL3xLg4nThDGkENecw64bG1ajM&sz=w800",
-        "reviewCount":  20
+        "reviewCount":  20,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1465,7 +1517,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1O7UNzlRi8WU_-BDTq0Y_jkVEs1WiLePl&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1zDob-yYZcvg8Gy0PnwIkekqBYuY3xtnY&sz=w800",
-        "reviewCount":  43
+        "reviewCount":  43,
+        "stock":  0
     },
     {
         "badge":  "bestseller",
@@ -1492,7 +1545,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1mhC3Ofe4BuPpGM4Eq89hRintzAWYBbHI&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=17RLStOrOD8FPE1mZpdGtydI_jx9HgsgE&sz=w800",
-        "reviewCount":  66
+        "reviewCount":  66,
+        "stock":  0
     },
     {
         "badge":  "sale",
@@ -1519,7 +1573,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  2895,
         "image":  "https://drive.google.com/thumbnail?id=1BVISGELaNKOLA4kdrKfDQqKUvJDKNEDZ&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=16BEkWG_14NuM413ir76aOBE7RbvM73EZ&sz=w800",
-        "reviewCount":  89
+        "reviewCount":  89,
+        "stock":  0
     },
     {
         "badge":  "new",
@@ -1546,7 +1601,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=16pVH3gtAjHIrCwM2wjJVYnfLNYzChjg-&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1eEG_X6mXPZ8DNkbHBoFul6WPbqBCAXLJ&sz=w800",
-        "reviewCount":  112
+        "reviewCount":  112,
+        "stock":  1
     },
     {
         "badge":  null,
@@ -1573,7 +1629,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1cqaBtJkNscrbXDRjluoJ3TFm_vYqEmbg&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1xt-NR1pVXkH3qxl6qFGZgwPftHto1EdC&sz=w800",
-        "reviewCount":  135
+        "reviewCount":  135,
+        "stock":  3
     },
     {
         "badge":  null,
@@ -1600,7 +1657,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1YTRiRaCJl7CqU98cr7Galk8IL57V9xBY&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1MabHz-1wa6wdKAaZs3pN0dNw8-3-56Y7&sz=w800",
-        "reviewCount":  158
+        "reviewCount":  158,
+        "stock":  5
     },
     {
         "badge":  null,
@@ -1627,7 +1685,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=12Roqci4Kqb6DLXfuQffchi2PmDQNd2V3&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1QgGAvtRR5F3WnihNP6Iqr5tHTuWQP7XK&sz=w800",
-        "reviewCount":  181
+        "reviewCount":  181,
+        "stock":  10
     },
     {
         "badge":  "sale",
@@ -1654,7 +1713,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  2690,
         "image":  "https://drive.google.com/thumbnail?id=18Q5yjETL-udS0ZhSvuYrJyrGw5SHBO1T&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1gH7dzj1UVkEvTtvdO532jMudqoFWLTzz&sz=w800",
-        "reviewCount":  204
+        "reviewCount":  204,
+        "stock":  10
     },
     {
         "badge":  null,
@@ -1681,7 +1741,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1qb3PmjjVw5vcx-7z1QOjDwcMRYDRpuZf&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1oo9aecm5eYgLV73nm9O3VB7vYhlSnCx6&sz=w800",
-        "reviewCount":  227
+        "reviewCount":  227,
+        "stock":  50
     },
     {
         "badge":  null,
@@ -1708,7 +1769,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1UH2h_YQXBdu6EQAJp21wkZ7Qi7yMD04B&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1z1ZTpoKzAUPYVfoC1edqnb9y4T0B-RgD&sz=w800",
-        "reviewCount":  250
+        "reviewCount":  250,
+        "stock":  0
     },
     {
         "badge":  "new",
@@ -1735,7 +1797,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1gvwrgfrFU4O8LFQjRMuAIfKihG8l8Flh&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1J-sFDRBnZxmzM4Lpa4aOYYKlWkaQ8HJD&sz=w800",
-        "reviewCount":  273
+        "reviewCount":  273,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1762,7 +1825,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1tVtuab5pEdd6a1bje8jyV8dMzcmE-DpE&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1EbdZ2_rPx52u4qhz43KCNl8EpwNqsiZp&sz=w800",
-        "reviewCount":  296
+        "reviewCount":  296,
+        "stock":  0
     },
     {
         "badge":  "sale",
@@ -1789,7 +1853,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  2090,
         "image":  "https://drive.google.com/thumbnail?id=1vREEtJjMpWLr7go71AuH2o7U6LlsEREz&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1saBAvrRkNXZJz6BsElUVlfmVwiS_NAwB&sz=w800",
-        "reviewCount":  20
+        "reviewCount":  20,
+        "stock":  8
     },
     {
         "badge":  null,
@@ -1816,7 +1881,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1chG8fNdCNaswSolWInRuVD03ZV9vmgeO&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1LPx4QjGJryKEmYuepUW6cVK7JFJ-jCkx&sz=w800",
-        "reviewCount":  43
+        "reviewCount":  43,
+        "stock":  6
     },
     {
         "badge":  null,
@@ -1843,7 +1909,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1YFoz00VilQ_goqIvhu54SBJrUUwYVb-g&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1uxcSJAQJ6ycSaA77nF0CgItW2Jlh_Wos&sz=w800",
-        "reviewCount":  66
+        "reviewCount":  66,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1870,7 +1937,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://drive.google.com/thumbnail?id=1cASJoGQljt3B5qOawjfB5dD0TOMGULsp&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1JZ4iYS0-9H1DjtsB6ONSwRG-FbSSWBEJ&sz=w800",
-        "reviewCount":  89
+        "reviewCount":  89,
+        "stock":  7
     },
     {
         "badge":  null,
@@ -1898,6 +1966,7 @@ var TAVUSHA_PRODUCTS = [
         "image":  "https://drive.google.com/thumbnail?id=138AfY9WxqR4TYulHCOY8hYB5ahUT5WnD&sz=w800",
         "imageAlt":  "https://drive.google.com/thumbnail?id=1494orf0RXivm5Miwua3dQTgjT6NCygyr&sz=w800",
         "reviewCount":  112,
+        "stock":  0
         "isNew":  false,
         "sizes":  [
                       "Free Size"
@@ -1913,7 +1982,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  2490,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  135
+        "reviewCount":  135,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1938,7 +2008,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  158
+        "reviewCount":  158,
+        "stock":  0
     },
     {
         "badge":  "bestseller",
@@ -1963,7 +2034,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  181
+        "reviewCount":  181,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -1988,7 +2060,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  204
+        "reviewCount":  204,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -2013,7 +2086,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  227
+        "reviewCount":  227,
+        "stock":  0
     },
     {
         "badge":  "sale",
@@ -2038,7 +2112,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  2490,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  250
+        "reviewCount":  250,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -2063,7 +2138,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  273
+        "reviewCount":  273,
+        "stock":  0
     },
     {
         "badge":  "new",
@@ -2088,7 +2164,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  296
+        "reviewCount":  296,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -2113,7 +2190,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  20
+        "reviewCount":  20,
+        "stock":  0
     },
     {
         "badge":  null,
@@ -2138,7 +2216,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  null,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  43
+        "reviewCount":  43,
+        "stock":  0
     },
     {
         "badge":  "sale",
@@ -2163,7 +2242,8 @@ var TAVUSHA_PRODUCTS = [
         "originalPrice":  2490,
         "image":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
         "imageAlt":  "https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600&q=85",
-        "reviewCount":  66
+        "reviewCount":  66,
+        "stock":  0
     }
 ];
 

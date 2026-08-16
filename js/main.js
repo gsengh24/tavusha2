@@ -405,6 +405,65 @@ function updateStyleQuiz(mode, btn) {
   if (descEl)  descEl.textContent  = item.desc;
 }
 
+// ─── STOCK HELPER ────────────────────────────────────────────
+// Returns available stock for a given product id and optional colour.
+// Priority: admin sp_demo_products override → TAVUSHA_PRODUCTS → EXCEL_PRODUCTS → fallback 99
+function getProductStock(productId, colorName) {
+  const pIdStr = String(productId || '').toLowerCase().trim();
+  const pIdDigits = pIdStr.replace(/\D/g, '');
+
+  // 1. Check admin demo overrides first (set via admin portal in localStorage)
+  try {
+    const demoProd = JSON.parse(localStorage.getItem('sp_demo_products') || '[]');
+    const match = demoProd.find(p => {
+      const p_id = String(p._id || '').toLowerCase().trim();
+      const p_sku = String(p.sku || '').toLowerCase().trim();
+      const p_id_direct = String(p.id || '').toLowerCase().trim();
+      const p_id_digits = p_id.replace(/\D/g, '');
+      return (
+        p_id === pIdStr ||
+        p_id === 'itm' + pIdStr ||
+        p_id === 'p_' + pIdStr ||
+        p_id_direct === pIdStr ||
+        p_sku === pIdStr ||
+        p_sku === 'itm' + pIdStr ||
+        (pIdDigits && p_id_digits && pIdDigits === p_id_digits)
+      );
+    });
+
+    if (match) {
+      if (colorName && Array.isArray(match.colorVariants) && match.colorVariants.length > 0) {
+        const cMatch = match.colorVariants.find(v => (v.color || '').toLowerCase().trim() === colorName.toLowerCase().trim());
+        if (cMatch && cMatch.stock !== undefined) return Math.max(0, Number(cMatch.stock));
+      }
+      if (match.stock !== undefined) return Math.max(0, Number(match.stock));
+    }
+  } catch(e) {}
+
+  // 2. Fall back to compiled TAVUSHA_PRODUCTS
+  if (typeof TAVUSHA_PRODUCTS !== 'undefined' && Array.isArray(TAVUSHA_PRODUCTS)) {
+    const prod = TAVUSHA_PRODUCTS.find(p => {
+      const tIdStr = String(p.id || '').toLowerCase().trim();
+      const tIdDigits = tIdStr.replace(/\D/g, '');
+      return tIdStr === pIdStr || (pIdDigits && tIdDigits && pIdDigits === tIdDigits);
+    });
+    if (prod && prod.stock !== undefined) return Math.max(0, Number(prod.stock));
+  }
+
+  // 3. Check EXCEL_PRODUCTS
+  if (typeof EXCEL_PRODUCTS !== 'undefined' && Array.isArray(EXCEL_PRODUCTS)) {
+    const exMatch = EXCEL_PRODUCTS.find(p => {
+      const e_id = String(p._id || '').toLowerCase().trim();
+      const e_sku = String(p.sku || '').toLowerCase().trim();
+      const e_digits = e_id.replace(/\D/g, '');
+      return e_id === pIdStr || e_sku === pIdStr || (pIdDigits && e_digits && pIdDigits === e_digits);
+    });
+    if (exMatch && exMatch.stock !== undefined) return Math.max(0, Number(exMatch.stock));
+  }
+
+  return 99; // No stock data → uncapped
+}
+
 // ─── CART ─────────────────────────────────────────────────────
 function addToCartFromQuickView() {
   if (!TAVUSHA.quickViewProduct) return;
@@ -427,10 +486,23 @@ function addToCartFromQuickView() {
 
 function addToCart(product, size, colour) {
   const col = colour || (product.colour ? product.colour.split(',')[0].trim() : '');
+  const stock = getProductStock(product.id);
+
+  // Block add entirely if out of stock
+  if (stock === 0) {
+    showToast(`${product.name} is out of stock`, 'error');
+    return;
+  }
+
   const existing = TAVUSHA.cart.find(i => String(i.id) === String(product.id) && i.size === size && (i.colour || '') === col);
-  if (existing) { existing.qty += 1; }
-  else {
-    TAVUSHA.cart.push({ id: product.id, name: product.name, price: product.price, image: product.image, brand: product.brand || 'TAVUSHA', size, colour: col, qty: 1 });
+  if (existing) {
+    if (existing.qty >= stock) {
+      showToast(`Only ${stock} piece${stock !== 1 ? 's' : ''} available for ${product.name}`, 'info');
+      return;
+    }
+    existing.qty += 1;
+  } else {
+    TAVUSHA.cart.push({ id: product.id, name: product.name, price: product.price, image: product.image, brand: product.brand || 'TAVUSHA', size, colour: col, qty: 1, stock });
   }
   saveCart();
   updateCartUI();
@@ -446,6 +518,14 @@ function removeFromCart(id, size, colour) {
 function updateCartQty(id, size, delta, colour) {
   const item = TAVUSHA.cart.find(i => String(i.id) === String(id) && i.size === size && (colour === undefined || (i.colour || '') === (colour || '')));
   if (!item) return;
+  if (delta > 0) {
+    // Refresh stock in case admin has updated it
+    const stock = getProductStock(id);
+    if (item.qty >= stock) {
+      showToast(`Only ${stock} piece${stock !== 1 ? 's' : ''} available for this item`, 'info');
+      return;
+    }
+  }
   item.qty += delta;
   if (item.qty <= 0) { removeFromCart(id, size, colour); return; }
   saveCart(); updateCartUI(); renderCartItems();
@@ -497,6 +577,10 @@ function renderCartItems() {
   if (footer) footer.style.display = 'block';
   c.innerHTML = TAVUSHA.cart.map(item => {
     const escapedCol = (item.colour || '').replace(/'/g, "\\'");
+    const itemStock = getProductStock(item.id);
+    const atMax = item.qty >= itemStock;
+    const plusDisabled = atMax ? 'disabled style="opacity:0.35;cursor:not-allowed"' : '';
+    const stockNote = atMax ? `<div style="font-size:0.68rem;color:#a07840;margin-top:2px">Max qty reached (${itemStock} in stock)</div>` : '';
     return `
     <div class="cart-item">
       <div class="cart-item__img"><img src="${item.image}" alt="${item.name}" loading="lazy"></div>
@@ -504,12 +588,13 @@ function renderCartItems() {
         <div>
           <div class="cart-item__name">${item.name}</div>
           <div class="cart-item__meta">Size: ${item.size}${item.colour ? ` · Colour: ${item.colour}` : ''} · ${item.brand || 'TAVUSHA'}</div>
+          ${stockNote}
         </div>
         <div class="cart-item__controls">
           <div class="cart-item__qty">
             <button class="cart-item__qty-btn" onclick="updateCartQty('${item.id}','${item.size}',-1,'${escapedCol}')">−</button>
             <span class="cart-item__qty-num">${item.qty}</span>
-            <button class="cart-item__qty-btn" onclick="updateCartQty('${item.id}','${item.size}',1,'${escapedCol}')">+</button>
+            <button class="cart-item__qty-btn" onclick="updateCartQty('${item.id}','${item.size}',1,'${escapedCol}')" ${plusDisabled}>+</button>
           </div>
           <span class="cart-item__price">₹${(item.price * item.qty).toLocaleString('en-IN')}</span>
         </div>
@@ -825,8 +910,28 @@ async function placeOrder() {
     console.warn('Backend order call notice (falling back to direct Razorpay):', err.message);
   }
 
+  // ─── Lazy-load Razorpay SDK on demand ────────────────────────
+  const launchPayment = async (rzpOptions) => {
+    if (typeof Razorpay === 'undefined') {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://checkout.razorpay.com/v1/checkout.js';
+        s.onload = resolve;
+        s.onerror = reject;
+        document.head.appendChild(s);
+      });
+    }
+    const rzp = new Razorpay(rzpOptions);
+    rzp.on('payment.failed', function (response) {
+      showToast(`Payment failed: ${response.error.description || 'Transaction declined'}`, 'error');
+      if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
+    });
+    rzp.open();
+    if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
+  };
+
   // ─── 1. Launch Razorpay Checkout ─────────────────────────────
-  if (typeof Razorpay !== 'undefined') {
+  try {
     const rzpOptions = backendRazorpayOptions ? {
       ...backendRazorpayOptions,
       handler: async function (response) {
@@ -859,11 +964,7 @@ async function placeOrder() {
       currency: 'INR',
       name: 'TAVUSHA',
       description: `Order ${orderNum} — ${paymentType === 'cod' ? '20% Advance' : 'Full Payment'}`,
-      prefill: {
-        name: name,
-        contact: phone,
-        email: email || ''
-      },
+      prefill: { name, contact: phone, email: email || '' },
       theme: { color: '#1a1a1a' },
       handler: function (response) {
         showToast('Payment received! Finalizing order...', 'info');
@@ -877,18 +978,10 @@ async function placeOrder() {
       }
     };
 
-    try {
-      const rzp = new Razorpay(rzpOptions);
-      rzp.on('payment.failed', function (response) {
-        showToast(`Payment failed: ${response.error.description || 'Transaction declined'}`, 'error');
-        if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
-      });
-      rzp.open();
-      if (btn) { btn.disabled = false; btn.textContent = 'Proceed to Pay'; }
-      return;
-    } catch (rzpErr) {
-      console.error('Razorpay open error:', rzpErr);
-    }
+    await launchPayment(rzpOptions);
+    return;
+  } catch (rzpErr) {
+    console.error('Razorpay error:', rzpErr);
   }
 
   // ─── 2. Fallback to UPI QR (only if Razorpay SDK blocked by ad-blocker) ──

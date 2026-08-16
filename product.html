@@ -427,8 +427,9 @@
 <div class="cursor__dot" id="cursorDot"></div>
 <div class="cursor__ring" id="cursorRing"></div>
 
-<script src="js/products.js" defer></script>
-<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+<!-- products.js must NOT be deferred so TAVUSHA_PRODUCTS is available immediately -->
+<script src="js/products.js"></script>
+<!-- Razorpay loaded lazily only when payment is initiated, not on page load -->
 <script src="js/main.js" defer></script>
 <script src="js/auth.js" defer></script>
 <script>
@@ -651,8 +652,12 @@ function selSize(s,el){
 }
 
 function changeQty(d){
-  pdpQtyVal=Math.max(1,pdpQtyVal+d);
+  const maxStock = (typeof getProductStock === 'function' && pdpProduct) ? getProductStock(pdpProduct.id) : 99;
+  pdpQtyVal=Math.min(maxStock, Math.max(1,pdpQtyVal+d));
   document.getElementById('pdpQtyDisplay').textContent=pdpQtyVal;
+  if (d > 0 && pdpQtyVal >= maxStock) {
+    showToast(`Only ${maxStock} piece${maxStock !== 1 ? 's' : ''} available`, 'info');
+  }
 }
 
 function pdpAddToCart(){
@@ -661,7 +666,18 @@ function pdpAddToCart(){
     return;
   }
   if(!pdpSelectedSize){showToast('Please select a size first','error');return;}
-  for(let i=0;i<pdpQtyVal;i++) addToCart(pdpProduct, pdpSelectedSize, pdpSelectedColorName);
+  const maxStock = (typeof getProductStock === 'function' && pdpProduct) ? getProductStock(pdpProduct.id) : 99;
+  const alreadyInCart = (TAVUSHA.cart.find(i => String(i.id) === String(pdpProduct.id) && i.size === pdpSelectedSize && (i.colour || '') === (pdpSelectedColorName || '')) || {qty: 0}).qty;
+  const canAdd = Math.max(0, maxStock - alreadyInCart);
+  if (canAdd <= 0) {
+    showToast(`You already have the maximum available stock (${maxStock}) in your bag`, 'info');
+    return;
+  }
+  const toAdd = Math.min(pdpQtyVal, canAdd);
+  if (toAdd < pdpQtyVal) {
+    showToast(`Only ${canAdd} more piece${canAdd !== 1 ? 's' : ''} can be added (${maxStock} in stock)`, 'info');
+  }
+  for(let i=0;i<toAdd;i++) addToCart(pdpProduct, pdpSelectedSize, pdpSelectedColorName);
   setTimeout(openCart,300);
 }
 

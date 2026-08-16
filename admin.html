@@ -250,6 +250,196 @@
     border: 1px solid rgba(0,0,0,0.18);
     flex-shrink: 0;
   }
+
+  /* ─── Inventory Hub & Stock Management Styles ─── */
+  .stock-info-banner {
+    background: linear-gradient(135deg, #13271b, #1e5230);
+    color: #ffffff;
+    border-radius: 14px;
+    padding: 22px 26px;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    box-shadow: 0 4px 20px rgba(19, 39, 27, 0.15);
+  }
+  .stock-info-banner__icon {
+    font-size: 2.4rem;
+    line-height: 1;
+    background: rgba(255,255,255,0.12);
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .stock-info-banner__title {
+    font-size: 1.15rem;
+    font-weight: 800;
+    letter-spacing: 0.02em;
+    margin-bottom: 4px;
+  }
+  .stock-info-banner__desc {
+    font-size: 0.84rem;
+    opacity: 0.9;
+    line-height: 1.45;
+  }
+  .inventory-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .inv-stat-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+  }
+  .inv-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.04);
+  }
+  .inv-stat-card__icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.3rem;
+  }
+  .inv-stat-card__val {
+    font-size: 1.45rem;
+    font-weight: 800;
+    color: var(--black);
+    line-height: 1.1;
+  }
+  .inv-stat-card__lbl {
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--warm-grey);
+    margin-top: 2px;
+  }
+  
+  /* Stock Stepper & Quick Presets */
+  .stock-stepper-wrap {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .stock-step-btn {
+    width: 28px;
+    height: 28px;
+    border: 1px solid var(--border);
+    background: #f8f6f3;
+    border-radius: 6px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-primary);
+    transition: all 0.1s ease;
+    user-select: none;
+    line-height: 1;
+    padding: 0;
+  }
+  .stock-step-btn:hover {
+    background: var(--brand-dark);
+    color: #fff;
+    border-color: var(--brand-dark);
+  }
+  .stock-step-btn:active {
+    transform: scale(0.95);
+  }
+  .stock-presets-row {
+    display: flex;
+    gap: 4px;
+    margin-top: 6px;
+    flex-wrap: wrap;
+  }
+  .stock-preset-btn {
+    border: 1px solid var(--border);
+    background: #faf8f5;
+    font-size: 0.68rem;
+    font-weight: 600;
+    border-radius: 4px;
+    padding: 2px 6px;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.12s ease;
+  }
+  .stock-preset-btn:hover {
+    background: #ede6de;
+    color: var(--black);
+  }
+  .stock-preset-btn--zero {
+    color: #b3261e;
+    background: #fdf0ee;
+    border-color: #f7c3bf;
+  }
+  .stock-preset-btn--zero:hover {
+    background: #b3261e;
+    color: #fff;
+  }
+  
+  /* Live Customer Limit Pill */
+  .customer-limit-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    border-radius: 20px;
+    padding: 3px 10px;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
+  }
+  .customer-limit-pill--in {
+    background: #e4f3e6;
+    color: #1e7a34;
+    border: 1px solid #bce2c2;
+  }
+  .customer-limit-pill--low {
+    background: #fdf1dd;
+    color: #a07840;
+    border: 1px solid #f6d89a;
+  }
+  .customer-limit-pill--out {
+    background: #fbe4e2;
+    color: #b3261e;
+    border: 1px solid #f3b5af;
+  }
+  
+  /* Variant stock breakdown box */
+  .variant-stock-box {
+    background: #faf7f4;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    margin-top: 6px;
+    font-size: 0.75rem;
+  }
+  .variant-stock-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px 0;
+    border-bottom: 1px dashed rgba(0,0,0,0.06);
+  }
+  .variant-stock-row:last-child {
+    border-bottom: none;
+  }
 </style>
 </head>
 <body>
@@ -432,6 +622,7 @@ async function handleMockApi(path, options = {}) {
       if (sub === 'reject') { prods[idx].status = 'rejected'; setLocal('sp_demo_products', prods); return prods[idx]; }
       if (method === 'DELETE') { prods.splice(idx, 1); setLocal('sp_demo_products', prods); return { message: 'Deleted' }; }
       if (method === 'PUT') {
+        let rawStock = null;
         if (options.body instanceof FormData) {
           if (options.body.get('title')) prods[idx].title = options.body.get('title');
           if (options.body.get('price')) prods[idx].price = Number(options.body.get('price'));
@@ -446,8 +637,13 @@ async function handleMockApi(path, options = {}) {
               prods[idx].colour = prods[idx].colorVariants.map(v => v.color).join(', ');
             }
           }
-          if (options.body.get('stock') && (!prods[idx].colorVariants || prods[idx].colorVariants.length === 0)) {
-            prods[idx].stock = Number(options.body.get('stock'));
+          rawStock = options.body.get('stock');
+          if (rawStock !== null && rawStock !== undefined && rawStock !== '') {
+            const numStock = Math.max(0, parseInt(rawStock, 10) || 0);
+            prods[idx].stock = numStock;
+            if (Array.isArray(prods[idx].colorVariants) && prods[idx].colorVariants.length === 1) {
+              prods[idx].colorVariants[0].stock = numStock;
+            }
           }
           if (options.body.get('colour') && (!prods[idx].colorVariants || prods[idx].colorVariants.length === 0)) {
             prods[idx].colour = options.body.get('colour');
@@ -466,7 +662,6 @@ async function handleMockApi(path, options = {}) {
               if (newImgs.length) prods[idx].images = [...(prods[idx].images || []), ...newImgs];
             } catch(e) {}
           }
-        }
         } else if (options.body) {
           if (options.body.title) prods[idx].title = options.body.title;
           if (options.body.price) prods[idx].price = Number(options.body.price);
@@ -480,11 +675,27 @@ async function handleMockApi(path, options = {}) {
               prods[idx].colour = prods[idx].colorVariants.map(v => v.color).join(', ');
             }
           }
-          if (options.body.stock !== undefined && (!prods[idx].colorVariants || prods[idx].colorVariants.length === 0)) {
-            prods[idx].stock = Number(options.body.stock);
+          rawStock = options.body.stock;
+          if (rawStock !== null && rawStock !== undefined && rawStock !== '') {
+            const numStock = Math.max(0, parseInt(rawStock, 10) || 0);
+            prods[idx].stock = numStock;
+            if (Array.isArray(prods[idx].colorVariants) && prods[idx].colorVariants.length === 1) {
+              prods[idx].colorVariants[0].stock = numStock;
+            }
           }
           if (options.body.colour !== undefined && (!prods[idx].colorVariants || prods[idx].colorVariants.length === 0)) {
             prods[idx].colour = options.body.colour;
+          }
+        }
+        setLocal('sp_demo_products', prods); return prods[idx];
+      }
+      if (sub === 'stock' && method === 'PATCH') {
+        const body = options.body || {};
+        if (body.stock !== undefined) {
+          const numStock = Math.max(0, parseInt(body.stock, 10) || 0);
+          prods[idx].stock = numStock;
+          if (Array.isArray(prods[idx].colorVariants) && prods[idx].colorVariants.length === 1) {
+            prods[idx].colorVariants[0].stock = numStock;
           }
         }
         setLocal('sp_demo_products', prods); return prods[idx];
@@ -1293,6 +1504,7 @@ function adminView() {
   <button id="newProductBtn" class="btn-pill sp-btn-block" style="margin-bottom:20px">+ Upload New Product</button>
   <div class="sp-tabs" style="overflow-x: auto; white-space: nowrap; padding-bottom: 8px;">
     <button id="tabProducts" class="filter-btn active">📦 Products</button>
+    <button id="tabInventory" class="filter-btn" style="background:linear-gradient(135deg,#13271b18,#1e7a3424);border-color:#1e7a34;font-weight:700;color:#13271b">📊 Stock &amp; Inventory Limits</button>
     <button id="tabPosters" class="filter-btn" style="background:linear-gradient(135deg,#6a0dad22,#e8b4ff22);border-color:#9b59b6">📸 Posters</button>
     <button id="tabCms" class="filter-btn">🖼️ Banners</button>
     <button id="tabStaff" class="filter-btn">👥 Staff</button>
@@ -1306,6 +1518,7 @@ function attachAdmin() {
   document.getElementById('logoutBtn').onclick = logout;
   document.getElementById('newProductBtn').onclick = () => openProductForm(null);
   document.getElementById('tabProducts').onclick = () => showAdminTab('products');
+  document.getElementById('tabInventory').onclick = () => showAdminTab('inventory');
   document.getElementById('tabPosters').onclick = () => showAdminTab('posters');
   document.getElementById('tabStaff').onclick = () => showAdminTab('staff');
   document.getElementById('tabCms').onclick = () => showAdminTab('cms');
@@ -1315,6 +1528,7 @@ function attachAdmin() {
 }
 async function showAdminTab(tab) {
   document.getElementById('tabProducts').classList.toggle('active', tab === 'products');
+  if (document.getElementById('tabInventory')) document.getElementById('tabInventory').classList.toggle('active', tab === 'inventory');
   document.getElementById('tabPosters').classList.toggle('active', tab === 'posters');
   document.getElementById('tabStaff').classList.toggle('active', tab === 'staff');
   document.getElementById('tabCms').classList.toggle('active', tab === 'cms');
@@ -1398,6 +1612,148 @@ async function showAdminTab(tab) {
       
       renderFilteredProductsTable();
     
+    } else if (tab === 'inventory') {
+      state.products = await api('/products');
+      
+      const totalUnits = state.products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
+      const inStockCount = state.products.filter(p => (Number(p.stock) || 0) > 5).length;
+      const lowStockCount = state.products.filter(p => (Number(p.stock) || 0) > 0 && (Number(p.stock) || 0) <= 5).length;
+      const outOfStockCount = state.products.filter(p => (Number(p.stock) || 0) === 0).length;
+
+      window.invSearchQuery = window.invSearchQuery || '';
+      window.invCategoryFilter = window.invCategoryFilter || 'all';
+      window.invStockFilter = window.invStockFilter || 'all';
+
+      content.innerHTML = `
+        <!-- Stock Enforcement Explainer Banner -->
+        <div class="stock-info-banner">
+          <div class="stock-info-banner__icon">🔒</div>
+          <div>
+            <div class="stock-info-banner__title">Live Stock &amp; Customer Bag Limit Enforcement</div>
+            <div class="stock-info-banner__desc">
+              Every stock count listed below directly limits what customers can add to their cart on the website.
+              If a product is set to <strong>10 pieces</strong>, a customer is strictly blocked from adding more than 10 pieces.
+              If set to <strong>0 pieces</strong>, purchasing is disabled and shown as <em>Out of Stock</em>.
+            </div>
+          </div>
+          <div style="margin-left:auto; display:flex; flex-direction:column; gap:8px; flex-shrink:0;">
+            <button id="syncAllStockBtn" class="btn-pill" style="background:#fff; color:#13271b; font-weight:700; font-size:0.8rem; padding:8px 16px; border:none; cursor:pointer;">
+              🔄 Sync All with Storefront
+            </button>
+            <button id="restockOutBtn" class="btn-pill" style="background:rgba(255,255,255,0.18); color:#fff; font-weight:600; font-size:0.75rem; padding:6px 12px; border:1px solid rgba(255,255,255,0.4); cursor:pointer;">
+              ⚡ Restock 0-Stock Items (+10)
+            </button>
+          </div>
+        </div>
+
+        <!-- Inventory Metrics Cards -->
+        <div class="inventory-stats-grid">
+          <div class="inv-stat-card">
+            <div class="inv-stat-card__icon" style="background:#eef2ff; color:#3730a3">📦</div>
+            <div>
+              <div class="inv-stat-card__val">${state.products.length}</div>
+              <div class="inv-stat-card__lbl">Total Listed Items</div>
+            </div>
+          </div>
+          <div class="inv-stat-card">
+            <div class="inv-stat-card__icon" style="background:#f0fdf4; color:#166534">📊</div>
+            <div>
+              <div class="inv-stat-card__val" id="statTotalUnits">${totalUnits}</div>
+              <div class="inv-stat-card__lbl">Total Units in Stock</div>
+            </div>
+          </div>
+          <div class="inv-stat-card">
+            <div class="inv-stat-card__icon" style="background:#e4f3e6; color:#1e7a34">✓</div>
+            <div>
+              <div class="inv-stat-card__val" id="statInStock">${inStockCount}</div>
+              <div class="inv-stat-card__lbl">In Stock (>5 Units)</div>
+            </div>
+          </div>
+          <div class="inv-stat-card">
+            <div class="inv-stat-card__icon" style="background:#fdf1dd; color:#a07840">⚠️</div>
+            <div>
+              <div class="inv-stat-card__val" id="statLowStock">${lowStockCount}</div>
+              <div class="inv-stat-card__lbl">Low Stock (≤5 Units)</div>
+            </div>
+          </div>
+          <div class="inv-stat-card">
+            <div class="inv-stat-card__icon" style="background:#fbe4e2; color:#b3261e">⛔</div>
+            <div>
+              <div class="inv-stat-card__val" id="statOutStock">${outOfStockCount}</div>
+              <div class="inv-stat-card__lbl">Out of Stock (0 Units)</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Filter & Search Controls -->
+        <div class="control-panel">
+          <div class="control-panel__search">
+            <label class="sp-qe-label">Search Inventory</label>
+            <input type="text" id="invSearch" class="sp-qe-input" placeholder="Search by title, SKU, ID..." value="${esc(window.invSearchQuery)}"/>
+          </div>
+          <div class="control-panel__select">
+            <label class="sp-qe-label">Category</label>
+            <select id="invCatFilter" class="sp-qe-input">
+              <option value="all" ${window.invCategoryFilter === 'all' ? 'selected' : ''}>All Categories</option>
+              <option value="party" ${window.invCategoryFilter === 'party' ? 'selected' : ''}>Party Wear</option>
+              <option value="ethnic" ${window.invCategoryFilter === 'ethnic' ? 'selected' : ''}>Ethnic Wear</option>
+              <option value="casual" ${window.invCategoryFilter === 'casual' ? 'selected' : ''}>Casual Luxe</option>
+              <option value="maxi" ${window.invCategoryFilter === 'maxi' ? 'selected' : ''}>Maxi Dresses</option>
+              <option value="coord" ${window.invCategoryFilter === 'coord' ? 'selected' : ''}>Co-ords</option>
+              <option value="other" ${window.invCategoryFilter === 'other' ? 'selected' : ''}>Other</option>
+            </select>
+          </div>
+          <div class="control-panel__select">
+            <label class="sp-qe-label">Stock Status</label>
+            <select id="invStockFilter" class="sp-qe-input">
+              <option value="all" ${window.invStockFilter === 'all' ? 'selected' : ''}>All Statuses</option>
+              <option value="instock" ${window.invStockFilter === 'instock' ? 'selected' : ''}>In Stock (>0)</option>
+              <option value="lowstock" ${window.invStockFilter === 'lowstock' ? 'selected' : ''}>Low Stock (≤5)</option>
+              <option value="outofstock" ${window.invStockFilter === 'outofstock' ? 'selected' : ''}>Out of Stock (0)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Inventory Management Table -->
+        <div class="table-container">
+          <table class="admin-table">
+            <thead>
+              <tr>
+                <th>Preview</th>
+                <th>Product &amp; SKU</th>
+                <th>Price</th>
+                <th style="min-width: 220px;">Stock Limit &amp; Stepper</th>
+                <th>Customer Bag Restriction</th>
+                <th style="text-align: right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="invTableBody">
+              <!-- Rendered via renderFilteredInventoryTable -->
+            </tbody>
+          </table>
+        </div>
+      `;
+
+      const searchInput = document.getElementById('invSearch');
+      const catSelect = document.getElementById('invCatFilter');
+      const stockSelect = document.getElementById('invStockFilter');
+
+      const filterFn = () => {
+        window.invSearchQuery = searchInput.value.trim().toLowerCase();
+        window.invCategoryFilter = catSelect.value;
+        window.invStockFilter = stockSelect.value;
+        renderFilteredInventoryTable();
+      };
+
+      searchInput.oninput = filterFn;
+      catSelect.onchange = filterFn;
+      stockSelect.onchange = filterFn;
+
+      document.getElementById('syncAllStockBtn').onclick = syncInventoryWithStorefront;
+      document.getElementById('restockOutBtn').onclick = restockAllOutOfStock;
+
+      renderFilteredInventoryTable();
+
     } else if (tab === 'posters') {
       state.sections = await api('/cms/sections');
       state.products = await api('/products');
@@ -2852,15 +3208,15 @@ function renderFilteredProductsTable() {
   let filtered = [...state.products];
   
   if (q) {
-    filtered = filtered.filter(p => p.title.toLowerCase().includes(q) || p._id.includes(q));
+    filtered = filtered.filter(p => (p.title && p.title.toLowerCase().includes(q)) || (p._id && p._id.includes(q)) || (p.sku && p.sku.toLowerCase().includes(q)));
   }
   if (cat !== 'all') {
     filtered = filtered.filter(p => p.category === cat);
   }
   if (stock !== 'all') {
-    if (stock === 'instock') filtered = filtered.filter(p => p.stock > 0);
-    else if (stock === 'lowstock') filtered = filtered.filter(p => p.stock > 0 && p.stock <= 5);
-    else if (stock === 'outofstock') filtered = filtered.filter(p => p.stock === 0);
+    if (stock === 'instock') filtered = filtered.filter(p => (Number(p.stock) || 0) > 0);
+    else if (stock === 'lowstock') filtered = filtered.filter(p => (Number(p.stock) || 0) > 0 && (Number(p.stock) || 0) <= 5);
+    else if (stock === 'outofstock') filtered = filtered.filter(p => (Number(p.stock) || 0) === 0);
   }
   
   if (filtered.length === 0) {
@@ -2869,10 +3225,11 @@ function renderFilteredProductsTable() {
   }
   
   tbody.innerHTML = filtered.map(p => {
-    const isLow = p.stock > 0 && p.stock <= 5;
-    const isOut = p.stock === 0;
-    const stockPillStyle = isOut ? 'color:#b3261e;background:#fbe4e2;font-weight:700;' : (isLow ? 'color:#a07840;background:#fdf1dd;font-weight:700;' : 'color:#1e7a34;background:#e4f3e6;');
-    const stockStatusLabel = isOut ? 'Out of Stock' : (isLow ? `Low Stock (${p.stock})` : `In Stock (${p.stock})`);
+    const curStock = Number(p.stock !== undefined ? p.stock : 0);
+    const isLow = curStock > 0 && curStock <= 5;
+    const isOut = curStock === 0;
+    const pillClass = isOut ? 'customer-limit-pill--out' : (isLow ? 'customer-limit-pill--low' : 'customer-limit-pill--in');
+    const pillText = isOut ? '⛔ Out of Stock (0) - Bag Blocked' : (isLow ? `⚠️ Low: Max ${curStock} in Bag` : `✓ Max ${curStock} in Bag`);
     
     return `
       <tr>
@@ -2885,7 +3242,7 @@ function renderFilteredProductsTable() {
           ${renderProductColorBadges(p)}
         </td>
         <td>
-          <span style="font-family:monospace; font-size:0.75rem; background:#faf8f6; padding:2px 6px; border-radius:4px; border:1px solid var(--border)">${p._id.slice(-6).toUpperCase()}</span>
+          <span style="font-family:monospace; font-size:0.75rem; background:#faf8f6; padding:2px 6px; border-radius:4px; border:1px solid var(--border)">${p.sku || p._id.slice(-6).toUpperCase()}</span>
         </td>
         <td>
           <div class="table-quick-edit">
@@ -2893,11 +3250,13 @@ function renderFilteredProductsTable() {
           </div>
         </td>
         <td>
-          <div class="table-quick-edit">
-            <input type="number" class="sp-qe-input tblStockInput" data-id="${p._id}" value="${p.stock}" min="0" style="padding:4px 6px; width:65px"/>
-            <button class="sp-mini-btn tblSaveBtn" data-id="${p._id}" style="min-height:30px; padding:4px 10px">Save</button>
+          <div class="table-quick-edit" style="align-items: center; gap: 4px;">
+            <button class="stock-step-btn" onclick="stepProdTableStock('${p._id}', -1)" title="Decrease stock by 1">−</button>
+            <input type="number" class="sp-qe-input tblStockInput" data-id="${p._id}" value="${curStock}" min="0" style="padding:4px 6px; width:55px; text-align:center;"/>
+            <button class="stock-step-btn" onclick="stepProdTableStock('${p._id}', 1)" title="Increase stock by 1">+</button>
+            <button class="sp-mini-btn tblSaveBtn" data-id="${p._id}" style="min-height:30px; padding:4px 10px; margin-left:4px;">Save</button>
           </div>
-          <div style="margin-top:6px"><span class="sp-chip" style="${stockPillStyle}">${stockStatusLabel}</span></div>
+          <div style="margin-top:6px"><span class="customer-limit-pill ${pillClass}">${pillText}</span></div>
         </td>
         <td>
           ${statusPill(p.status)}
@@ -2922,6 +3281,13 @@ function renderFilteredProductsTable() {
   tbody.querySelectorAll('.tblDelBtn').forEach(b => b.onclick = async () => { if (confirm('Permanently delete this product?')) { await api('/products/' + b.dataset.id + '/permanent', { method: 'DELETE' }); showAdminTab('products'); } });
 }
 
+function stepProdTableStock(id, delta) {
+  const input = document.querySelector(`.tblStockInput[data-id="${id}"]`);
+  if (!input) return;
+  const current = Math.max(0, parseInt(input.value || '0', 10));
+  input.value = Math.max(0, current + delta);
+}
+
 async function quickSavePriceStockTable(id, btn) {
   const row = btn.closest('tr');
   const priceEl = row.querySelector('.tblPriceInput');
@@ -2939,15 +3305,264 @@ async function quickSavePriceStockTable(id, btn) {
       fd.append('colour', cur.colour || '');
       fd.append('size', cur.size || '');
       fd.append('category', cur.category || 'other');
+      cur.price = Number(priceEl.value);
+      cur.stock = Number(stockEl.value);
+      if (Array.isArray(cur.colorVariants) && cur.colorVariants.length === 1) {
+        cur.colorVariants[0].stock = Number(stockEl.value);
+      }
     }
     await api('/products/' + id, { method: 'PUT', body: fd });
+    
+    // Always persist to local demo store for live customer cart limitation
+    const prods = getLocal('sp_demo_products', state.products);
+    const idx = prods.findIndex(p => p._id === id);
+    if (idx !== -1) {
+      prods[idx].price = Number(priceEl.value);
+      prods[idx].stock = Number(stockEl.value);
+      if (Array.isArray(prods[idx].colorVariants) && prods[idx].colorVariants.length === 1) {
+        prods[idx].colorVariants[0].stock = Number(stockEl.value);
+      }
+      setLocal('sp_demo_products', prods);
+    }
+
     btn.textContent = '✓'; btn.style.background = '#1e7a34'; btn.style.color = '#fff';
-    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; btn.disabled = false; showAdminTab('products'); }, 1000);
-    if (cur) { cur.price = Number(priceEl.value); cur.stock = Number(stockEl.value); }
+    setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; btn.disabled = false; renderFilteredProductsTable(); }, 800);
   } catch(err) {
     btn.textContent = '!'; btn.style.background = '#b3261e'; btn.style.color = '#fff';
     setTimeout(() => { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; btn.disabled = false; }, 2000);
   }
+}
+
+/* ---------------- INVENTORY & STOCK LIMITS TAB FUNCTIONS ---------------- */
+function renderFilteredInventoryTable() {
+  const tbody = document.getElementById('invTableBody');
+  if (!tbody) return;
+
+  const q = window.invSearchQuery || '';
+  const cat = window.invCategoryFilter || 'all';
+  const stock = window.invStockFilter || 'all';
+
+  let filtered = [...state.products];
+
+  if (q) {
+    filtered = filtered.filter(p => (p.title && p.title.toLowerCase().includes(q)) || (p._id && p._id.includes(q)) || (p.sku && p.sku.toLowerCase().includes(q)));
+  }
+  if (cat !== 'all') {
+    filtered = filtered.filter(p => p.category === cat);
+  }
+  if (stock !== 'all') {
+    if (stock === 'instock') filtered = filtered.filter(p => (Number(p.stock) || 0) > 0);
+    else if (stock === 'lowstock') filtered = filtered.filter(p => (Number(p.stock) || 0) > 0 && (Number(p.stock) || 0) <= 5);
+    else if (stock === 'outofstock') filtered = filtered.filter(p => (Number(p.stock) || 0) === 0);
+  }
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" class="sp-empty" style="text-align:center">No inventory items match the selected filters.</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = filtered.map(p => {
+    const curStock = Number(p.stock !== undefined ? p.stock : 0);
+    const isLow = curStock > 0 && curStock <= 5;
+    const isOut = curStock === 0;
+    const pillClass = isOut ? 'customer-limit-pill--out' : (isLow ? 'customer-limit-pill--low' : 'customer-limit-pill--in');
+    const pillText = isOut ? '⛔ Out of Stock (0) — Bag Blocked' : (isLow ? `⚠️ Low Stock: Max ${curStock} in Bag` : `✓ Max ${curStock} Pieces in Bag`);
+    const hasColorVariants = Array.isArray(p.colorVariants) && p.colorVariants.length > 0;
+
+    return `
+      <tr data-id="${p._id}">
+        <td>
+          <img src="${p.images && p.images[0] ? p.images[0] : 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100'}" class="table-thumb" onerror="this.src='https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=100'"/>
+        </td>
+        <td>
+          <div style="font-weight:700; color:var(--black); font-size:0.92rem">${esc(p.title)}</div>
+          <div style="font-size:0.75rem; color:var(--warm-grey); margin-top:2px;">
+            SKU: <strong style="font-family:monospace; color:var(--brand-dark)">${esc(p.sku || p._id.slice(-6).toUpperCase())}</strong> · Category: <span class="sp-chip">${esc(p.category)}</span>
+          </div>
+          ${renderProductColorBadges(p)}
+        </td>
+        <td>
+          <div style="font-weight:700; font-size:0.95rem; color:var(--black)">₹${Number(p.price || 0).toLocaleString('en-IN')}</div>
+        </td>
+        <td>
+          <div class="stock-stepper-wrap">
+            <button type="button" class="stock-step-btn" onclick="stepInventoryStock('${p._id}', -1)" title="Decrease by 1">−</button>
+            <input type="number" class="sp-qe-input invStockInput" data-id="${p._id}" value="${curStock}" min="0" style="padding:5px 8px; width:65px; font-weight:700; text-align:center; font-size:0.95rem;"/>
+            <button type="button" class="stock-step-btn" onclick="stepInventoryStock('${p._id}', 1)" title="Increase by 1">+</button>
+            <button class="sp-mini-btn invSaveBtn" data-id="${p._id}" style="min-height:32px; padding:5px 12px; font-weight:700; margin-left:6px;">Save</button>
+          </div>
+          <div class="stock-presets-row">
+            <button type="button" class="stock-preset-btn stock-preset-btn--zero" onclick="setInventoryStockPreset('${p._id}', 0)">0 (Out)</button>
+            <button type="button" class="stock-preset-btn" onclick="setInventoryStockPreset('${p._id}', 5)">5</button>
+            <button type="button" class="stock-preset-btn" onclick="setInventoryStockPreset('${p._id}', 10)">10</button>
+            <button type="button" class="stock-preset-btn" onclick="setInventoryStockPreset('${p._id}', 25)">25</button>
+            <button type="button" class="stock-preset-btn" onclick="setInventoryStockPreset('${p._id}', 50)">50</button>
+          </div>
+        </td>
+        <td>
+          <div><span class="customer-limit-pill ${pillClass}">${pillText}</span></div>
+          <div style="font-size:0.7rem; color:var(--warm-grey); margin-top:4px;">Customer cart capacity is restricted to this count</div>
+        </td>
+        <td style="text-align: right">
+          <button class="sp-mini-btn invEditBtn" data-id="${p._id}">Full Edit</button>
+        </td>
+      </tr>
+    `;
+  }).join('');
+
+  tbody.querySelectorAll('.invEditBtn').forEach(b => b.onclick = () => openProductForm(state.products.find(p => p._id === b.dataset.id)));
+  tbody.querySelectorAll('.invSaveBtn').forEach(b => b.onclick = () => quickSaveInventoryRow(b.dataset.id, b));
+}
+
+function stepInventoryStock(id, delta) {
+  const input = document.querySelector(`.invStockInput[data-id="${id}"]`);
+  if (!input) return;
+  const current = Math.max(0, parseInt(input.value || '0', 10));
+  input.value = Math.max(0, current + delta);
+}
+
+function setInventoryStockPreset(id, val) {
+  const input = document.querySelector(`.invStockInput[data-id="${id}"]`);
+  if (!input) return;
+  input.value = val;
+  const saveBtn = document.querySelector(`.invSaveBtn[data-id="${id}"]`);
+  if (saveBtn) quickSaveInventoryRow(id, saveBtn);
+}
+
+async function quickSaveInventoryRow(id, btn) {
+  const input = document.querySelector(`.invStockInput[data-id="${id}"]`);
+  if (!input) return;
+  const newStock = Math.max(0, parseInt(input.value || '0', 10));
+  const orig = btn.textContent;
+  btn.textContent = '…'; btn.disabled = true;
+
+  try {
+    const cur = state.products.find(p => p._id === id);
+    const fd = new FormData();
+    fd.append('stock', newStock);
+    if (cur) {
+      fd.append('title', cur.title);
+      fd.append('price', cur.price);
+      fd.append('description', cur.description || '');
+      fd.append('colour', cur.colour || '');
+      fd.append('size', cur.size || '');
+      fd.append('category', cur.category || 'other');
+      cur.stock = newStock;
+      if (Array.isArray(cur.colorVariants) && cur.colorVariants.length === 1) {
+        cur.colorVariants[0].stock = newStock;
+      }
+    }
+
+    await api('/products/' + id, { method: 'PUT', body: fd });
+
+    // Sync with local products database
+    const prods = getLocal('sp_demo_products', state.products);
+    const idx = prods.findIndex(p => p._id === id);
+    if (idx !== -1) {
+      prods[idx].stock = newStock;
+      if (Array.isArray(prods[idx].colorVariants) && prods[idx].colorVariants.length === 1) {
+        prods[idx].colorVariants[0].stock = newStock;
+      }
+      setLocal('sp_demo_products', prods);
+    }
+
+    btn.textContent = '✓ Saved';
+    btn.style.background = '#1e7a34';
+    btn.style.color = '#fff';
+
+    // Update stats dynamically
+    const totalUnits = state.products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
+    const inStockCount = state.products.filter(p => (Number(p.stock) || 0) > 5).length;
+    const lowStockCount = state.products.filter(p => (Number(p.stock) || 0) > 0 && (Number(p.stock) || 0) <= 5).length;
+    const outOfStockCount = state.products.filter(p => (Number(p.stock) || 0) === 0).length;
+
+    const elTotal = document.getElementById('statTotalUnits');
+    const elIn = document.getElementById('statInStock');
+    const elLow = document.getElementById('statLowStock');
+    const elOut = document.getElementById('statOutStock');
+
+    if (elTotal) elTotal.textContent = totalUnits;
+    if (elIn) elIn.textContent = inStockCount;
+    if (elLow) elLow.textContent = lowStockCount;
+    if (elOut) elOut.textContent = outOfStockCount;
+
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.disabled = false;
+      renderFilteredInventoryTable();
+    }, 900);
+  } catch(err) {
+    btn.textContent = '! Error';
+    btn.style.background = '#b3261e';
+    btn.style.color = '#fff';
+    setTimeout(() => {
+      btn.textContent = orig;
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.disabled = false;
+    }, 2000);
+  }
+}
+
+async function restockAllOutOfStock() {
+  const outOfStockList = state.products.filter(p => (Number(p.stock) || 0) === 0);
+  if (outOfStockList.length === 0) {
+    alert('All products already have stock!');
+    return;
+  }
+
+  if (!confirm(`Restock all ${outOfStockList.length} out-of-stock products to 10 pieces each?`)) return;
+
+  const btn = document.getElementById('restockOutBtn');
+  if (btn) { btn.textContent = '⏳ Restocking...'; btn.disabled = true; }
+
+  for (const prod of outOfStockList) {
+    prod.stock = 10;
+    if (Array.isArray(prod.colorVariants) && prod.colorVariants.length === 1) {
+      prod.colorVariants[0].stock = 10;
+    }
+    const fd = new FormData();
+    fd.append('stock', 10);
+    fd.append('title', prod.title);
+    fd.append('price', prod.price);
+    await api('/products/' + prod._id, { method: 'PUT', body: fd }).catch(() => {});
+  }
+
+  // Update localStorage
+  const prods = getLocal('sp_demo_products', state.products);
+  prods.forEach(p => {
+    if ((Number(p.stock) || 0) === 0) p.stock = 10;
+  });
+  setLocal('sp_demo_products', prods);
+
+  if (btn) { btn.textContent = '✓ Done!'; btn.style.background = '#1e7a34'; }
+  setTimeout(() => { showAdminTab('inventory'); }, 800);
+}
+
+async function syncInventoryWithStorefront() {
+  const btn = document.getElementById('syncAllStockBtn');
+  if (btn) { btn.textContent = '⏳ Syncing...'; btn.disabled = true; }
+
+  // Sync state.products to sp_demo_products
+  setLocal('sp_demo_products', state.products);
+
+  setTimeout(() => {
+    if (btn) {
+      btn.textContent = '✓ Synced with Storefront!';
+      btn.style.background = '#1e7a34';
+      btn.style.color = '#fff';
+    }
+    setTimeout(() => {
+      if (btn) {
+        btn.textContent = '🔄 Sync All with Storefront';
+        btn.style.background = '#fff';
+        btn.style.color = '#13271b';
+        btn.disabled = false;
+      }
+    }, 2000);
+  }, 400);
 }
 
 function downloadCourierLabel(orderId) {
