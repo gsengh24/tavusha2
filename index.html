@@ -4,6 +4,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#1a1209">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
   
   <!-- Primary SEO -->
   <title>TAVUSHA — Premium Women's Fashion | Party Wear, Ethnic & Designer Wear India</title>
@@ -862,9 +865,10 @@
 <div class="cursor__ring" id="cursorRing"></div>
 
 <!-- products.js must NOT be deferred so TAVUSHA_PRODUCTS is available for inline scripts -->
-<script src="js/products.js"></script>
-<script src="js/main.js" defer></script>
-<script src="js/auth.js" defer></script>
+<!-- v=20260816 cache-busting -->
+<script src="js/products.js?v=20260816"></script>
+<script src="js/main.js?v=20260816" defer></script>
+<script src="js/auth.js?v=20260816" defer></script>
 <script>
 // Load backend-approved products in background with cache + timeout
 // Avoids blocking the page on Render.com cold starts
