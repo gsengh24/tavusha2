@@ -669,20 +669,107 @@ function animateCartIcon() {
 // ─── WISHLIST ─────────────────────────────────────────────────
 function toggleWishlistCard(btn, id) {
   const idx = TAVUSHA.wishlist.indexOf(id);
-  const svg = btn.querySelector('svg');
+  const svg = btn ? btn.querySelector('svg') : null;
   if (idx === -1) {
     TAVUSHA.wishlist.push(id);
-    btn.classList.add('active');
+    if (btn) btn.classList.add('active');
     if (svg) svg.setAttribute('fill', 'currentColor');
     showToast('Added to wishlist', 'success');
   } else {
     TAVUSHA.wishlist.splice(idx, 1);
-    btn.classList.remove('active');
+    if (btn) btn.classList.remove('active');
     if (svg) svg.setAttribute('fill', 'none');
     showToast('Removed from wishlist', 'info');
   }
   localStorage.setItem('tavusha_wishlist', JSON.stringify(TAVUSHA.wishlist));
   updateWishlistUI();
+}
+
+function injectWishlistHTML() {
+  if (document.getElementById('wishlistOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.className = 'overlay';
+  overlay.id = 'wishlistOverlay';
+  overlay.onclick = closeWishlist;
+  
+  const drawer = document.createElement('div');
+  drawer.className = 'cart-drawer';
+  drawer.id = 'wishlistDrawer';
+  drawer.style.zIndex = '999999';
+  drawer.innerHTML = `
+    <div class="cart-drawer__header">
+      <div class="cart-drawer__title">Your Wishlist</div>
+      <button class="cart-drawer__close" onclick="closeWishlist()"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="cart-drawer__items" id="wishlistItems" style="flex:1;overflow-y:auto;padding-bottom:10px;"></div>
+  `;
+  document.body.appendChild(overlay);
+  document.body.appendChild(drawer);
+}
+
+function openWishlist() {
+  injectWishlistHTML();
+  document.getElementById('quickViewOverlay')?.classList.remove('open');
+  document.getElementById('mobileMenu')?.classList.remove('open');
+  document.getElementById('searchOverlay')?.classList.remove('open');
+  document.getElementById('cartOverlay')?.classList.remove('open');
+  document.getElementById('cartDrawer')?.classList.remove('open');
+  
+  document.getElementById('wishlistOverlay')?.classList.add('open');
+  document.getElementById('wishlistDrawer')?.classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderWishlistItems();
+}
+
+function closeWishlist() {
+  document.getElementById('wishlistOverlay')?.classList.remove('open');
+  document.getElementById('wishlistDrawer')?.classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function renderWishlistItems() {
+  const c = document.getElementById('wishlistItems');
+  if (!c) return;
+  if (!TAVUSHA.wishlist || !TAVUSHA.wishlist.length) {
+    c.innerHTML = `<div class="cart-drawer__empty">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.3"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+      <div><p style="font-family:var(--font-display);font-size:1.1rem;color:var(--black)">Your wishlist is empty</p><p style="font-size:0.78rem;color:var(--warm-grey)">Save items you love here</p></div>
+      <button class="btn-pill" onclick="closeWishlist()"><span>Explore Collection</span></button>
+    </div>`;
+    return;
+  }
+  
+  c.innerHTML = TAVUSHA.wishlist.map(id => {
+    let p = null;
+    if (typeof TAVUSHA_PRODUCTS !== 'undefined') p = TAVUSHA_PRODUCTS.find(x => String(x.id) === String(id));
+    if (!p && typeof EXCEL_PRODUCTS !== 'undefined') p = EXCEL_PRODUCTS.find(x => String(x._id||'').toLowerCase() === String(id).toLowerCase());
+    
+    if (!p) return `<div class="cart-item">
+      <div class="cart-item__info">
+        <div class="cart-item__name">Product ID: ${id}</div><br>
+        <button class="cart-item__remove" onclick="toggleWishlistCard(null, '${id}'); setTimeout(renderWishlistItems,100);">Remove</button>
+      </div>
+    </div>`;
+
+    const title = p.name || p.title || 'Product';
+    const price = p.price || 0;
+    const img = p.image || (p.images && p.images[0]) || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=200';
+    
+    return `
+    <div class="cart-item">
+      <div class="cart-item__img" style="cursor:pointer" onclick="window.location.href='product.html?id=${id}'"><img src="${img}" alt="${title}" loading="lazy"></div>
+      <div class="cart-item__info">
+        <div>
+          <div class="cart-item__name" style="cursor:pointer" onclick="window.location.href='product.html?id=${id}'">${title}</div>
+          <div class="cart-item__meta">${p.category || 'TAVUSHA'}</div>
+        </div>
+        <div class="cart-item__controls" style="margin-top:auto">
+          <span class="cart-item__price">₹${price.toLocaleString('en-IN')}</span>
+        </div>
+        <button class="cart-item__remove" onclick="toggleWishlistCard(null, '${id}'); setTimeout(renderWishlistItems,100);">Remove</button>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 function toggleWishlistQuickView() {
@@ -777,9 +864,7 @@ function initKeyboard() {
   // Bind cart/search/wishlist buttons
   document.getElementById('cartBtn')?.addEventListener('click', openCart);
   document.getElementById('searchBtn')?.addEventListener('click', openSearch);
-  document.getElementById('wishlistBtn')?.addEventListener('click', () => {
-    showToast('Your wishlist will open soon', 'info');
-  });
+  document.getElementById('wishlistBtn')?.addEventListener('click', openWishlist);
 }
 
 // ─── SHAKE ANIMATION ─────────────────────────────────────────
