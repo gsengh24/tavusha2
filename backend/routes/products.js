@@ -2,6 +2,7 @@ const express = require('express');
 const multer = require('multer');
 const sharp = require('sharp');
 const path = require('path');
+const XLSX = require('xlsx');
 const Product = require('../models/Product');
 const { protect, adminOnly, requirePermission } = require('../middleware/auth');
 const supabase = require('../supabase');
@@ -18,6 +19,17 @@ const upload = multer({
     const ext = path.extname(file.originalname).toLowerCase();
     if (okTypes.test(ext)) cb(null, true);
     else cb(new Error('Only image (jpg, png, webp) or video (mp4, mov, webm) files are allowed'));
+  }
+});
+
+// ---- Excel / CSV upload setup ----
+const excelUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    if (['.xlsx', '.xls', '.csv'].includes(ext)) cb(null, true);
+    else cb(new Error('Only Excel (.xlsx, .xls) or CSV files are allowed'));
   }
 });
 
@@ -320,6 +332,111 @@ router.delete('/:id', protect, requirePermission('canDelete'), async (req, res) 
     res.json({ message: 'Product removed' });
   } catch (err) {
     res.status(500).json({ message: 'Delete failed', error: err.message });
+  }
+});
+
+// ────────────────────────────────────────────────────────────
+// POST /api/products/bulk-import  (admin only)
+// Accepts: multipart/form-data with field "excel" (xlsx/xls/csv)
+//
+// Expected sheet columns (case-insensitive, flexible names):
+//   Title | Price | Stock | Colour/Color | Size | Category | Description | Images (comma-sep URLs)
+// ────────────────────────────────────────────────────────────
+router.post('/bulk-import', protect, adminOnly, excelUpload.single('excel'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ message: 'No file uploaded' });
+
+    // Parse workbook from memory buffer
+    const wb = XLSX.read(req.file.buffer, { type: 'buffer' });
+    const sheetName = wb.SheetNames[0];
+    if (!sheetName) return res.status(400).json({ message: 'Workbook has no sheets' });
+
+    const ws = wb.Sheets[sheetName];
+    const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+    if (!rows.length) return res.status(400).json({ message: 'Sheet is empty or has no data rows' });
+
+    // Column name normaliser — handles any casing / spacing
+    function col(row, ...names) {
+      for (const n of names) {
+        const key = Object.keys(row).find(k => k.trim().toLowerCase() === n.toLowerCase());
+        if (key !== undefined && row[key] !== '' && row[key] !== null && row[key] !== undefined) {
+          return String(row[key]).trim();
+        }
+      }
+      return '';
+    }
+
+    const VALID_CATEGORIES = ['party','ethnic','casual','maxi','coord','workwear','other'];
+
+    const summary = { imported: 0, skipped: 0, errors: [] };
+    const created = [];
+
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const rowNum = i + 2; // Excel rows are 1-indexed, row 1 is header
+
+      const title = col(row, 'title', 'name', 'product name', 'product title');
+      const priceStr = col(row, 'price', 'mrp', 'selling price', 'rate');
+      const stockStr = col(row, 'stock', 'quantity', 'qty', 'inventory');
+      const colour  = col(row, 'colour', 'color', 'colours', 'colors');
+      const size    = col(row, 'size', 'sizes', 'available sizes');
+      const rawCat  = col(row, 'category', 'type', 'product type');
+      const desc    = col(row, 'description', 'desc', 'details');
+      const imgStr  = col(row, 'images', 'image', 'image url', 'image urls', 'photos', 'photo');
+
+      if (!title) {
+        summary.skipped++;
+        summary.errors.push(`Row ${rowNum}: Missing title — skipped`);
+        continue;
+      }
+
+      const price = parseFloat(priceStr);
+      if (isNaN(price) || price <= 0) {
+        summary.skipped++;
+        summary.errors.push(`Row ${rowNum} (${title}): Invalid price "${priceStr}" — skipped`);
+        continue;
+      }
+
+      const stock = parseInt(stockStr, 10);
+      const finalStock = isNaN(stock) ? 0 : Math.max(0, stock);
+
+      // Normalise category
+      const catClean = rawCat.toLowerCase().replace(/[^a-z]/g, '');
+      let category = VALID_CATEGORIES.find(c => catClean.includes(c)) || 'other';
+
+      // Parse image URLs (comma / semicolon / newline separated)
+      const images = imgStr
+        ? imgStr.split(/[,;\n]+/).map(u => u.trim()).filter(u => u.startsWith('http'))
+        : [];
+
+      try {
+        const product = await Product.create({
+          title,
+          description: desc,
+          price,
+          colour,
+          colorVariants: [],
+          size,
+          category,
+          stock: finalStock,
+          inStock: finalStock > 0,
+          images,
+          videos: [],
+          status: 'approved',   // Admin imports are auto-approved
+          createdBy: req.user._id
+        });
+        created.push(product);
+        summary.imported++;
+      } catch (e) {
+        summary.skipped++;
+        summary.errors.push(`Row ${rowNum} (${title}): DB error — ${e.message}`);
+      }
+    }
+
+    res.status(201).json({ ...summary, products: created });
+  } catch (err) {
+    res.status(500).json({ message: 'Bulk import failed', error: err.message });
   }
 });
 

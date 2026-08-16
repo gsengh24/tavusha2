@@ -455,6 +455,7 @@
 <div id="app" class="sp-shell"></div>
 
 <script src="js/products_data.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
 <script>
 const RENDER_BACKEND = 'https://tavusha2-backend.onrender.com/api';
 const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.hostname.startsWith('192.168.');
@@ -1510,6 +1511,7 @@ function adminView() {
     <button id="tabStaff" class="filter-btn">👥 Staff</button>
     <button id="tabShipping" class="filter-btn">🚚 Shipping</button>
     <button id="tabOrders" class="filter-btn">📋 Orders</button>
+    <button id="tabBulkImport" class="filter-btn" style="background:linear-gradient(135deg,#0a4d2222,#22c55e22);border-color:#16a34a;font-weight:700">📊 Bulk Import</button>
   </div>
   <div id="adminContent" class="sp-list"></div>
   <div id="formModal" class="sp-modal-overlay" style="display:none"><div class="sp-modal" id="formModalContent"></div></div>`;
@@ -1524,6 +1526,7 @@ function attachAdmin() {
   document.getElementById('tabCms').onclick = () => showAdminTab('cms');
   document.getElementById('tabShipping').onclick = () => showAdminTab('shipping');
   document.getElementById('tabOrders').onclick = () => showAdminTab('orders');
+  document.getElementById('tabBulkImport').onclick = () => showAdminTab('bulkImport');
   showAdminTab('products');
 }
 async function showAdminTab(tab) {
@@ -1534,6 +1537,7 @@ async function showAdminTab(tab) {
   document.getElementById('tabCms').classList.toggle('active', tab === 'cms');
   document.getElementById('tabShipping').classList.toggle('active', tab === 'shipping');
   document.getElementById('tabOrders').classList.toggle('active', tab === 'orders');
+  document.getElementById('tabBulkImport').classList.toggle('active', tab === 'bulkImport');
   const content = document.getElementById('adminContent');
   
   try {
@@ -2537,11 +2541,638 @@ async function showAdminTab(tab) {
       });
       content.querySelectorAll('.editOrderBtn').forEach(b => b.onclick = () => openOrderModal(state.orders.find(x => x.id === b.dataset.id)));
       content.querySelectorAll('.printLabelBtn').forEach(b => b.onclick = () => downloadCourierLabel(b.dataset.id));
+    } else if (tab === 'bulkImport') {
+      renderBulkImportTab(content);
     }
   } catch(err) {
     content.innerHTML = `<div class="sp-form-msg sp-form-msg--error" style="margin-top:40px">${err.message || 'Error loading data. Check console.'}</div>`;
     console.error('Tab Load Error:', err);
   }
+}
+
+/* ──────────────────────────────────────────────────────────
+   BULK IMPORT TAB  (admin-only Excel / CSV product upload)
+────────────────────────────────────────────────────────── */
+function renderBulkImportTab(content) {
+  content.innerHTML = `
+  <style>
+    .bi-hero {
+      background: linear-gradient(135deg, #064e3b, #16a34a);
+      color: #fff;
+      border-radius: 16px;
+      padding: 28px 28px 22px;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+    .bi-hero::after {
+      content: '📊';
+      position: absolute;
+      right: 24px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 5rem;
+      opacity: 0.12;
+    }
+    .bi-hero__icon { font-size: 2.4rem; flex-shrink:0; }
+    .bi-hero__title { font-size: 1.3rem; font-weight: 800; letter-spacing: 0.02em; margin-bottom: 4px; }
+    .bi-hero__sub { font-size: 0.82rem; opacity: 0.85; line-height: 1.5; }
+
+    .bi-zone {
+      border: 2.5px dashed #16a34a;
+      border-radius: 16px;
+      background: #f0fdf4;
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: background .2s, border-color .2s, transform .15s;
+      margin-bottom: 24px;
+    }
+    .bi-zone:hover, .bi-zone.drag-over {
+      background: #dcfce7;
+      border-color: #15803d;
+      transform: scale(1.01);
+    }
+    .bi-zone__icon { font-size: 3rem; display:block; margin-bottom: 12px; }
+    .bi-zone__title { font-size: 1.05rem; font-weight: 700; color: #15803d; margin-bottom: 6px; }
+    .bi-zone__hint { font-size: 0.78rem; color: #4b5563; }
+    .bi-zone__or { font-size: 0.8rem; color: #6b7280; margin: 10px 0; }
+    .bi-file-pick {
+      display: inline-block;
+      padding: 9px 24px;
+      background: #16a34a;
+      color: #fff;
+      border-radius: 999px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .bi-file-pick:hover { background: #15803d; }
+
+    .bi-template {
+      background: #fff;
+      border: 1px solid #d1fae5;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 24px;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .bi-template__icon { font-size: 1.6rem; flex-shrink:0; }
+    .bi-template__body { flex: 1; }
+    .bi-template__title { font-weight: 700; font-size: 0.9rem; color: #065f46; margin-bottom: 3px; }
+    .bi-template__desc { font-size: 0.78rem; color: #4b5563; line-height: 1.5; }
+    .bi-dl-btn {
+      display: inline-block;
+      margin-top: 8px;
+      padding: 7px 18px;
+      background: #065f46;
+      color: #fff;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      transition: background .2s;
+    }
+    .bi-dl-btn:hover { background: #064e3b; }
+
+    .bi-preview {
+      background: #fff;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 24px;
+      display: none;
+    }
+    .bi-preview-head {
+      background: #f0fdf4;
+      border-bottom: 1px solid #d1fae5;
+      padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .bi-preview-head__title { font-weight: 700; font-size: 0.9rem; color: #15803d; }
+    .bi-stats { display: flex; gap: 12px; }
+    .bi-stat { font-size: 0.75rem; padding: 3px 10px; border-radius: 999px; font-weight: 700; }
+    .bi-stat--ok   { background: #dcfce7; color: #15803d; }
+    .bi-stat--warn { background: #fef3c7; color: #b45309; }
+    .bi-stat--err  { background: #fee2e2; color: #b91c1c; }
+    .bi-preview-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      display: block;
+    }
+    .bi-preview-table th {
+      background: #f9fafb;
+      padding: 10px 12px;
+      border-bottom: 1px solid #e5e7eb;
+      text-align: left;
+      white-space: nowrap;
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #6b7280;
+      font-weight: 700;
+    }
+    .bi-preview-table td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f3f4f6;
+      vertical-align: middle;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .bi-preview-table tr.row-error td { background: #fff5f5; color: #b91c1c; }
+    .bi-cat-pill {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      background: #e0f2fe;
+      color: #0369a1;
+    }
+    .bi-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .bi-import-btn {
+      padding: 12px 32px;
+      background: linear-gradient(135deg, #16a34a, #15803d);
+      color: #fff;
+      border: none;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: opacity .2s, transform .15s;
+      box-shadow: 0 4px 14px #16a34a44;
+    }
+    .bi-import-btn:hover { opacity: .9; transform: translateY(-1px); }
+    .bi-import-btn:disabled { opacity: .5; pointer-events: none; }
+    .bi-clear-btn {
+      padding: 10px 20px;
+      background: #f3f4f6;
+      color: #374151;
+      border: 1px solid #d1d5db;
+      border-radius: 999px;
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: background .2s;
+    }
+    .bi-clear-btn:hover { background: #e5e7eb; }
+    .bi-result {
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-top: 24px;
+      display: none;
+    }
+    .bi-result--ok  { background: #dcfce7; color: #065f46; border: 1px solid #bbf7d0; }
+    .bi-result--err { background: #fee2e2; color: #7f1d1d; border: 1px solid #fecaca; }
+    .bi-result__title { font-weight: 800; font-size: 1rem; margin-bottom: 8px; }
+    .bi-result__list { font-size: 0.8rem; margin-top: 8px; line-height: 1.7; }
+  </style>
+
+  <!-- Hero Banner -->
+  <div class="bi-hero">
+    <div class="bi-hero__icon">📊</div>
+    <div>
+      <div class="bi-hero__title">Bulk Product Import via Excel</div>
+      <div class="bi-hero__sub">Upload an Excel (.xlsx / .xls) or CSV file to add multiple products at once. Products are auto-approved and appear on the shop immediately.</div>
+    </div>
+  </div>
+
+  <!-- Format Guide -->
+  <div style="background:#fff;border:1px solid #d1fae5;border-radius:16px;overflow:hidden;margin-bottom:24px;">
+    <!-- Guide Header -->
+    <div style="background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-bottom:1px solid #a7f3d0;padding:16px 22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span style="font-size:1.4rem">📋</span>
+        <div>
+          <div style="font-weight:800;font-size:0.95rem;color:#064e3b">Excel Format Guide</div>
+          <div style="font-size:0.73rem;color:#065f46;margin-top:1px">Your sheet must have a header row. Column order does not matter.</div>
+        </div>
+      </div>
+      <button class="bi-dl-btn" id="biDownloadTemplate">⬇ Download Template (.xlsx)</button>
+    </div>
+
+    <!-- Column Definition Cards -->
+    <div style="padding:18px 22px;">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-bottom:20px;">
+
+        <div style="border:1px solid #d1fae5;border-radius:10px;padding:12px 14px;background:#f0fdf4;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span style="font-weight:800;font-size:0.82rem;color:#15803d;font-family:monospace">Title</span>
+            <span style="font-size:0.62rem;background:#fef08a;color:#713f12;padding:1px 7px;border-radius:999px;font-weight:700">REQUIRED</span>
+          </div>
+          <div style="font-size:0.72rem;color:#374151;line-height:1.4;">Product name</div>
+          <div style="font-size:0.67rem;color:#6b7280;margin-top:4px;">Also: <em>name, product name</em></div>
+        </div>
+
+        <div style="border:1px solid #d1fae5;border-radius:10px;padding:12px 14px;background:#f0fdf4;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span style="font-weight:800;font-size:0.82rem;color:#15803d;font-family:monospace">Price</span>
+            <span style="font-size:0.62rem;background:#fef08a;color:#713f12;padding:1px 7px;border-radius:999px;font-weight:700">REQUIRED</span>
+          </div>
+          <div style="font-size:0.72rem;color:#374151;line-height:1.4;">Selling price in ₹ (numbers only)</div>
+          <div style="font-size:0.67rem;color:#6b7280;margin-top:4px;">Also: <em>MRP, selling price, rate</em></div>
+        </div>
+
+        <div style="border:1px solid #d1fae5;border-radius:10px;padding:12px 14px;background:#f0fdf4;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span style="font-weight:800;font-size:0.82rem;color:#15803d;font-family:monospace">Stock</span>
+            <span style="font-size:0.62rem;background:#e0f2fe;color:#0369a1;padding:1px 7px;border-radius:999px;font-weight:700">OPTIONAL</span>
+          </div>
+          <div style="font-size:0.72rem;color:#374151;line-height:1.4;">Quantity in stock (default: 0)</div>
+          <div style="font-size:0.67rem;color:#6b7280;margin-top:4px;">Also: <em>quantity, qty, inventory</em></div>
+        </div>
+
+        <div style="border:1px solid #d1fae5;border-radius:10px;padding:12px 14px;background:#f0fdf4;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span style="font-weight:800;font-size:0.82rem;color:#15803d;font-family:monospace">Colour</span>
+            <span style="font-size:0.62rem;background:#e0f2fe;color:#0369a1;padding:1px 7px;border-radius:999px;font-weight:700">OPTIONAL</span>
+          </div>
+          <div style="font-size:0.72rem;color:#374151;line-height:1.4;">Colour name(s)</div>
+          <div style="font-size:0.67rem;color:#6b7280;margin-top:4px;">Also: <em>color, colours, colors</em></div>
+        </div>
+
+        <div style="border:1px solid #d1fae5;border-radius:10px;padding:12px 14px;background:#f0fdf4;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span style="font-weight:800;font-size:0.82rem;color:#15803d;font-family:monospace">Size</span>
+            <span style="font-size:0.62rem;background:#e0f2fe;color:#0369a1;padding:1px 7px;border-radius:999px;font-weight:700">OPTIONAL</span>
+          </div>
+          <div style="font-size:0.72rem;color:#374151;line-height:1.4;">Sizes comma-separated</div>
+          <div style="font-size:0.67rem;color:#6b7280;margin-top:4px;">e.g. <em>S, M, L, XL</em></div>
+        </div>
+
+        <div style="border:1px solid #d1fae5;border-radius:10px;padding:12px 14px;background:#f0fdf4;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span style="font-weight:800;font-size:0.82rem;color:#15803d;font-family:monospace">Category</span>
+            <span style="font-size:0.62rem;background:#e0f2fe;color:#0369a1;padding:1px 7px;border-radius:999px;font-weight:700">OPTIONAL</span>
+          </div>
+          <div style="font-size:0.72rem;color:#374151;line-height:1.4;">One of the values below</div>
+          <div style="font-size:0.67rem;color:#6b7280;margin-top:4px;display:flex;flex-wrap:wrap;gap:3px;">
+            <span style="background:#e0f2fe;padding:1px 5px;border-radius:3px">party</span>
+            <span style="background:#e0f2fe;padding:1px 5px;border-radius:3px">ethnic</span>
+            <span style="background:#e0f2fe;padding:1px 5px;border-radius:3px">casual</span>
+            <span style="background:#e0f2fe;padding:1px 5px;border-radius:3px">maxi</span>
+            <span style="background:#e0f2fe;padding:1px 5px;border-radius:3px">coord</span>
+            <span style="background:#e0f2fe;padding:1px 5px;border-radius:3px">other</span>
+          </div>
+        </div>
+
+        <div style="border:1px solid #d1fae5;border-radius:10px;padding:12px 14px;background:#f0fdf4;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span style="font-weight:800;font-size:0.82rem;color:#15803d;font-family:monospace">Description</span>
+            <span style="font-size:0.62rem;background:#e0f2fe;color:#0369a1;padding:1px 7px;border-radius:999px;font-weight:700">OPTIONAL</span>
+          </div>
+          <div style="font-size:0.72rem;color:#374151;line-height:1.4;">Product details / fabric / fit</div>
+          <div style="font-size:0.67rem;color:#6b7280;margin-top:4px;">Also: <em>desc, details</em></div>
+        </div>
+
+        <div style="border:1px solid #d1fae5;border-radius:10px;padding:12px 14px;background:#f0fdf4;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px;">
+            <span style="font-weight:800;font-size:0.82rem;color:#15803d;font-family:monospace">Images</span>
+            <span style="font-size:0.62rem;background:#e0f2fe;color:#0369a1;padding:1px 7px;border-radius:999px;font-weight:700">OPTIONAL</span>
+          </div>
+          <div style="font-size:0.72rem;color:#374151;line-height:1.4;">Direct image URLs, comma-separated (must start with http)</div>
+          <div style="font-size:0.67rem;color:#6b7280;margin-top:4px;">Also: <em>image, image url, photo</em></div>
+        </div>
+
+      </div>
+
+      <!-- Spreadsheet Sample -->
+      <div style="margin-bottom:6px;font-size:0.78rem;font-weight:700;color:#374151;display:flex;align-items:center;gap:6px;">
+        <span style="font-size:1rem">📊</span> Sample Data — how your Excel should look:
+      </div>
+      <div style="overflow-x:auto;border-radius:10px;border:1.5px solid #bbf7d0;">
+        <table style="width:100%;border-collapse:collapse;font-size:0.74rem;min-width:700px;">
+          <thead>
+            <tr style="background:#dcfce7;">
+              <th style="padding:9px 12px;border-bottom:2px solid #86efac;text-align:left;font-weight:800;color:#14532d;white-space:nowrap">Title</th>
+              <th style="padding:9px 12px;border-bottom:2px solid #86efac;text-align:left;font-weight:800;color:#14532d;white-space:nowrap">Price</th>
+              <th style="padding:9px 12px;border-bottom:2px solid #86efac;text-align:left;font-weight:800;color:#14532d;white-space:nowrap">Stock</th>
+              <th style="padding:9px 12px;border-bottom:2px solid #86efac;text-align:left;font-weight:800;color:#14532d;white-space:nowrap">Colour</th>
+              <th style="padding:9px 12px;border-bottom:2px solid #86efac;text-align:left;font-weight:800;color:#14532d;white-space:nowrap">Size</th>
+              <th style="padding:9px 12px;border-bottom:2px solid #86efac;text-align:left;font-weight:800;color:#14532d;white-space:nowrap">Category</th>
+              <th style="padding:9px 12px;border-bottom:2px solid #86efac;text-align:left;font-weight:800;color:#14532d;white-space:nowrap">Description</th>
+              <th style="padding:9px 12px;border-bottom:2px solid #86efac;text-align:left;font-weight:800;color:#14532d;white-space:nowrap">Images</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr style="background:#fff;">
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;color:#1e293b;font-weight:600">Chiffon Floral Dress</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;color:#16a34a;font-weight:700">4999</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;">20</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;">Blush Pink</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;">S, M, L</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;"><span style="background:#e0f2fe;color:#0369a1;padding:2px 7px;border-radius:4px;font-weight:700;font-size:0.7rem">casual</span></td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;color:#6b7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Flowy floral print chiffon...</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;color:#6b7280;font-size:0.68rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"><em>(leave blank or paste URL)</em></td>
+            </tr>
+            <tr style="background:#f9fafb;">
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;color:#1e293b;font-weight:600">Velvet Lehenga Set</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;color:#16a34a;font-weight:700">24500</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;">8</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;">Maroon</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;">M, L</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;"><span style="background:#fce7f3;color:#9d174d;padding:2px 7px;border-radius:4px;font-weight:700;font-size:0.7rem">ethnic</span></td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;color:#6b7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Heavy embroidered velvet...</td>
+              <td style="padding:9px 12px;border-bottom:1px solid #f0fdf4;color:#6b7280;font-size:0.68rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">https://example.com/img.jpg</td>
+            </tr>
+            <tr style="background:#fff;">
+              <td style="padding:9px 12px;color:#1e293b;font-weight:600">Party Jumpsuit</td>
+              <td style="padding:9px 12px;color:#16a34a;font-weight:700">6999</td>
+              <td style="padding:9px 12px;">15</td>
+              <td style="padding:9px 12px;">Black</td>
+              <td style="padding:9px 12px;">XS, S, M, L</td>
+              <td style="padding:9px 12px;"><span style="background:#fdf4ff;color:#7e22ce;padding:2px 7px;border-radius:4px;font-weight:700;font-size:0.7rem">party</span></td>
+              <td style="padding:9px 12px;color:#6b7280;max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">Sleek wide-leg jumpsuit...</td>
+              <td style="padding:9px 12px;color:#6b7280;font-size:0.68rem;"><em>(leave blank)</em></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div style="margin-top:10px;font-size:0.72rem;color:#6b7280;display:flex;align-items:center;gap:5px;">
+        💡 <strong>Tip:</strong> Download the template below — it already has the correct headers and sample rows pre-filled.
+      </div>
+    </div>
+  </div>
+
+  <!-- Drop Zone -->
+  <div class="bi-zone" id="biDropZone">
+    <span class="bi-zone__icon">🗂️</span>
+    <div class="bi-zone__title">Drag & Drop your Excel or CSV file here</div>
+    <div class="bi-zone__hint">Supports .xlsx, .xls, and .csv — up to 10 MB</div>
+    <div class="bi-zone__or">— or —</div>
+    <label class="bi-file-pick" for="biFileInput">📂 Choose File</label>
+    <input type="file" id="biFileInput" accept=".xlsx,.xls,.csv" style="display:none"/>
+    <div id="biFileName" style="margin-top:12px;font-size:0.8rem;color:#15803d;font-weight:600"></div>
+  </div>
+
+  <!-- Preview Panel (hidden until file loaded) -->
+  <div class="bi-preview" id="biPreview">
+    <div class="bi-preview-head">
+      <div class="bi-preview-head__title" id="biPreviewTitle">Preview</div>
+      <div class="bi-stats">
+        <span class="bi-stat bi-stat--ok" id="biStatOk">0 valid</span>
+        <span class="bi-stat bi-stat--warn" id="biStatSkip">0 skipped</span>
+      </div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="bi-preview-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Title</th><th>Price (₹)</th><th>Stock</th><th>Colour</th><th>Size</th><th>Category</th><th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="biPreviewBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="bi-actions" id="biActions" style="display:none">
+    <button class="bi-import-btn" id="biImportBtn">⬆ Import Products to Shop</button>
+    <button class="bi-clear-btn" id="biClearBtn">✕ Clear &amp; Re-select</button>
+  </div>
+
+  <!-- Result Box -->
+  <div class="bi-result" id="biResult">
+    <div class="bi-result__title" id="biResultTitle"></div>
+    <div class="bi-result__list" id="biResultList"></div>
+  </div>
+  `;
+
+  // ── State ──────────────────────────────────────────────────
+  let parsedRows = []; // { title, price, stock, colour, size, category, desc, images, _valid, _error }
+  const VALID_CATS = ['party','ethnic','casual','maxi','coord','workwear','other'];
+
+  function normaliseCat(raw) {
+    const c = (raw || '').toLowerCase().replace(/[^a-z]/g,'');
+    return VALID_CATS.find(v => c.includes(v)) || 'other';
+  }
+
+  function parseFile(file) {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const data = new Uint8Array(e.target.result);
+      let wb;
+      try {
+        wb = XLSX.read(data, { type: 'array' });
+      } catch(err) {
+        showResult(false, 'Could not parse file: ' + err.message, []);
+        return;
+      }
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const raw = XLSX.utils.sheet_to_json(ws, { defval: '' });
+
+      if (!raw.length) {
+        showResult(false, 'The sheet appears to be empty.', []);
+        return;
+      }
+
+      function col(row, ...names) {
+        for (const n of names) {
+          const key = Object.keys(row).find(k => k.trim().toLowerCase() === n.toLowerCase());
+          if (key !== undefined && row[key] !== '' && row[key] !== null) return String(row[key]).trim();
+        }
+        return '';
+      }
+
+      parsedRows = raw.map((row, i) => {
+        const title    = col(row, 'title','name','product name','product title');
+        const priceStr = col(row, 'price','mrp','selling price','rate');
+        const stockStr = col(row, 'stock','quantity','qty','inventory');
+        const colour   = col(row, 'colour','color','colours','colors');
+        const size     = col(row, 'size','sizes','available sizes');
+        const rawCat   = col(row, 'category','type','product type');
+        const desc     = col(row, 'description','desc','details');
+        const imgStr   = col(row, 'images','image','image url','image urls','photos','photo');
+        const price    = parseFloat(priceStr);
+        const stock    = parseInt(stockStr, 10);
+        const images   = imgStr ? imgStr.split(/[,;\n]+/).map(u=>u.trim()).filter(u=>u.startsWith('http')) : [];
+
+        let _valid = true; let _error = '';
+        if (!title) { _valid = false; _error = 'Missing title'; }
+        else if (isNaN(price) || price <= 0) { _valid = false; _error = `Bad price: "${priceStr}"`; }
+
+        return {
+          _rowNum: i + 2, title, price: isNaN(price)?0:price,
+          stock: isNaN(stock)?0:Math.max(0,stock),
+          colour, size, category: normaliseCat(rawCat), desc, images, _valid, _error
+        };
+      });
+
+      renderPreview();
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function renderPreview() {
+    const valid  = parsedRows.filter(r => r._valid);
+    const skipped = parsedRows.filter(r => !r._valid);
+
+    document.getElementById('biPreviewTitle').textContent =
+      `Preview — ${parsedRows.length} row${parsedRows.length!==1?'s':''} detected`;
+    document.getElementById('biStatOk').textContent   = valid.length   + ' valid';
+    document.getElementById('biStatSkip').textContent = skipped.length + ' skipped';
+    document.getElementById('biPreview').style.display = 'block';
+    document.getElementById('biActions').style.display = 'flex';
+    document.getElementById('biResult').style.display  = 'none';
+
+    const tbody = document.getElementById('biPreviewBody');
+    tbody.innerHTML = parsedRows.map(r => `
+      <tr class="${r._valid?'':'row-error'}">
+        <td style="color:#9ca3af">${r._rowNum}</td>
+        <td><strong>${r._valid ? (r.title||'—') : ('⚠ '+r._error)}</strong></td>
+        <td>${r._valid ? '₹'+r.price.toLocaleString('en-IN') : '—'}</td>
+        <td>${r.stock}</td>
+        <td>${r.colour||'—'}</td>
+        <td style="font-size:0.72rem">${r.size||'—'}</td>
+        <td><span class="bi-cat-pill">${r.category}</span></td>
+        <td>${r._valid
+          ? '<span style="color:#16a34a;font-weight:700">✓ Ready</span>'
+          : '<span style="color:#dc2626;font-weight:700">✗ Skipped</span>'}</td>
+      </tr>
+    `).join('');
+  }
+
+  function showResult(ok, title, errors) {
+    const el = document.getElementById('biResult');
+    el.className = 'bi-result ' + (ok ? 'bi-result--ok' : 'bi-result--err');
+    el.style.display = 'block';
+    document.getElementById('biResultTitle').textContent = title;
+    document.getElementById('biResultList').innerHTML = errors.map(e => `• ${e}`).join('<br/>');
+  }
+
+  // ── Download sample template ──────────────────────────────
+  document.getElementById('biDownloadTemplate').onclick = () => {
+    const headers = ['Title','Price','Stock','Colour','Size','Category','Description','Images'];
+    const sample = [
+      ['Chiffon Floral Dress', 4999, 20, 'Blush Pink', 'S, M, L', 'casual', 'Flowy floral print chiffon perfect for summer.', ''],
+      ['Velvet Lehenga Set',   24500, 8,  'Maroon',     'M, L',    'ethnic', 'Heavy embroidered velvet lehenga for weddings.', ''],
+      ['Party Jumpsuit',       6999, 15, 'Black',      'XS, S, M, L', 'party', 'Sleek wide-leg jumpsuit for evenings.',       '']
+    ];
+    const ws  = XLSX.utils.aoa_to_sheet([headers, ...sample]);
+    const wb2 = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb2, ws, 'Products');
+    XLSX.writeFile(wb2, 'TAVUSHA_Product_Import_Template.xlsx');
+  };
+
+  // ── File input / drag-drop ────────────────────────────────
+  const zone = document.getElementById('biDropZone');
+  const inp  = document.getElementById('biFileInput');
+
+  zone.addEventListener('dragover', e => { e.preventDefault(); zone.classList.add('drag-over'); });
+  zone.addEventListener('dragleave', () => zone.classList.remove('drag-over'));
+  zone.addEventListener('drop', e => {
+    e.preventDefault(); zone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file) handleFilePicked(file);
+  });
+  inp.addEventListener('change', () => {
+    if (inp.files[0]) handleFilePicked(inp.files[0]);
+  });
+
+  function handleFilePicked(file) {
+    document.getElementById('biFileName').textContent = '📄 ' + file.name;
+    parsedRows = [];
+    document.getElementById('biPreview').style.display = 'none';
+    document.getElementById('biActions').style.display = 'none';
+    document.getElementById('biResult').style.display  = 'none';
+    parseFile(file);
+  }
+
+  // ── Clear ─────────────────────────────────────────────────
+  document.getElementById('biClearBtn').onclick = () => {
+    parsedRows = [];
+    inp.value = '';
+    document.getElementById('biFileName').textContent = '';
+    document.getElementById('biPreview').style.display  = 'none';
+    document.getElementById('biActions').style.display  = 'none';
+    document.getElementById('biResult').style.display   = 'none';
+  };
+
+  // ── Import ────────────────────────────────────────────────
+  document.getElementById('biImportBtn').onclick = async () => {
+    const validRows = parsedRows.filter(r => r._valid);
+    if (!validRows.length) {
+      showResult(false, 'No valid rows to import.', []);
+      return;
+    }
+
+    const btn = document.getElementById('biImportBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="sp-spinner" style="width:16px;height:16px;border-width:2px;border-color:#fff;border-top-color:transparent;display:inline-block;border-radius:50%;animation:spin .8s linear infinite"></span> Importing…';
+
+    if (state.isDemo) {
+      // ── Demo / offline mode: import to localStorage ──────────
+      const prods = getLocal('sp_demo_products', DEFAULT_MOCK_PRODS);
+      let imported = 0; const errors = [];
+      for (const r of validRows) {
+        try {
+          const newP = {
+            _id: 'bulk_' + Date.now() + '_' + imported,
+            title: r.title, price: r.price, stock: r.stock,
+            colour: r.colour, size: r.size, category: r.category,
+            description: r.desc, status: 'approved',
+            images: r.images.length ? r.images : ['https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400'],
+            created_at: new Date().toISOString()
+          };
+          prods.unshift(newP);
+          imported++;
+        } catch(e) {
+          errors.push(r.title + ': ' + e.message);
+        }
+      }
+      setLocal('sp_demo_products', prods);
+      btn.disabled = false;
+      btn.innerHTML = '⬆ Import Products to Shop';
+      const skipped = validRows.length - imported + parsedRows.filter(r=>!r._valid).length;
+      showResult(true,
+        `✅ ${imported} product${imported!==1?'s':''} imported successfully (demo mode)!`,
+        errors.concat(parsedRows.filter(r=>!r._valid).map(r=>`Row ${r._rowNum}: ${r._error}`))
+      );
+      return;
+    }
+
+    // ── Live backend mode: upload file to /api/products/bulk-import ──
+    try {
+      const file = inp.files[0];
+      if (!file) { showResult(false, 'Please select a file first.', []); btn.disabled=false; btn.innerHTML='⬆ Import Products to Shop'; return; }
+      const fd = new FormData();
+      fd.append('excel', file);
+      const result = await api('/products/bulk-import', { method: 'POST', body: fd });
+      btn.disabled = false;
+      btn.innerHTML = '⬆ Import Products to Shop';
+      showResult(true,
+        `✅ ${result.imported} product${result.imported!==1?'s':''} imported! ${result.skipped?result.skipped+' row(s) skipped.':''}`,
+        result.errors || []
+      );
+      state.products = await api('/products');
+    } catch(err) {
+      btn.disabled = false;
+      btn.innerHTML = '⬆ Import Products to Shop';
+      showResult(false, 'Import failed: ' + err.message, []);
+    }
+  };
 }
 
 /* ---------------- MODALS FOR CMS & OTHER TABS ---------------- */
