@@ -1323,8 +1323,9 @@ async function showAdminTab(tab) {
 
       const heroBanners = state.banners.filter(b => b.type === 'hero');
       const festBanners = state.banners.filter(b => b.type === 'festival');
-      const posterSpread = state.sections.find(s => s.key === 'poster_spread');
-      const posterCfg = posterSpread?.config || {};
+      const posterSpread = state.sections.find(s => s.key === 'poster_spread' || s.key === 'poster-spread');
+      let posterCfg = posterSpread?.config || {};
+      if (typeof posterCfg === 'string') { try { posterCfg = JSON.parse(posterCfg); } catch(e) {} }
 
       content.innerHTML = `
         <!-- ANNOUNCEMENT BAR -->

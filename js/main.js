@@ -965,13 +965,48 @@ async function loadCmsContent() {
     if (res.ok) cms = await res.json();
   } catch { /* backend offline */ }
 
-  // Fallback: read from localStorage (set by admin.html)
-  if (!cms) {
+  if (!cms) cms = {};
+
+  // Check localStorage for admin overrides / offline data
+  let localCms = null;
+  try {
     const stored = localStorage.getItem('cms_data');
-    cms = stored ? JSON.parse(stored) : null;
+    if (stored) localCms = JSON.parse(stored);
+  } catch (e) {}
+
+  let demoSecs = null;
+  try {
+    const storedSecs = localStorage.getItem('sp_demo_sections');
+    if (storedSecs) demoSecs = JSON.parse(storedSecs);
+  } catch (e) {}
+
+  // Merge sections from all available sources
+  let sectionsMap = {};
+
+  // 1. Live API sections
+  if (cms.sections) {
+    const list = Array.isArray(cms.sections) ? cms.sections : Object.entries(cms.sections).map(([key, s]) => ({ key, ...s }));
+    list.forEach(s => { sectionsMap[s.key] = s; });
   }
 
-  if (!cms) return; // no data — show static page as-is
+  // 2. Local CMS cache
+  if (localCms && localCms.sections) {
+    const list = Array.isArray(localCms.sections) ? localCms.sections : Object.entries(localCms.sections).map(([key, s]) => ({ key, ...s }));
+    list.forEach(s => {
+      sectionsMap[s.key] = { ...(sectionsMap[s.key] || {}), ...s };
+    });
+  }
+
+  // 3. Admin demo section updates
+  if (demoSecs && Array.isArray(demoSecs)) {
+    demoSecs.forEach(ds => {
+      sectionsMap[ds.key] = { ...(sectionsMap[ds.key] || {}), ...ds };
+    });
+  }
+
+  cms.sections = Object.values(sectionsMap);
+  if (!cms.announcement && localCms?.announcement) cms.announcement = localCms.announcement;
+  if (!cms.heroBanners && localCms?.heroBanners) cms.heroBanners = localCms.heroBanners;
 
   // Announcement bar text
   if (cms.announcement) {
@@ -996,10 +1031,9 @@ async function loadCmsContent() {
     renderFestivalBanners(cms.festivalBanners);
   }
 
-  // Section visibility
-  if (cms.sections) {
-    const list = Array.isArray(cms.sections) ? cms.sections : Object.entries(cms.sections).map(([key, s]) => ({ key, visible: s.visible, config: s.config }));
-    list.forEach(s => {
+  // Section visibility & content
+  if (cms.sections && cms.sections.length) {
+    cms.sections.forEach(s => {
       let id = s.key;
       // Map section keys to actual element IDs if needed
       if (id === 'poster_spread') id = 'poster-spread';
