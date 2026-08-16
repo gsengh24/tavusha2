@@ -522,6 +522,7 @@ function renderPDP(p) {
   const gMain=document.getElementById('galleryMain');
   const mainDriveId = p.image.match(/[?&]id=([^&]+)/);
   const mainFallback = mainDriveId ? `https://lh3.googleusercontent.com/d/${mainDriveId[1]}=w800` : (p.imageAlt || p.image);
+  gMain.referrerPolicy = 'no-referrer';
   gMain.onerror = function() {
     if(!this.dataset.tried){this.dataset.tried='1';this.src=mainFallback;}
     else{this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%25\' height=\'100%25\'><rect fill=\'%23ede0c0\'/><text x=\'50%25\' y=\'50%25\' font-family=\'serif\' font-size=\'14\' fill=\'%23a07840\' text-anchor=\'middle\' dy=\'.3em\'>TAVUSHA</text></svg>';}
@@ -538,7 +539,7 @@ function renderPDP(p) {
     const m = src.match(/[?&]id=([^&]+)/);
     const fb = m ? `https://lh3.googleusercontent.com/d/${m[1]}=w800` : src;
     return `<div class="pdp-gallery__thumb ${i===0?'active':''}" onclick="switchImg(${i},this,'${src}','${bgs[i%bgs.length]}')">
-      <img src="${src}" alt="${p.name} ${i+1}" loading="lazy" onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='${fb}';}"></div>`;
+      <img src="${src}" alt="${p.name} ${i+1}" loading="lazy" referrerpolicy="no-referrer" onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='${fb}';}"></div>`;
   }).join('');
   // ── Multi-Colour Variants Parsing ──
   let variants = [];
@@ -786,7 +787,7 @@ function renderRelated(p){
     const driveIdMatch = rp.image.match(/[?&]id=([^&]+)/);
     const driveId = driveIdMatch ? driveIdMatch[1] : '';
     const fallbackImg = driveId ? `https://lh3.googleusercontent.com/d/${driveId}=w800` : (rp.imageAlt || rp.image);
-    return `<div class="product-card reveal" onclick="location.href='product.html?id=${rp.id}'" style="cursor:pointer">
+    return `<div class="product-card reveal visible" onclick="location.href='product.html?id=${rp.id}'" style="cursor:pointer">
       <div class="product-card__media" style="--card-bg:${bgs[i%bgs.length]}">
         <img class="product-card__img" src="${rp.image}" alt="${rp.name}" loading="lazy" onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='${fallbackImg}';}else{this.src='data:image/svg+xml,<svg xmlns=\\'http://www.w3.org/2000/svg\\' width=\\'100%25\\' height=\\'100%25\\'><rect fill=\\'%23f5e2d6\\'/><text x=\\'50%25\\' y=\\'50%25\\' font-family=\\'serif\\' font-size=\\'14\\' fill=\\'%23a07840\\' text-anchor=\\'middle\\' dy=\\'.3em\\'>TAVUSHA</text></svg>';}">
         <div class="product-card__actions">

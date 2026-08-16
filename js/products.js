@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    TAVUSHA - Auto-generated Products Data from Excel
    ============================================================ */
 
@@ -22,14 +22,19 @@ window.tavushaImgError = function(img) {
   var origSrc = img.dataset.origSrc || img.src;
   if (!img.dataset.origSrc) img.dataset.origSrc = img.src;
 
+  img.referrerPolicy = 'no-referrer';
+
   var m = origSrc.match(/[?&]id=([^&]+)/) || origSrc.match(/\/d\/([^/]+)/) || origSrc.match(/\/file\/d\/([^/]+)/);
   var fileId = m ? m[1] : '';
 
   if (tried === 0 && fileId) {
     img.dataset.tried = '1';
-    img.src = 'https://drive.google.com/uc?export=view&id=' + fileId;
-  } else {
+    img.src = 'https://drive.google.com/thumbnail?id=' + fileId + '&sz=w800';
+  } else if (tried === 1 && fileId) {
     img.dataset.tried = '2';
+    img.src = 'https://lh3.googleusercontent.com/d/' + fileId + '=w800';
+  } else {
+    img.dataset.tried = '3';
     img.onerror = null;
     img.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='400' height='500' viewBox='0 0 400 500'%3E%3Crect fill='%23f5e2d6' width='400' height='500'/%3E%3Ctext x='50%25' y='46%25' font-family='Georgia,serif' font-size='16' fill='%23a07840' text-anchor='middle'%3ETAVUSHA%3C/text%3E%3Ctext x='50%25' y='54%25' font-family='Georgia,serif' font-size='11' fill='%23c9a87c' text-anchor='middle'%3ETAVUSHA%3C/text%3E%3C/svg%3E";
   }
@@ -1967,6 +1972,15 @@ var TAVUSHA_PRODUCTS = [
         "imageAlt":  "https://drive.google.com/thumbnail?id=1494orf0RXivm5Miwua3dQTgjT6NCygyr&sz=w800",
         "reviewCount":  112,
         "stock":  0
+    },
+    {
+        "badge":  "sale",
+        "id":  70,
+        "category":  [
+                         "sale",
+                         "all"
+                     ],
+        "rating":  4.5,
         "isNew":  false,
         "sizes":  [
                       "Free Size"

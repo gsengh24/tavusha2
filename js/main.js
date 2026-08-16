@@ -233,9 +233,9 @@ function renderProductCard(product, colorIdx) {
   const isWishlisted = TAVUSHA.wishlist.includes(product.id);
 
   return `
-    <div class="product-card reveal" data-id="${product.id}" onclick="openQuickView('${product.id}')">
+    <div class="product-card reveal visible" data-id="${product.id}" onclick="openQuickView('${product.id}')">
       <div class="product-card__media" style="--card-bg:${color}">
-        <img class="product-card__img" src="${typeof fixDriveUrl==='function'?fixDriveUrl(product.image):product.image}" data-orig-src="${product.image}" alt="${product.name}" loading="lazy"
+        <img class="product-card__img" src="${typeof fixDriveUrl==='function'?fixDriveUrl(product.image):product.image}" data-orig-src="${product.image}" alt="${product.name}" loading="lazy" referrerpolicy="no-referrer"
           onerror="if(typeof tavushaImgError==='function'){tavushaImgError(this);}">
         ${product.badge ? `<span class="product-card__badge ${badgeMap[product.badge] || ''}">${badgeLabelMap[product.badge] || product.badge}</span>` : ''}
         <!-- Two action circles — reference pattern -->
@@ -267,11 +267,11 @@ function renderProductCard(product, colorIdx) {
 // Reference: Horizontal 4-card row below split-header
 function renderHeroProductRow() {
   const grid = document.getElementById('heroProductRow');
-  if (!grid || typeof TAVUSHA_PRODUCTS === 'undefined') return;
+  if (!grid || typeof TAVUSHA_PRODUCTS === 'undefined' || !Array.isArray(TAVUSHA_PRODUCTS)) return;
 
-  // Show first 4 trending products
-  const picks = TAVUSHA_PRODUCTS
-    .sort((a, b) => b.reviewCount - a.reviewCount)
+  // Show first 4 trending products without mutating original TAVUSHA_PRODUCTS array
+  const picks = [...TAVUSHA_PRODUCTS]
+    .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
     .slice(0, 4);
 
   grid.innerHTML = picks.map((p, i) => renderProductCard(p, i)).join('');

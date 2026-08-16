@@ -498,6 +498,66 @@ ul { list-style: none; }
 .editorial-item__img img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s var(--ease-snap); }
 .editorial-item:hover .editorial-item__img img { transform: scale(1.06); }
 
+/* ─── Editorial Promo Card ─────────────────────────────── */
+.editorial-promo-card {
+  margin-top: 24px;
+  padding: 24px;
+  border-radius: var(--radius-card, 16px);
+  background: linear-gradient(135deg, #FAF6F0 0%, #F3ECE2 100%);
+  border: 1px solid rgba(201, 169, 110, 0.3);
+  box-shadow: 0 10px 25px -5px rgba(28, 25, 23, 0.04);
+}
+.editorial-promo-card__tag {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--brand-dark, #A07840);
+  margin-bottom: 8px;
+}
+.editorial-promo-card__title {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--black, #1C1917);
+  margin-bottom: 6px;
+  line-height: 1.25;
+}
+.editorial-promo-card__desc {
+  font-size: 0.78rem;
+  color: var(--warm-grey, #78716C);
+  line-height: 1.55;
+  margin-bottom: 14px;
+}
+.editorial-promo-card__features {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--brand-dark, #826644);
+  margin-bottom: 16px;
+}
+.editorial-promo-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 50px;
+  background: var(--black, #1C1917);
+  color: #fff;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-decoration: none;
+  transition: all 0.3s ease;
+}
+.editorial-promo-card__btn:hover {
+  background: var(--brand, #C9A96E);
+  color: var(--black, #1C1917);
+  transform: translateY(-2px);
+}
+
 /* ─── CATEGORY BROWSER ───────────────────────────────────────── */
 /* Reference: Large typographic list — sizes, underline on active */
 .cat-browser {
