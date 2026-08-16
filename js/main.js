@@ -1038,11 +1038,15 @@ async function loadCmsContent() {
     const bar = document.getElementById('announcement');
     if (bar) {
       const textEl = bar.querySelector('.announcement__text');
-      if (textEl) textEl.textContent = cms.announcement;
+      const annText = typeof cms.announcement === 'string' 
+        ? cms.announcement 
+        : (cms.announcement.config?.text || cms.announcement.text || '');
+      if (textEl && annText) textEl.textContent = annText;
     }
   }
 
   // Hero banners rendering
+  const heroBanners = cms.heroBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'hero' || !b.type) : []) || [];
   if (heroBanners && heroBanners.length) {
     const heroBanner = heroBanners[0];
     const heroImg = document.querySelector('.hero__model-img');
@@ -1079,17 +1083,20 @@ async function loadCmsContent() {
   }
 
   // Festival / promo banners — inject into page if container exists
+  const festBanners = cms.festivalBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'festival') : []) || [];
   if (festBanners && festBanners.length) {
     renderFestivalBanners(festBanners);
   }
 
-  // Section visibility & content
-  if (cms.sections && cms.sections.length) {
-    cms.sections.forEach(s => {
+  // Section visibility & dynamic configurations
+  if (cms.sections) {
+    const list = Array.isArray(cms.sections) ? cms.sections : Object.entries(cms.sections).map(([key, s]) => ({ key, visible: s.visible, config: s.config }));
+    list.forEach(s => {
       let id = s.key;
       // Map section keys to actual element IDs if needed
       if (id === 'poster_spread') id = 'poster-spread';
       if (id === 'categories') id = 'cat-browser';
+      if (id === 'testimonials') id = 'reviews';
       
       const el = document.getElementById(id);
       if (el) el.style.display = s.visible !== false ? '' : 'none';
@@ -1129,7 +1136,12 @@ async function loadCmsContent() {
           if (elMainDesc && cfg.main_desc) elMainDesc.textContent = cfg.main_desc;
           
           const elMainAction = document.getElementById('p_spread_main_action');
-          if (elMainAction && cfg.main_link) elMainAction.setAttribute('onclick', `window.location.href='product.html?id=${cfg.main_link}'`);
+          if (elMainAction && cfg.main_link) {
+            const targetUrl = cfg.main_link.startsWith('http') || cfg.main_link.includes('.html') 
+              ? cfg.main_link 
+              : `product.html?id=${cfg.main_link}`;
+            elMainAction.setAttribute('onclick', `window.location.href='${targetUrl}'`);
+          }
 
           // Side 1
           const elSide1Img = document.getElementById('p_spread_side1_img');
@@ -1145,7 +1157,12 @@ async function loadCmsContent() {
           if (elSide1Quote && cfg.side1_quote) elSide1Quote.textContent = cfg.side1_quote;
           
           const elSide1Action = document.getElementById('p_spread_side1_action');
-          if (elSide1Action && cfg.side1_link) elSide1Action.setAttribute('onclick', `window.location.href='product.html?id=${cfg.side1_link}'`);
+          if (elSide1Action && cfg.side1_link) {
+            const targetUrl = cfg.side1_link.startsWith('http') || cfg.side1_link.includes('.html') 
+              ? cfg.side1_link 
+              : `product.html?id=${cfg.side1_link}`;
+            elSide1Action.setAttribute('onclick', `window.location.href='${targetUrl}'`);
+          }
 
           // Side 2
           const elSide2Img = document.getElementById('p_spread_side2_img');
@@ -1161,7 +1178,12 @@ async function loadCmsContent() {
           if (elSide2Quote && cfg.side2_quote) elSide2Quote.textContent = cfg.side2_quote;
           
           const elSide2Action = document.getElementById('p_spread_side2_action');
-          if (elSide2Action && cfg.side2_link) elSide2Action.setAttribute('onclick', `window.location.href='product.html?id=${cfg.side2_link}'`);
+          if (elSide2Action && cfg.side2_link) {
+            const targetUrl = cfg.side2_link.startsWith('http') || cfg.side2_link.includes('.html') 
+              ? cfg.side2_link 
+              : `product.html?id=${cfg.side2_link}`;
+            elSide2Action.setAttribute('onclick', `window.location.href='${targetUrl}'`);
+          }
 
           // Quote Box
           const elQuoteText = document.getElementById('p_spread_quote_text');
@@ -1171,12 +1193,74 @@ async function loadCmsContent() {
           if (elQuoteAuthor && cfg.quote_author) elQuoteAuthor.textContent = cfg.quote_author;
         }
       }
+
+      // Load Customer Feedback / Testimonials config
+      if ((s.key === 'testimonials' || s.key === 'reviews') && s.visible !== false && s.config) {
+        renderCustomerFeedback(s.config);
+      }
     });
   }
 
   // Promo popup
   if (cms.popup && cms.popup.enabled) {
     setTimeout(() => showCmsPopup(cms.popup), (cms.popup.delay || 5) * 1000);
+  }
+}
+
+function handleLinkNavigation(url) {
+  if (!url || url === '#') return;
+  if (url.startsWith('#')) {
+    const target = document.querySelector(url);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth' });
+    }
+  } else {
+    window.location.href = url;
+  }
+}
+
+function renderCustomerFeedback(cfg) {
+  if (!cfg) return;
+  const titleEl = document.getElementById('reviews_section_title');
+  if (titleEl && cfg.title) titleEl.innerHTML = cfg.title;
+
+  const subEl = document.getElementById('reviews_section_sub');
+  if (subEl && cfg.sub) subEl.textContent = cfg.sub;
+
+  const scoreEl = document.getElementById('reviews_avg_score');
+  if (scoreEl && cfg.rating) scoreEl.textContent = cfg.rating;
+
+  const countEl = document.getElementById('reviews_total_count');
+  if (countEl && cfg.count) countEl.textContent = cfg.count;
+
+  if (Array.isArray(cfg.reviews) && cfg.reviews.length > 0) {
+    const grid = document.getElementById('reviewsGridContainer');
+    if (grid) {
+      grid.innerHTML = cfg.reviews.map((r, i) => {
+        const starsCount = Number(r.stars) || 5;
+        const starsHTML = Array.from({length: 5}, (_, idx) => 
+          `<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" opacity="${idx < starsCount ? '1' : '0.3'}"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
+        ).join('');
+        const initial = (r.name || 'C').charAt(0).toUpperCase();
+
+        return `
+          <div class="review-card-ref reveal delay-${(i % 4) + 1}">
+            <div class="review-card-ref__stars">
+              ${starsHTML}
+            </div>
+            <p class="review-card-ref__text">"${r.text || ''}"</p>
+            <div class="review-card-ref__author">
+              <div class="review-card-ref__avatar">${r.avatar || initial}</div>
+              <div>
+                <div class="review-card-ref__name">${r.name || 'Anonymous Customer'}</div>
+                <div class="review-card-ref__tag">${r.tag || '✓ Verified Purchase'}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+      if (typeof reInitReveal === 'function') reInitReveal(grid);
+    }
   }
 }
 
@@ -1193,18 +1277,25 @@ function renderFestivalBanners(banners) {
 
   container.innerHTML = `
     <div style="display:flex; gap:16px; padding:0 40px; overflow-x:auto; scroll-snap-type:x mandatory;">
-      ${banners.map(b => `
-        <div onclick="${b.cta_url ? `window.location.href='${b.cta_url}'` : ''}"
-             style="min-width:280px; border-radius:16px; overflow:hidden; cursor:${b.cta_url ? 'pointer' : 'default'};
+      ${banners.map(b => {
+        const hasLink = b.cta_url && b.cta_url !== '#';
+        const urlStr = hasLink ? b.cta_url.replace(/'/g, "\\'") : '';
+        return `
+        <div onclick="${hasLink ? `handleLinkNavigation('${urlStr}')` : ''}"
+             style="min-width:280px; border-radius:16px; overflow:hidden; cursor:${hasLink ? 'pointer' : 'default'};
                     background:linear-gradient(135deg,#1a0a2e,#5c1e4a); flex-shrink:0; scroll-snap-align:start;
-                    display:flex; align-items:center; gap:16px; padding:20px; color:#fff; position:relative;">
-          ${b.image_url ? `<img src="${b.image_url}" style="width:80px; height:80px; object-fit:cover; border-radius:10px; flex-shrink:0">` : ''}
+                    display:flex; align-items:center; gap:16px; padding:20px; color:#fff; position:relative; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+             onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 8px 24px rgba(0,0,0,0.2)';"
+             onmouseout="this.style.transform='none'; this.style.boxShadow='none';">
+          ${b.image_url ? `<img src="${b.image_url}" style="width:80px; height:80px; object-fit:cover; border-radius:10px; flex-shrink:0" alt="${b.title || 'Festival Banner'}">` : ''}
           <div>
-            <div style="font-size:0.65rem; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; opacity:0.7; margin-bottom:4px">Limited Offer</div>
-            <div style="font-size:1.1rem; font-weight:700; margin-bottom:4px">${b.title}</div>
+            <div style="font-size:0.65rem; font-weight:700; letter-spacing:0.15em; text-transform:uppercase; opacity:0.7; margin-bottom:4px">${b.festival_tag || b.badge_text || 'Limited Offer'}</div>
+            <div style="font-size:1.1rem; font-weight:700; margin-bottom:4px">${b.title || ''}</div>
             ${b.subtitle ? `<div style="font-size:0.8rem; opacity:0.85">${b.subtitle}</div>` : ''}
+            ${hasLink ? `<div style="font-size:0.75rem; font-weight:600; text-decoration:underline; margin-top:6px; opacity:0.95">${b.cta_text || 'Shop Now →'}</div>` : ''}
           </div>
-        </div>`).join('')}
+        </div>`;
+      }).join('')}
     </div>`;
 }
 

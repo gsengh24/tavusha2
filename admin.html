@@ -193,6 +193,63 @@
     padding: 6px 12px;
     font-size: 0.75rem;
   }
+  
+  /* Multi-color variant manager styles */
+  .sp-variant-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .sp-variant-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #faf8f6;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+  .sp-variant-color-input {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    cursor: pointer;
+    background: none;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .sp-variant-color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  .sp-variant-color-input::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+  }
+  .sp-color-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    background: #f4f0ec;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: 2px 4px 2px 0;
+  }
+  .sp-color-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.18);
+    flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
@@ -324,13 +381,15 @@ async function handleMockApi(path, options = {}) {
     const prods = getLocal('sp_demo_products', DEFAULT_MOCK_PRODS);
     if (method === 'GET') return prods;
     if (method === 'POST') {
-      let title = 'New Product', price = 0, stock = 0, colour = '', size = '', category = 'other', description = '';
+      let title = 'New Product', price = 0, stock = 0, colour = '', colorVariants = [], size = '', category = 'other', description = '';
       let images = [];
       if (options.body instanceof FormData) {
         title = options.body.get('title') || title;
         price = Number(options.body.get('price') || 0);
         stock = Number(options.body.get('stock') || 0);
         colour = options.body.get('colour') || '';
+        const cv = options.body.get('colorVariants');
+        if (cv) { try { colorVariants = JSON.parse(cv); } catch(e) { colorVariants = []; } }
         size = options.body.get('size') || '';
         category = options.body.get('category') || 'other';
         description = options.body.get('description') || '';
@@ -343,6 +402,7 @@ async function handleMockApi(path, options = {}) {
         price = Number(options.body.price || 0);
         stock = Number(options.body.stock || 0);
         colour = options.body.colour || '';
+        colorVariants = options.body.colorVariants || [];
         size = options.body.size || '';
         category = options.body.category || 'other';
         description = options.body.description || '';
@@ -351,7 +411,11 @@ async function handleMockApi(path, options = {}) {
       if (!images || !images.length) {
         images = ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500'];
       }
-      const newP = { _id: 'p_' + Date.now(), title, price, stock, colour, size, category, description, status: 'approved', images, created_at: new Date().toISOString() };
+      if (Array.isArray(colorVariants) && colorVariants.length > 0) {
+        stock = colorVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+        colour = colorVariants.map(v => v.color).join(', ');
+      }
+      const newP = { _id: 'p_' + Date.now(), title, price, stock, colour, colorVariants, size, category, description, status: 'approved', images, created_at: new Date().toISOString() };
       prods.unshift(newP); setLocal('sp_demo_products', prods);
       return newP;
     }
@@ -371,11 +435,23 @@ async function handleMockApi(path, options = {}) {
         if (options.body instanceof FormData) {
           if (options.body.get('title')) prods[idx].title = options.body.get('title');
           if (options.body.get('price')) prods[idx].price = Number(options.body.get('price'));
-          if (options.body.get('stock')) prods[idx].stock = Number(options.body.get('stock'));
-          if (options.body.get('description')) prods[idx].description = options.body.get('description');
-          if (options.body.get('colour')) prods[idx].colour = options.body.get('colour');
-          if (options.body.get('size')) prods[idx].size = options.body.get('size');
+          if (options.body.get('description') !== null) prods[idx].description = options.body.get('description');
           if (options.body.get('category')) prods[idx].category = options.body.get('category');
+          if (options.body.get('size')) prods[idx].size = options.body.get('size');
+          const cv = options.body.get('colorVariants');
+          if (cv !== null && cv !== undefined) {
+            try { prods[idx].colorVariants = JSON.parse(cv); } catch(e) { prods[idx].colorVariants = []; }
+            if (prods[idx].colorVariants && prods[idx].colorVariants.length > 0) {
+              prods[idx].stock = prods[idx].colorVariants.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+              prods[idx].colour = prods[idx].colorVariants.map(v => v.color).join(', ');
+            }
+          }
+          if (options.body.get('stock') && (!prods[idx].colorVariants || prods[idx].colorVariants.length === 0)) {
+            prods[idx].stock = Number(options.body.get('stock'));
+          }
+          if (options.body.get('colour') && (!prods[idx].colorVariants || prods[idx].colorVariants.length === 0)) {
+            prods[idx].colour = options.body.get('colour');
+          }
           const removeStr = options.body.get('removeImages');
           if (removeStr) {
             try {
@@ -390,10 +466,26 @@ async function handleMockApi(path, options = {}) {
               if (newImgs.length) prods[idx].images = [...(prods[idx].images || []), ...newImgs];
             } catch(e) {}
           }
+        }
         } else if (options.body) {
           if (options.body.title) prods[idx].title = options.body.title;
           if (options.body.price) prods[idx].price = Number(options.body.price);
-          if (options.body.stock) prods[idx].stock = Number(options.body.stock);
+          if (options.body.description !== undefined) prods[idx].description = options.body.description;
+          if (options.body.category) prods[idx].category = options.body.category;
+          if (options.body.size) prods[idx].size = options.body.size;
+          if (options.body.colorVariants !== undefined) {
+            prods[idx].colorVariants = options.body.colorVariants;
+            if (prods[idx].colorVariants && prods[idx].colorVariants.length > 0) {
+              prods[idx].stock = prods[idx].colorVariants.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+              prods[idx].colour = prods[idx].colorVariants.map(v => v.color).join(', ');
+            }
+          }
+          if (options.body.stock !== undefined && (!prods[idx].colorVariants || prods[idx].colorVariants.length === 0)) {
+            prods[idx].stock = Number(options.body.stock);
+          }
+          if (options.body.colour !== undefined && (!prods[idx].colorVariants || prods[idx].colorVariants.length === 0)) {
+            prods[idx].colour = options.body.colour;
+          }
         }
         setLocal('sp_demo_products', prods); return prods[idx];
       }
@@ -744,6 +836,19 @@ async function loadStaffProducts() {
   renderFilteredStaffProductsTable();
 }
 
+function renderProductColorBadges(p) {
+  if (Array.isArray(p.colorVariants) && p.colorVariants.length > 0) {
+    return `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px">` + p.colorVariants.map(v => {
+      const st = Number(v.stock !== undefined ? v.stock : 0);
+      const isOut = st <= 0;
+      const isLow = st > 0 && st <= 5;
+      const stockColor = isOut ? '#b3261e' : (isLow ? '#a07840' : '#1e7a34');
+      return `<span class="sp-color-chip" title="${esc(v.color)}: ${st} in stock"><span class="sp-color-dot" style="background:${v.hex || '#1C1917'}"></span><span>${esc(v.color)}</span>: <strong style="color:${stockColor}">${st}</strong></span>`;
+    }).join('') + `</div>`;
+  }
+  return `<div style="font-size:0.75rem; color:var(--warm-grey); margin-top:3px">Colour: <span>${esc(p.colour || '—')}</span></div>`;
+}
+
 function renderFilteredStaffProductsTable() {
   const tbody = document.getElementById('staffProdTableBody');
   if (!tbody) return;
@@ -788,7 +893,8 @@ function renderFilteredStaffProductsTable() {
         </td>
         <td>
           <div style="font-weight:700; color:var(--black); font-size:0.9rem">${esc(p.title)}</div>
-          <div style="font-size:0.75rem; color:var(--warm-grey)">Category: <span class="sp-chip">${esc(p.category)}</span> | Colour: ${esc(p.colour || '—')}</div>
+          <div style="font-size:0.75rem; color:var(--warm-grey)">Category: <span class="sp-chip">${esc(p.category)}</span></div>
+          ${renderProductColorBadges(p)}
         </td>
         <td>
           <span style="font-family:monospace; font-size:0.75rem; background:#faf8f6; padding:2px 6px; border-radius:4px; border:1px solid var(--border)">${p._id.slice(-6).toUpperCase()}</span>
@@ -866,11 +972,56 @@ async function quickSavePriceStock(id, btn) {
 let cropImages = [];
 const CATEGORIES = [['party','Party Wear'],['ethnic','Ethnic Wear'],['casual','Casual Luxe'],['maxi','Maxi Dresses'],['coord','Co-ords'],['other','Other']];
 
+const KNOWN_COLOR_PALETTE = {
+  'pink': '#E8A4A4', 'rose': '#E8A4A4', 'rose pink': '#E8A4A4', 'blush': '#F3C5C5', 'blush pink': '#F3C5C5',
+  'black': '#1C1917', 'midnight black': '#1C1917', 'obsidian': '#1C1917',
+  'gold': '#C9A96E', 'champagne': '#C9A96E', 'champagne gold': '#C9A96E',
+  'ivory': '#F5F0E8', 'white': '#FFFFFF', 'off-white': '#FAFAF7',
+  'green': '#8B9E7A', 'sage': '#8B9E7A', 'sage green': '#8B9E7A', 'emerald': '#1e7a34', 'emerald green': '#1e7a34',
+  'blue': '#1E3A5F', 'navy': '#1E3A5F', 'navy blue': '#1E3A5F', 'royal blue': '#1952a5',
+  'maroon': '#8B2240', 'deep maroon': '#8B2240', 'wine': '#722F37', 'burgundy': '#800020',
+  'red': '#b3261e', 'ruby': '#9b111e', 'rust': '#B7410E',
+  'sand': '#E8D5B0', 'taupe': '#B09080', 'stone': '#78716C', 'terracotta': '#C4693A', 'charcoal': '#44403C',
+  'mocha': '#826644', 'violet': '#8a2be2', 'purple': '#6a0dad', 'lilac': '#C8A2C8', 'lavender': '#E6E6FA'
+};
+
+function guessColorHex(name) {
+  if (!name) return '#1C1917';
+  const clean = name.toLowerCase().trim();
+  if (KNOWN_COLOR_PALETTE[clean]) return KNOWN_COLOR_PALETTE[clean];
+  for (const k in KNOWN_COLOR_PALETTE) {
+    if (clean.includes(k)) return KNOWN_COLOR_PALETTE[k];
+  }
+  return '#1C1917';
+}
+
 function openProductForm(product) {
   cropImages = [];
   const modal = document.getElementById('formModal');
   const content = document.getElementById('formModalContent');
   modal.style.display = 'flex';
+
+  // Initialize color variants list
+  let variantList = [];
+  if (product && Array.isArray(product.colorVariants) && product.colorVariants.length > 0) {
+    variantList = product.colorVariants.map(v => ({
+      color: v.color || '',
+      hex: v.hex || guessColorHex(v.color),
+      stock: Number(v.stock !== undefined ? v.stock : 0)
+    }));
+  } else if (product && product.colour) {
+    const parts = product.colour.split(',').map(s => s.trim()).filter(Boolean);
+    const stockPer = Math.floor((Number(product.stock) || 0) / (parts.length || 1));
+    variantList = parts.map((name, i) => ({
+      color: name,
+      hex: guessColorHex(name),
+      stock: i === 0 ? (stockPer + ((Number(product.stock) || 0) % (parts.length || 1))) : stockPer
+    }));
+  }
+  if (variantList.length === 0) {
+    variantList = [{ color: 'Standard', hex: '#1C1917', stock: product ? Number(product.stock || 0) : 10 }];
+  }
+
   content.innerHTML = `
     <div class="sp-modal__head">
       <h2 class="sp-modal__title">${product ? 'Edit Product' : 'New Product'}</h2>
@@ -884,38 +1035,36 @@ function openProductForm(product) {
     <label class="sp-field-label">Description</label>
     <textarea id="f_desc" placeholder="Details, fabric, fit..." class="sp-input sp-textarea" rows="3">${product ? esc(product.description || '') : ''}</textarea>
 
-    <div class="sp-section-label">Pricing &amp; Stock</div>
-    <div class="sp-form-grid">
-      <div class="sp-form-group">
-        <label class="sp-field-label">Price (₹) *</label>
-        <input id="f_price" type="number" inputmode="numeric" placeholder="0" class="sp-input" value="${product ? product.price : ''}"/>
-      </div>
-      <div class="sp-form-group">
-        <label class="sp-field-label">Stock Qty</label>
-        <input id="f_stock" type="number" inputmode="numeric" placeholder="0" class="sp-input" value="${product ? product.stock : ''}"/>
-      </div>
+    <div class="sp-section-label">Pricing</div>
+    <div class="sp-form-group">
+      <label class="sp-field-label">Price (₹) *</label>
+      <input id="f_price" type="number" inputmode="numeric" placeholder="0" class="sp-input" value="${product ? product.price : ''}"/>
     </div>
-    <label class="sp-toggle-row">
-      <span class="sp-field-label" style="margin:0">Mark as In Stock</span>
-      <div class="sp-switch"><input type="checkbox" id="f_inStock" ${(!product || product.inStock !== false) ? 'checked' : ''}/><span class="sp-switch__track"></span></div>
-    </label>
 
-    <div class="sp-section-label">Product Details</div>
+    <!-- Multi-Colour & Per-Colour Stock Variants -->
+    <div class="sp-section-label" style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+      <span>Colours &amp; Stock per Colour</span>
+      <button type="button" id="addVarRowBtn" class="sp-mini-btn" style="background:var(--brand-dark);color:#fff;font-size:0.75rem;padding:5px 12px;border-radius:20px">+ Add Colour</button>
+    </div>
+    <div id="varRowsContainer" class="sp-variant-list"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#faf8f6; border:1px dashed var(--border); border-radius:8px; padding:10px 14px; margin-top:8px; font-size:0.82rem;">
+      <span>Total Stock across colours: <strong id="totalVariantStock">0</strong></span>
+      <span id="variantCountLabel" style="color:var(--warm-grey); font-size:0.75rem">0 colours</span>
+    </div>
+
+    <div class="sp-section-label" style="margin-top:20px;">Sizes &amp; Category</div>
     <div class="sp-form-grid">
       <div class="sp-form-group">
-        <label class="sp-field-label">Colour(s)</label>
-        <input id="f_colour" placeholder="e.g. Rose Pink, Navy Blue, Maroon" class="sp-input" value="${product ? esc(product.colour || (Array.isArray(product.colors) ? product.colors.join(', ') : '')) : ''}"/>
-        <span style="font-size:0.72rem; color:var(--warm-grey); display:block; margin-top:3px">For multiple colours, separate with commas</span>
+        <label class="sp-field-label">Sizes (comma separated)</label>
+        <input id="f_size" placeholder="S, M, L, XL" class="sp-input" value="${product ? esc(product.size || '') : 'S, M, L'}"/>
       </div>
       <div class="sp-form-group">
-        <label class="sp-field-label">Size</label>
-        <input id="f_size" placeholder="S / M / L / XL" class="sp-input" value="${product ? esc(product.size || '') : ''}"/>
+        <label class="sp-field-label">Category</label>
+        <select id="f_category" class="sp-input">
+          ${CATEGORIES.map(([v, label]) => `<option value="${v}" ${product && product.category === v ? 'selected' : ''}>${label}</option>`).join('')}
+        </select>
       </div>
     </div>
-    <label class="sp-field-label">Category</label>
-    <select id="f_category" class="sp-input">
-      ${CATEGORIES.map(([v, label]) => `<option value="${v}" ${product && product.category === v ? 'selected' : ''}>${label}</option>`).join('')}
-    </select>
 
     <div class="sp-section-label">Photos</div>
     ${product && product.images && product.images.length ? `<div class="sp-existing-label">Tap a photo to mark for removal</div><div id="existingImgs" class="sp-thumb-row"></div>` : ''}
@@ -927,10 +1076,79 @@ function openProductForm(product) {
 
     <button id="saveProductBtn" class="btn-pill sp-btn-block sp-save-btn">${product ? 'Save Changes' : 'Upload Product'}</button>
   `;
+
   document.getElementById('closeForm').onclick = closeForm;
 
+  function renderVariantRows() {
+    const container = document.getElementById('varRowsContainer');
+    if (!container) return;
+    
+    container.innerHTML = variantList.map((v, i) => `
+      <div class="sp-variant-row" data-idx="${i}">
+        <input type="color" class="sp-variant-color-input varHex" value="${v.hex || '#1C1917'}" title="Pick Colour Swatch"/>
+        <input type="text" class="sp-input varName" placeholder="Colour (e.g. Rose Pink, Emerald)" value="${esc(v.color)}" style="flex:1; margin:0"/>
+        <div style="display:flex; align-items:center; gap:4px">
+          <label style="font-size:0.72rem; color:var(--warm-grey); white-space:nowrap">Stock:</label>
+          <input type="number" min="0" class="sp-input varStock" placeholder="0" value="${v.stock}" style="width:70px; margin:0; padding:6px 8px"/>
+        </div>
+        <button type="button" class="sp-mini-btn sp-mini-btn--danger varDelBtn" title="Remove colour" style="min-height:36px; padding:4px 10px; margin:0">✕</button>
+      </div>
+    `).join('');
+
+    // Bind inputs
+    container.querySelectorAll('.sp-variant-row').forEach(row => {
+      const idx = Number(row.dataset.idx);
+      const hexEl = row.querySelector('.varHex');
+      const nameEl = row.querySelector('.varName');
+      const stockEl = row.querySelector('.varStock');
+      const delBtn = row.querySelector('.varDelBtn');
+
+      hexEl.oninput = (e) => { variantList[idx].hex = e.target.value; };
+      nameEl.oninput = (e) => {
+        variantList[idx].color = e.target.value;
+        const autoHex = guessColorHex(e.target.value);
+        if (autoHex && autoHex !== '#1C1917' && (!variantList[idx].userChangedHex)) {
+          variantList[idx].hex = autoHex;
+          hexEl.value = autoHex;
+        }
+      };
+      hexEl.onchange = () => { variantList[idx].userChangedHex = true; };
+      stockEl.oninput = (e) => {
+        variantList[idx].stock = Math.max(0, parseInt(e.target.value || '0', 10));
+        updateVariantStockSum();
+      };
+      delBtn.onclick = () => {
+        if (variantList.length <= 1) {
+          variantList[0] = { color: '', hex: '#1C1917', stock: 0 };
+        } else {
+          variantList.splice(idx, 1);
+        }
+        renderVariantRows();
+      };
+    });
+
+    updateVariantStockSum();
+  }
+
+  function updateVariantStockSum() {
+    const total = variantList.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+    const sumEl = document.getElementById('totalVariantStock');
+    const countEl = document.getElementById('variantCountLabel');
+    if (sumEl) sumEl.textContent = total;
+    if (countEl) countEl.textContent = `${variantList.length} colour variant${variantList.length === 1 ? '' : 's'}`;
+  }
+
+  renderVariantRows();
+
+  document.getElementById('addVarRowBtn').onclick = () => {
+    variantList.push({ color: '', hex: '#C9A96E', stock: 5 });
+    renderVariantRows();
+    const rows = document.querySelectorAll('.varName');
+    if (rows.length) rows[rows.length - 1].focus();
+  };
+
   const removeList = new Set();
-  if (product && product.images.length) {
+  if (product && product.images && product.images.length) {
     const wrap = document.getElementById('existingImgs');
     wrap.innerHTML = product.images.map(img => `<img src="${img}" data-src="${img}" class="sp-thumb sp-thumb--pick"/>`).join('');
     wrap.querySelectorAll('img').forEach(im => im.onclick = () => {
@@ -948,15 +1166,33 @@ function openProductForm(product) {
     const price = document.getElementById('f_price').value.trim();
     if (!title) { msg.textContent = 'Product title is required.'; msg.className = 'sp-form-msg sp-form-msg--error'; return; }
     if (!price) { msg.textContent = 'Price is required.'; msg.className = 'sp-form-msg sp-form-msg--error'; return; }
+
+    // Clean up variants
+    const validVariants = variantList.filter(v => v.color && v.color.trim()).map(v => ({
+      color: v.color.trim(),
+      hex: v.hex || guessColorHex(v.color),
+      stock: Math.max(0, parseInt(v.stock || '0', 10))
+    }));
+
+    if (validVariants.length === 0) {
+      msg.textContent = 'Please specify at least one Colour name for the product.';
+      msg.className = 'sp-form-msg sp-form-msg--error';
+      return;
+    }
+
+    const totalCalculatedStock = validVariants.reduce((s, v) => s + v.stock, 0);
+    const colourNamesCombined = validVariants.map(v => v.color).join(', ');
+
     try {
       msg.textContent = 'Saving…'; msg.className = 'sp-form-msg sp-form-msg--pending';
       const fd = new FormData();
       fd.append('title', title);
       fd.append('description', document.getElementById('f_desc').value);
       fd.append('price', price);
-      fd.append('stock', document.getElementById('f_stock').value || 0);
-      fd.append('inStock', document.getElementById('f_inStock').checked);
-      fd.append('colour', document.getElementById('f_colour').value);
+      fd.append('stock', totalCalculatedStock);
+      fd.append('inStock', totalCalculatedStock > 0);
+      fd.append('colour', colourNamesCombined);
+      fd.append('colorVariants', JSON.stringify(validVariants));
       fd.append('size', document.getElementById('f_size').value);
       fd.append('category', document.getElementById('f_category').value);
       if (product && removeList.size) fd.append('removeImages', JSON.stringify([...removeList]));
@@ -1175,10 +1411,15 @@ async function showAdminTab(tab) {
             <div style="font-size:1.2rem; font-weight:800; letter-spacing:0.03em">Campaign Poster Spread</div>
             <div style="font-size:0.82rem; opacity:0.8; margin-top:4px">Edit the editorial magazine layout on your homepage. Changes save instantly.</div>
           </div>
-          <label class="sp-toggle" style="margin-left:auto; color:white;">
-            <input type="checkbox" id="cmsPosterVis" ${posterSpread?.visible !== false ? 'checked' : ''}/>
-            <span>Show on Homepage</span>
-          </label>
+          <div style="margin-left:auto; display:flex; align-items:center; gap:16px;">
+            <button id="saveCmsPosterTop" class="btn-pill" style="background:#fff; color:#2d1b4e; font-weight:700; padding:8px 18px; border:none; cursor:pointer;">
+              💾 Save Changes
+            </button>
+            <label class="sp-toggle" style="margin:0; color:white;">
+              <input type="checkbox" id="cmsPosterVis" ${posterSpread?.visible !== false ? 'checked' : ''}/>
+              <span>Show on Homepage</span>
+            </label>
+          </div>
         </div>
         
         <div class="sp-form-grid" style="margin-bottom:16px">
@@ -1198,9 +1439,11 @@ async function showAdminTab(tab) {
             <div class="poster-card__title">
               <span>1. 🖼️ Main Featured Poster (Large)</span>
             </div>
-            <label class="sp-field-label">Image URL <span style="font-weight:400;color:var(--warm-grey)">(paste Cloudinary / Supabase URL, or local path)</span></label>
-            <input type="text" id="cp_main_image" class="sp-input" value="${esc(posterCfg.main_image || 'assets/images/party_wear.jpg')}"/>
-            ${posterCfg.main_image ? `<img src="${esc(posterCfg.main_image)}" style="width:100%;height:120px;object-fit:cover;border-radius:8px;margin:8px 0" onerror="this.style.display='none'">` : ''}
+            <label class="sp-field-label">Image URL <span style="font-weight:400;color:var(--warm-grey)">(paste direct image URL)</span></label>
+            <input type="text" id="cp_main_image" class="sp-input poster-img-input" data-preview="cp_main_img_prev" value="${esc(posterCfg.main_image || 'assets/images/party_wear.jpg')}"/>
+            <div style="margin:8px 0;">
+              <img id="cp_main_img_prev" src="${esc(posterCfg.main_image || 'assets/images/party_wear.jpg')}" referrerpolicy="no-referrer" crossorigin="anonymous" style="width:100%;height:120px;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:#f4efeb;" onerror="this.onerror=null;this.style.objectFit='contain';this.style.background='#f4efeb';this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'80\' viewBox=\'0 0 120 80\'%3E%3Crect width=\'120\' height=\'80\' fill=\'%23e6e6e6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'11\' fill=\'%23999\'%3E⚠ Image blocked%3C/text%3E%3C/svg%3E';">
+            </div>
             <label class="sp-field-label">Badge / Tag Text</label>
             <input type="text" id="cp_main_badge" class="sp-input" value="${esc(posterCfg.main_badge || 'Limited Run — 250 Pieces')}"/>
             <label class="sp-field-label">Headline / Product Title</label>
@@ -1217,9 +1460,11 @@ async function showAdminTab(tab) {
           <!-- Side Card 1 -->
           <div class="poster-card">
             <div class="poster-card__title"><span>2. Side Card — Top Right</span></div>
-            <label class="sp-field-label">Image URL</label>
-            <input type="text" id="cp_side1_image" class="sp-input" value="${esc(posterCfg.side1_image || 'assets/images/ethnic.jpg')}"/>
-            ${posterCfg.side1_image ? `<img src="${esc(posterCfg.side1_image)}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin:8px 0" onerror="this.style.display='none'">` : ''}
+            <label class="sp-field-label">Image URL <span style="font-weight:400;color:var(--warm-grey)">(paste direct image URL)</span></label>
+            <input type="text" id="cp_side1_image" class="sp-input poster-img-input" data-preview="cp_side1_img_prev" value="${esc(posterCfg.side1_image || 'assets/images/ethnic.jpg')}"/>
+            <div style="margin:8px 0;">
+              <img id="cp_side1_img_prev" src="${esc(posterCfg.side1_image || 'assets/images/ethnic.jpg')}" referrerpolicy="no-referrer" crossorigin="anonymous" style="width:100%;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:#f4efeb;" onerror="this.onerror=null;this.style.objectFit='contain';this.style.background='#f4efeb';this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'80\' viewBox=\'0 0 120 80\'%3E%3Crect width=\'120\' height=\'80\' fill=\'%23e6e6e6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'11\' fill=\'%23999\'%3E⚠ Image blocked%3C/text%3E%3C/svg%3E';">
+            </div>
             <label class="sp-field-label">Badge Text</label>
             <input type="text" id="cp_side1_badge" class="sp-input" value="${esc(posterCfg.side1_badge || 'Heritage Couture')}"/>
             <label class="sp-field-label">Title</label>
@@ -1236,9 +1481,11 @@ async function showAdminTab(tab) {
           <!-- Side Card 2 -->
           <div class="poster-card">
             <div class="poster-card__title"><span>3. Side Card — Bottom Right</span></div>
-            <label class="sp-field-label">Image URL</label>
-            <input type="text" id="cp_side2_image" class="sp-input" value="${esc(posterCfg.side2_image || 'assets/images/workwear.jpg')}"/>
-            ${posterCfg.side2_image ? `<img src="${esc(posterCfg.side2_image)}" style="width:100%;height:80px;object-fit:cover;border-radius:8px;margin:8px 0" onerror="this.style.display='none'">` : ''}
+            <label class="sp-field-label">Image URL <span style="font-weight:400;color:var(--warm-grey)">(paste direct image URL)</span></label>
+            <input type="text" id="cp_side2_image" class="sp-input poster-img-input" data-preview="cp_side2_img_prev" value="${esc(posterCfg.side2_image || 'assets/images/workwear.jpg')}"/>
+            <div style="margin:8px 0;">
+              <img id="cp_side2_img_prev" src="${esc(posterCfg.side2_image || 'assets/images/workwear.jpg')}" referrerpolicy="no-referrer" crossorigin="anonymous" style="width:100%;height:100px;object-fit:cover;border-radius:8px;border:1px solid var(--border);background:#f4efeb;" onerror="this.onerror=null;this.style.objectFit='contain';this.style.background='#f4efeb';this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'80\' viewBox=\'0 0 120 80\'%3E%3Crect width=\'120\' height=\'80\' fill=\'%23e6e6e6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'11\' fill=\'%23999\'%3E⚠ Image blocked%3C/text%3E%3C/svg%3E';">
+            </div>
             <label class="sp-field-label">Badge Text</label>
             <input type="text" id="cp_side2_badge" class="sp-input" value="${esc(posterCfg.side2_badge || 'Power Tailoring')}"/>
             <label class="sp-field-label">Title</label>
@@ -1268,10 +1515,26 @@ async function showAdminTab(tab) {
         <div id="posterSaveMsg" style="text-align:center; font-size:0.85rem; margin-top:10px; color:var(--warm-grey)"></div>
       `;
       
-      document.getElementById('saveCmsPoster').onclick = async () => {
-        const btn = document.getElementById('saveCmsPoster');
+      // Live image preview listener
+      content.querySelectorAll('.poster-img-input').forEach(inp => {
+        const updatePrev = () => {
+          const imgEl = document.getElementById(inp.dataset.preview);
+          if (imgEl && inp.value.trim()) {
+            imgEl.referrerPolicy = 'no-referrer';
+            imgEl.crossOrigin = 'anonymous';
+            imgEl.src = inp.value.trim();
+          }
+        };
+        inp.addEventListener('input', updatePrev);
+        inp.addEventListener('change', updatePrev);
+      });
+
+      const handlePosterSave = async () => {
+        const btnBottom = document.getElementById('saveCmsPoster');
+        const btnTop = document.getElementById('saveCmsPosterTop');
         const msg = document.getElementById('posterSaveMsg');
-        btn.textContent = '⏳ Saving...'; btn.disabled = true;
+        if (btnBottom) { btnBottom.textContent = '⏳ Saving...'; btnBottom.disabled = true; }
+        if (btnTop) { btnTop.textContent = '⏳ Saving...'; btnTop.disabled = true; }
         const visible = document.getElementById('cmsPosterVis').checked;
         const config = {
           eyebrow: document.getElementById('cp_eyebrow').value,
@@ -1295,16 +1558,29 @@ async function showAdminTab(tab) {
           quote_author: document.getElementById('cp_quote_author').value,
         };
         try {
-          await api('/cms/admin/sections/poster_spread', { method: 'PUT', body: { visible, config } });
+          const saved = await api('/cms/admin/sections/poster_spread', { method: 'PUT', body: { visible, config } });
+          // Detect silent no-op (backend updated 0 rows because the section row doesn't exist in DB yet)
+          if (!saved || (!saved.key && !state.isDemo)) {
+            throw new Error('Section not found in database. Please contact support to seed the cms_sections table.');
+          }
           await syncOfflineCmsData();
-          btn.textContent = '✓ Saved! Poster live on homepage.'; btn.style.background = '#1e7a34';
-          msg.textContent = 'Changes visible on homepage immediately.';
+          if (btnBottom) { btnBottom.textContent = '✓ Saved! Poster live on homepage.'; btnBottom.style.background = '#1e7a34'; }
+          if (btnTop) { btnTop.textContent = '✓ Saved!'; btnTop.style.background = '#1e7a34'; btnTop.style.color = '#fff'; }
+          if (msg) msg.textContent = 'Changes visible on homepage immediately.';
+          alert('Campaign Poster configuration saved successfully!');
         } catch(err) {
-          btn.textContent = '! Error — Try Again'; btn.style.background = '#b3261e';
-          msg.textContent = err.message;
+          if (btnBottom) { btnBottom.textContent = '! Error — Try Again'; btnBottom.style.background = '#b3261e'; }
+          if (msg) msg.textContent = err.message;
         }
-        setTimeout(() => { btn.textContent = '💾 Save Campaign Poster Changes'; btn.style.background = ''; btn.disabled = false; }, 3000);
+        setTimeout(() => { 
+          if (btnBottom) { btnBottom.textContent = '💾 Save Campaign Poster Changes'; btnBottom.style.background = ''; btnBottom.disabled = false; }
+          if (btnTop) { btnTop.textContent = '💾 Save Changes'; btnTop.style.background = '#fff'; btnTop.style.color = '#2d1b4e'; btnTop.disabled = false; }
+        }, 3000);
       };
+
+      document.getElementById('saveCmsPoster').onclick = handlePosterSave;
+      const topBtn = document.getElementById('saveCmsPosterTop');
+      if (topBtn) topBtn.onclick = handlePosterSave;
 
     } else if (tab === 'staff') {
 
@@ -1369,6 +1645,18 @@ async function showAdminTab(tab) {
       const posterSpread = state.sections.find(s => s.key === 'poster_spread' || s.key === 'poster-spread');
       let posterCfg = posterSpread?.config || {};
       if (typeof posterCfg === 'string') { try { posterCfg = JSON.parse(posterCfg); } catch(e) {} }
+      const testiSec = state.sections.find(s => s.key === 'testimonials' || s.key === 'reviews');
+      let testiCfg = testiSec?.config || {};
+      if (typeof testiCfg === 'string') { try { testiCfg = JSON.parse(testiCfg); } catch(e) {} }
+
+      const defaultReviews = [
+        { id: '1', name: 'Priya Sharma', avatar: 'P', stars: 5, text: "Absolutely obsessed with TAVUSHA! Got the Champagne Wrap Dress for my friend's wedding and received compliments all evening. The quality feels so premium.", tag: '✓ Verified Purchase' },
+        { id: '2', name: 'Ananya Krishnan', avatar: 'A', stars: 5, text: "TAVUSHA is my go-to now. The curation is unmatched—everything feels carefully selected. My Gold Anarkali arrived beautifully packaged and looked even better in person!", tag: '✓ Verified Purchase' },
+        { id: '3', name: 'Radhika Mehta', avatar: 'R', stars: 5, text: "Finally a fashion destination that truly understands what Indian women want. The Indo-Western collection is breathtaking, delivery was fast, already on my third order!", tag: '✓ Verified Purchase' },
+        { id: '4', name: 'Neha Kapoor', avatar: 'N', stars: 5, text: "Ordering from TAVUSHA is an experience — the packaging, the quality, the curation. It's the only fashion store I recommend to all my friends. 10/10 every time.", tag: '✓ Verified Purchase' }
+      ];
+      window.currentReviews = Array.isArray(testiCfg.reviews) && testiCfg.reviews.length > 0 ? testiCfg.reviews : defaultReviews;
+      const currentReviews = window.currentReviews;
 
       content.innerHTML = `
         <!-- ANNOUNCEMENT BAR -->
@@ -1438,10 +1726,10 @@ async function showAdminTab(tab) {
               
               <label class="sp-field-label">Background Image</label>
               <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
-                <img id="cp_main_image_preview" src="${esc(posterCfg.main_image || 'assets/images/party_wear.jpg')}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #ccc; flex-shrink:0;">
+                <img id="cms_cp_main_img_prev" src="${esc(posterCfg.main_image || 'assets/images/party_wear.jpg')}" referrerpolicy="no-referrer" crossorigin="anonymous" style="width:70px; height:70px; object-fit:cover; border-radius:8px; border:1px solid var(--border); background:#f4efeb; flex-shrink:0;" onerror="this.onerror=null;this.style.objectFit='contain';this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'80\' viewBox=\'0 0 120 80\'%3E%3Crect width=\'120\' height=\'80\' fill=\'%23e6e6e6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'11\' fill=\'%23999\'%3E⚠ Image%3C/text%3E%3C/svg%3E';">
                 <div style="flex:1;">
-                  <input type="file" id="cp_main_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:4px;" onchange="if(this.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('cp_main_image_preview').src=e.target.result; }; r.readAsDataURL(this.files[0]); }"/>
-                  <input type="text" id="cp_main_image" class="sp-input" placeholder="Or paste image URL" value="${esc(posterCfg.main_image || 'assets/images/party_wear.jpg')}" oninput="document.getElementById('cp_main_image_preview').src=this.value"/>
+                  <input type="file" id="cp_main_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:4px;" onchange="if(this.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('cms_cp_main_img_prev').src=e.target.result; }; r.readAsDataURL(this.files[0]); }"/>
+                  <input type="text" id="cp_main_image" class="sp-input poster-img-input" placeholder="Or paste image URL" value="${esc(posterCfg.main_image || 'assets/images/party_wear.jpg')}" oninput="document.getElementById('cms_cp_main_img_prev').src=this.value"/>
                 </div>
               </div>
               
@@ -1467,10 +1755,10 @@ async function showAdminTab(tab) {
               
               <label class="sp-field-label">Card Image</label>
               <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
-                <img id="cp_side1_image_preview" src="${esc(posterCfg.side1_image || 'assets/images/ethnic.jpg')}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #ccc; flex-shrink:0;">
+                <img id="cms_cp_side1_img_prev" src="${esc(posterCfg.side1_image || 'assets/images/ethnic.jpg')}" referrerpolicy="no-referrer" crossorigin="anonymous" style="width:70px; height:70px; object-fit:cover; border-radius:8px; border:1px solid var(--border); background:#f4efeb; flex-shrink:0;" onerror="this.onerror=null;this.style.objectFit='contain';this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'80\' viewBox=\'0 0 120 80\'%3E%3Crect width=\'120\' height=\'80\' fill=\'%23e6e6e6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'11\' fill=\'%23999\'%3E⚠ Image%3C/text%3E%3C/svg%3E';">
                 <div style="flex:1;">
-                  <input type="file" id="cp_side1_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:4px;" onchange="if(this.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('cp_side1_image_preview').src=e.target.result; }; r.readAsDataURL(this.files[0]); }"/>
-                  <input type="text" id="cp_side1_image" class="sp-input" placeholder="Or paste image URL" value="${esc(posterCfg.side1_image || 'assets/images/ethnic.jpg')}" oninput="document.getElementById('cp_side1_image_preview').src=this.value"/>
+                  <input type="file" id="cp_side1_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:4px;" onchange="if(this.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('cms_cp_side1_img_prev').src=e.target.result; }; r.readAsDataURL(this.files[0]); }"/>
+                  <input type="text" id="cp_side1_image" class="sp-input poster-img-input" placeholder="Or paste image URL" value="${esc(posterCfg.side1_image || 'assets/images/ethnic.jpg')}" oninput="document.getElementById('cms_cp_side1_img_prev').src=this.value"/>
                 </div>
               </div>
               
@@ -1496,10 +1784,10 @@ async function showAdminTab(tab) {
               
               <label class="sp-field-label">Card Image</label>
               <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
-                <img id="cp_side2_image_preview" src="${esc(posterCfg.side2_image || 'assets/images/workwear.jpg')}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #ccc; flex-shrink:0;">
+                <img id="cms_cp_side2_img_prev" src="${esc(posterCfg.side2_image || 'assets/images/workwear.jpg')}" referrerpolicy="no-referrer" crossorigin="anonymous" style="width:70px; height:70px; object-fit:cover; border-radius:8px; border:1px solid var(--border); background:#f4efeb; flex-shrink:0;" onerror="this.onerror=null;this.style.objectFit='contain';this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'120\' height=\'80\' viewBox=\'0 0 120 80\'%3E%3Crect width=\'120\' height=\'80\' fill=\'%23e6e6e6\'/%3E%3Ctext x=\'50%25\' y=\'50%25\' dominant-baseline=\'middle\' text-anchor=\'middle\' font-family=\'sans-serif\' font-size=\'11\' fill=\'%23999\'%3E⚠ Image%3C/text%3E%3C/svg%3E';">
                 <div style="flex:1;">
-                  <input type="file" id="cp_side2_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:4px;" onchange="if(this.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('cp_side2_image_preview').src=e.target.result; }; r.readAsDataURL(this.files[0]); }"/>
-                  <input type="text" id="cp_side2_image" class="sp-input" placeholder="Or paste image URL" value="${esc(posterCfg.side2_image || 'assets/images/workwear.jpg')}" oninput="document.getElementById('cp_side2_image_preview').src=this.value"/>
+                  <input type="file" id="cp_side2_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:4px;" onchange="if(this.files[0]){ const r=new FileReader(); r.onload=e=>{ document.getElementById('cms_cp_side2_img_prev').src=e.target.result; }; r.readAsDataURL(this.files[0]); }"/>
+                  <input type="text" id="cp_side2_image" class="sp-input poster-img-input" placeholder="Or paste image URL" value="${esc(posterCfg.side2_image || 'assets/images/workwear.jpg')}" oninput="document.getElementById('cms_cp_side2_img_prev').src=this.value"/>
                 </div>
               </div>
               
@@ -1546,7 +1834,7 @@ async function showAdminTab(tab) {
                 <img src="${b.image_url}"/>
                 <div class="cms-item-card__body">
                   <div class="cms-item-card__title">${esc(b.title || 'Untitled Banner')} [${esc(b.festival_tag || 'Sale')}]</div>
-                  <div class="cms-item-card__meta">${esc(b.subtitle)}</div>
+                  <div class="cms-item-card__meta">${esc(b.subtitle || '')} ${b.cta_url ? `| Link: <strong>${esc(b.cta_url)}</strong>` : ''}</div>
                 </div>
                 <div class="sp-staff-controls">
                   <button class="sp-mini-btn editBannerBtn" data-id="${b.id}">Edit</button>
@@ -1554,6 +1842,59 @@ async function showAdminTab(tab) {
                 </div>
               </div>`).join('')}
           </div>
+        </div>
+
+        <!-- CUSTOMER FEEDBACK & REVIEWS MANAGER -->
+        <div class="cms-group">
+          <div class="cms-group__title">
+            <span>Customer Feedback & Reviews</span>
+            <div style="display:flex; gap:8px; align-items:center;">
+              <button id="addReviewBtn" class="sp-mini-btn sp-mini-btn--ok">+ Add Review</button>
+              <label class="sp-toggle" style="margin:0">
+                <input type="checkbox" id="cmsReviewsVis" ${state.sections.find(s => s.key === 'testimonials' || s.key === 'reviews')?.visible !== false ? 'checked' : ''}/>
+                <span>Show</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="sp-form-grid" style="margin-bottom:14px">
+            <div class="sp-form-group">
+              <label class="sp-field-label">Section Heading Title</label>
+              <input type="text" id="cr_title" class="sp-input" value="${esc(testiCfg.title || 'Our Customers Are Obsessed')}"/>
+            </div>
+            <div class="sp-form-group">
+              <label class="sp-field-label">Section Subtitle</label>
+              <input type="text" id="cr_sub" class="sp-input" value="${esc(testiCfg.sub || 'Real women, real style, real love.')}"/>
+            </div>
+            <div class="sp-form-group">
+              <label class="sp-field-label">Average Score (e.g. 4.8)</label>
+              <input type="text" id="cr_rating" class="sp-input" value="${esc(testiCfg.rating || '4.8')}"/>
+            </div>
+            <div class="sp-form-group">
+              <label class="sp-field-label">Total Reviews Text</label>
+              <input type="text" id="cr_count" class="sp-input" value="${esc(testiCfg.count || '2,847 reviews')}"/>
+            </div>
+          </div>
+
+          <div class="sp-list" id="crReviewsList">
+            ${currentReviews.length === 0 ? `<p class="sp-empty" style="padding:12px">No customer reviews configured. Click + Add Review to add one.</p>` : currentReviews.map((r, idx) => `
+              <div class="cms-item-card" style="align-items:flex-start">
+                <div style="width:38px; height:38px; border-radius:50%; background:var(--brand-gold); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; flex-shrink:0;">
+                  ${esc(r.avatar || (r.name ? r.name.charAt(0).toUpperCase() : 'C'))}
+                </div>
+                <div class="cms-item-card__body">
+                  <div class="cms-item-card__title">${esc(r.name || 'Anonymous')} — ${'★'.repeat(Number(r.stars) || 5)}</div>
+                  <div style="font-size:0.84rem; color:var(--text); margin:4px 0;">"${esc(r.text || '')}"</div>
+                  <div class="cms-item-card__meta">${esc(r.tag || '✓ Verified Purchase')}</div>
+                </div>
+                <div class="sp-staff-controls">
+                  <button class="sp-mini-btn editReviewBtn" data-index="${idx}">Edit</button>
+                  <button class="sp-mini-btn sp-mini-btn--danger delReviewBtn" data-index="${idx}">&times;</button>
+                </div>
+              </div>`).join('')}
+          </div>
+
+          <button id="saveCmsReviews" class="btn-pill sp-btn-block sp-save-btn" style="margin-top:16px">Save Customer Feedback & Reviews</button>
         </div>
 
         <!-- POPUPS -->
@@ -1567,7 +1908,7 @@ async function showAdminTab(tab) {
               <div class="cms-item-card">
                 <div class="cms-item-card__body">
                   <div class="cms-item-card__title">${esc(p.title)} [${p.visible ? 'Visible' : 'Hidden'}]</div>
-                  <div class="cms-item-card__meta">${esc(p.body)}</div>
+                  <div class="cms-item-card__meta">${esc(p.body)} ${p.cta_url ? `| Link: ${esc(p.cta_url)}` : ''}</div>
                 </div>
                 <div class="sp-staff-controls">
                   <button class="sp-mini-btn editPopupBtn" data-id="${p.id}">Edit</button>
@@ -1582,7 +1923,7 @@ async function showAdminTab(tab) {
           <div class="cms-group__title">Homepage Sections Configuration</div>
           <div class="sp-list">
             ${state.sections.map(s => {
-              if (s.key === 'announcement' || s.key === 'poster_spread') return '';
+              if (s.key === 'announcement' || s.key === 'poster_spread' || s.key === 'testimonials' || s.key === 'reviews') return '';
               return `
                 <div class="cms-item-card">
                   <div class="cms-item-card__body">
@@ -1683,6 +2024,48 @@ async function showAdminTab(tab) {
           btn.textContent = 'Save Campaign Poster Configuration';
         }
       };
+
+      document.getElementById('saveCmsReviews').onclick = async () => {
+        const visible = document.getElementById('cmsReviewsVis').checked;
+        const config = {
+          title: document.getElementById('cr_title').value,
+          sub: document.getElementById('cr_sub').value,
+          rating: document.getElementById('cr_rating').value,
+          count: document.getElementById('cr_count').value,
+          reviews: currentReviews
+        };
+        const key = state.sections.find(s => s.key === 'testimonials') ? 'testimonials' : 'reviews';
+        await api('/cms/admin/sections/' + key, { method: 'PUT', body: { visible, config } });
+        await syncOfflineCmsData();
+        alert('Customer Feedback & Reviews configuration saved!');
+        showAdminTab('cms');
+      };
+
+      document.getElementById('addReviewBtn').onclick = () => openReviewModal(null);
+      content.querySelectorAll('.editReviewBtn').forEach(b => b.onclick = () => {
+        const idx = Number(b.dataset.index);
+        openReviewModal(currentReviews[idx], idx);
+      });
+      content.querySelectorAll('.delReviewBtn').forEach(b => b.onclick = () => {
+        const idx = Number(b.dataset.index);
+        if (confirm('Delete this review?')) {
+          currentReviews.splice(idx, 1);
+          showAdminTab('cms');
+        }
+      });
+
+      // Live image preview listener for CMS tab
+      content.querySelectorAll('.poster-img-input').forEach(inp => {
+        const updatePrev = () => {
+          const imgEl = document.getElementById(inp.dataset.preview);
+          if (imgEl && inp.value.trim()) {
+            imgEl.src = inp.value.trim();
+          }
+        };
+        inp.addEventListener('input', updatePrev);
+        inp.addEventListener('change', updatePrev);
+      });
+
       content.querySelectorAll('.secToggle').forEach(cb => cb.onchange = async () => {
         await api('/cms/admin/sections/' + cb.dataset.key, { method: 'PUT', body: { visible: cb.checked } });
         await syncOfflineCmsData();
@@ -1837,8 +2220,16 @@ function openBannerModal(banner, type) {
       </div>
       <div class="sp-form-group">
         <label class="sp-field-label">Button Link URL</label>
-        <input id="b_cta_url" placeholder="#" class="sp-input" value="${banner ? esc(banner.cta_url) : '#'}"/>
+        <input id="b_cta_url" placeholder="e.g. shop.html, product.html?id=..., #reviews" class="sp-input" value="${banner ? esc(banner.cta_url) : '#'}"/>
       </div>
+    </div>
+    <div style="background:#fdf9f5; border:1px solid #ebd9c8; border-radius:8px; padding:10px 14px; font-size:0.75rem; color:var(--text); margin-bottom:14px; line-height:1.5;">
+      <strong>Supported Link Formats:</strong><br/>
+      • <strong>Category Filter:</strong> <code>shop.html?cat=party</code> (also: <code>ethnic</code>, <code>casual</code>, <code>maxi</code>, <code>coord</code>)<br/>
+      • <strong>Specific Product:</strong> <code>product.html?id=&lt;product_id&gt;</code> (e.g. <code>product.html?id=1</code>)<br/>
+      • <strong>Shop Page:</strong> <code>shop.html</code><br/>
+      • <strong>Homepage Section / Smooth Scroll:</strong> <code>#reviews</code>, <code>#cat-browser</code>, <code>#poster-spread</code>, <code>#newsletter</code><br/>
+      • <strong>External Link:</strong> <code>https://instagram.com/yourhandle</code>
     </div>
 
     ${type === 'festival' ? `
@@ -2092,6 +2483,75 @@ function openPopupModal(popup) {
       await api('/cms/admin/popups', { method: 'POST', body });
     }
     await syncOfflineCmsData();
+    closeForm();
+    showAdminTab('cms');
+  };
+}
+
+function openReviewModal(review, index) {
+  const modal = document.getElementById('formModal');
+  const content = document.getElementById('formModalContent');
+  modal.style.display = 'flex';
+  const isEdit = review !== null && index !== null && index !== undefined;
+
+  content.innerHTML = `
+    <div class="sp-modal__head">
+      <h2 class="sp-modal__title">${isEdit ? 'Edit' : 'Add'} Customer Feedback / Review</h2>
+      <button id="closeForm" class="sp-close">&times;</button>
+    </div>
+    <div id="formMsg" class="sp-form-msg" style="margin-bottom:8px"></div>
+
+    <label class="sp-field-label">Customer Name *</label>
+    <input id="r_name" placeholder="e.g. Priya Sharma" class="sp-input" value="${review ? esc(review.name) : ''}"/>
+
+    <label class="sp-field-label">Avatar Initial or Letter</label>
+    <input id="r_avatar" placeholder="e.g. P" class="sp-input" maxlength="2" value="${review ? esc(review.avatar || '') : ''}"/>
+
+    <label class="sp-field-label">Star Rating (1 to 5)</label>
+    <select id="r_stars" class="sp-input">
+      <option value="5" ${!review || Number(review.stars) === 5 ? 'selected' : ''}>★★★★★ (5 Stars)</option>
+      <option value="4" ${review && Number(review.stars) === 4 ? 'selected' : ''}>★★★★☆ (4 Stars)</option>
+      <option value="3" ${review && Number(review.stars) === 3 ? 'selected' : ''}>★★★☆☆ (3 Stars)</option>
+      <option value="2" ${review && Number(review.stars) === 2 ? 'selected' : ''}>★★☆☆☆ (2 Stars)</option>
+      <option value="1" ${review && Number(review.stars) === 1 ? 'selected' : ''}>★☆☆☆☆ (1 Star)</option>
+    </select>
+
+    <label class="sp-field-label">Review / Feedback Text *</label>
+    <textarea id="r_text" placeholder="Write what the customer loved about TAVUSHA..." class="sp-input sp-textarea" rows="3">${review ? esc(review.text) : ''}</textarea>
+
+    <label class="sp-field-label">Badge Tag</label>
+    <input id="r_tag" placeholder="✓ Verified Purchase" class="sp-input" value="${review ? esc(review.tag || '✓ Verified Purchase') : '✓ Verified Purchase'}"/>
+
+    <button id="saveReviewBtn" class="btn-pill sp-btn-block sp-save-btn">Save Review</button>
+  `;
+
+  document.getElementById('closeForm').onclick = closeForm;
+  document.getElementById('saveReviewBtn').onclick = () => {
+    const name = document.getElementById('r_name').value.trim();
+    const text = document.getElementById('r_text').value.trim();
+    if (!name || !text) {
+      const msg = document.getElementById('formMsg');
+      msg.textContent = 'Customer Name and Review Text are required.';
+      msg.className = 'sp-form-msg sp-form-msg--error';
+      return;
+    }
+
+    const item = {
+      id: review?.id || String(Date.now()),
+      name,
+      avatar: document.getElementById('r_avatar').value.trim() || name.charAt(0).toUpperCase(),
+      stars: Number(document.getElementById('r_stars').value) || 5,
+      text,
+      tag: document.getElementById('r_tag').value.trim() || '✓ Verified Purchase'
+    };
+
+    if (!window.currentReviews) window.currentReviews = [];
+    if (isEdit) {
+      window.currentReviews[index] = item;
+    } else {
+      window.currentReviews.push(item);
+    }
+
     closeForm();
     showAdminTab('cms');
   };
@@ -2421,7 +2881,8 @@ function renderFilteredProductsTable() {
         </td>
         <td>
           <div style="font-weight:700; color:var(--black); font-size:0.9rem">${esc(p.title)}</div>
-          <div style="font-size:0.75rem; color:var(--warm-grey)">Category: <span class="sp-chip">${esc(p.category)}</span> | Colour: ${esc(p.colour || '—')}</div>
+          <div style="font-size:0.75rem; color:var(--warm-grey)">Category: <span class="sp-chip">${esc(p.category)}</span></div>
+          ${renderProductColorBadges(p)}
         </td>
         <td>
           <span style="font-family:monospace; font-size:0.75rem; background:#faf8f6; padding:2px 6px; border-radius:4px; border:1px solid var(--border)">${p._id.slice(-6).toUpperCase()}</span>
@@ -2489,41 +2950,6 @@ async function quickSavePriceStockTable(id, btn) {
   }
 }
 
-async function syncOfflineCmsData() {
-  try {
-    const banners = await api('/cms/admin/banners');
-    const sections = await api('/cms/sections');
-    const popups = await api('/cms/admin/popups');
-    
-    // Announcement text
-    const annText = sections.find(s => s.key === 'announcement')?.config?.text || '';
-    
-    // Active popup
-    const activePop = popups.find(p => p.visible);
-    
-    // Section visibilities
-    const secObj = {};
-    sections.forEach(s => {
-      secObj[s.key === 'poster_spread' ? 'poster-spread' : s.key === 'categories' ? 'cat-browser' : s.key] = s.visible !== false;
-    });
-
-    state.banners = banners;
-    state.sections = sections;
-    state.popups = popups;
-
-    // Cache in local storage for instant frontend rendering
-    localStorage.setItem('cms_data', JSON.stringify({
-      banners,
-      sections,
-      popup: activePop,
-      announcement: annText,
-      heroBanners: Array.isArray(banners) ? banners.filter(b => b.type === 'hero' || !b.type) : []
-    }));
-  } catch (e) {
-    console.warn('syncOfflineCmsData error:', e);
-  }
-}
-
 function downloadCourierLabel(orderId) {
   const order = state.orders.find(o => o.id === orderId);
   if (!order) return alert('Order not found');
@@ -2577,6 +3003,53 @@ function downloadCourierLabel(orderId) {
     </html>
   `);
   printWindow.document.close();
+}
+
+async function syncOfflineCmsData() {
+  try {
+    const banners = await api('/cms/admin/banners');
+    const sections = await api('/cms/sections');
+    const popups = await api('/cms/admin/popups');
+    
+    // Announcement text
+    const annText = sections.find(s => s.key === 'announcement')?.config?.text || '';
+    
+    // Active popup
+    const activePop = popups.find(p => p.visible);
+    
+    // Section visibilities and configs
+    const secObj = {};
+    sections.forEach(s => {
+      secObj[s.key === 'poster_spread' ? 'poster-spread' : s.key === 'categories' ? 'cat-browser' : s.key === 'testimonials' ? 'reviews' : s.key] = s.visible !== false;
+      if (s.config) {
+        secObj[s.key] = { visible: s.visible !== false, config: s.config };
+      }
+    });
+    
+    // Hero and festival banners
+    const heroBanners = Array.isArray(banners) ? banners.filter(b => b.type === 'hero' && b.visible) : [];
+    const festivalBanners = Array.isArray(banners) ? banners.filter(b => b.type === 'festival' && b.visible) : [];
+    
+    const cmsPayload = {
+      announcement: annText,
+      heroBanners,
+      festivalBanners,
+      sections: secObj,
+      popup: activePop ? {
+        enabled: true,
+        title: activePop.title,
+        body: activePop.body,
+        image_url: activePop.image_url,
+        cta_label: activePop.cta_text,
+        cta_url: activePop.cta_url,
+        delay: activePop.trigger_delay_seconds
+      } : { enabled: false }
+    };
+    
+    localStorage.setItem('cms_data', JSON.stringify(cmsPayload));
+  } catch (e) {
+    console.warn('syncOfflineCmsData error:', e);
+  }
 }
 
 render();

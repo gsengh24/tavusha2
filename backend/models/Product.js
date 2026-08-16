@@ -8,10 +8,11 @@ class ProductInstance {
     this.description = data.description || '';
     this.price = data.price;
     this.colour = data.colour || '';
+    this.colorVariants = Array.isArray(data.color_variants) ? data.color_variants : (Array.isArray(data.colorVariants) ? data.colorVariants : []);
     this.size = data.size || '';
     this.category = data.category || 'other';
     this.stock = data.stock || 0;
-    this.inStock = data.in_stock !== undefined ? data.in_stock : true;
+    this.inStock = data.in_stock !== undefined ? data.in_stock : (Number(this.stock) > 0);
     this.images = data.images || [];
     this.videos = data.videos || [];
     this.status = data.status || 'pending';
@@ -25,11 +26,19 @@ class ProductInstance {
   }
 
   async save() {
+    let totalStock = this.stock;
+    if (Array.isArray(this.colorVariants) && this.colorVariants.length > 0) {
+      totalStock = this.colorVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+      this.stock = totalStock;
+      this.inStock = totalStock > 0;
+    }
+
     const updateData = {
       title: this.title,
       description: this.description,
       price: this.price,
       colour: this.colour,
+      color_variants: this.colorVariants,
       size: this.size,
       category: this.category,
       stock: this.stock,
@@ -92,15 +101,25 @@ class ProductModel {
   }
 
   static async create(fields) {
+    let colorVariants = fields.colorVariants || fields.color_variants || [];
+    if (typeof colorVariants === 'string') {
+      try { colorVariants = JSON.parse(colorVariants); } catch(e) { colorVariants = []; }
+    }
+    let stock = fields.stock || 0;
+    if (Array.isArray(colorVariants) && colorVariants.length > 0) {
+      stock = colorVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+    }
+
     const insertData = {
       title: fields.title,
       description: fields.description || '',
       price: fields.price,
       colour: fields.colour || '',
+      color_variants: colorVariants,
       size: fields.size || '',
       category: fields.category || 'other',
-      stock: fields.stock || 0,
-      in_stock: fields.inStock !== undefined ? fields.inStock : (Number(fields.stock || 0) > 0),
+      stock: stock,
+      in_stock: fields.inStock !== undefined ? fields.inStock : (Number(stock) > 0),
       images: fields.images || [],
       videos: fields.videos || [],
       status: fields.status || 'pending',

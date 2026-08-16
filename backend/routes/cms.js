@@ -53,7 +53,6 @@ router.get('/public', async (req, res) => {
         CmsContent.getAnnouncement(),
       ]);
     } catch (dbErr) {
-      // Supabase unavailable — use file store fallback
       console.warn('[CMS] Supabase error, using file store:', dbErr.message);
       const fallback = fileStore.getPublicData();
       banners = fallback.banners;
@@ -61,7 +60,25 @@ router.get('/public', async (req, res) => {
       popup = fallback.popup;
       announcement = fallback.announcement;
     }
-    res.json({ banners: banners || [], sections: sections || [], popup: popup || null, announcement: announcement || '' });
+    const heroBanners = (banners || []).filter(b => b.type === 'hero');
+    const festivalBanners = (banners || []).filter(b => b.type === 'festival');
+    const annText = announcement?.config?.text || (typeof announcement === 'string' ? announcement : (announcement?.text || ''));
+    res.json({
+      banners: banners || [],
+      heroBanners,
+      festivalBanners,
+      sections: sections || [],
+      popup: popup ? {
+        enabled: true,
+        title: popup.title,
+        body: popup.body,
+        image_url: popup.image_url,
+        cta_label: popup.cta_text,
+        cta_url: popup.cta_url,
+        delay: popup.trigger_delay_seconds
+      } : { enabled: false },
+      announcement: annText
+    });
   } catch (err) {
     // Last resort: return file store data even on complete failure
     try {

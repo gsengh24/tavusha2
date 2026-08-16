@@ -27,6 +27,7 @@ CREATE TABLE IF NOT EXISTS products (
   description TEXT DEFAULT '',
   price NUMERIC NOT NULL,
   colour TEXT DEFAULT '',
+  color_variants JSONB DEFAULT '[]'::jsonb,
   size TEXT DEFAULT '',
   category TEXT DEFAULT 'other' CHECK (category IN ('party', 'ethnic', 'casual', 'maxi', 'coord', 'other')),
   stock INTEGER DEFAULT 0,
@@ -220,9 +221,32 @@ CREATE POLICY "Public read active banners" ON cms_banners
 CREATE POLICY "Public read cms_sections" ON cms_sections
   FOR SELECT TO anon, authenticated USING (true);
 
+-- NOTE: The backend uses the service_role key (bypasses RLS) for writes.
+-- These policies are for when the anon/publishable key is used or for safety.
+-- Admin writes to cms_sections (INSERT / UPDATE / DELETE)
+CREATE POLICY "Service role write cms_sections" ON cms_sections
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+CREATE POLICY "Authenticated write cms_sections" ON cms_sections
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
 -- Public can read active popup
 CREATE POLICY "Public read active popups" ON cms_popups
   FOR SELECT TO anon, authenticated USING (visible = true);
+
+-- Admin writes to cms_banners
+CREATE POLICY "Service role write cms_banners" ON cms_banners
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+CREATE POLICY "Authenticated write cms_banners" ON cms_banners
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- Admin writes to cms_popups
+CREATE POLICY "Service role write cms_popups" ON cms_popups
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+CREATE POLICY "Authenticated write cms_popups" ON cms_popups
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- Public can read active shipping zones
 CREATE POLICY "Public read shipping zones" ON shipping_zones

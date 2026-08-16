@@ -75,18 +75,28 @@ async function uploadVideoToSupabase(fileBuffer, originalName) {
 router.get('/storefront.js', async (req, res) => {
   try {
     const products = await Product.find({ status: 'approved', isDeleted: false });
-    const shaped = products.map((p) => ({
-      id: `staff-${p._id}`,
-      name: p.title,
-      price: p.price,
-      category: [p.category],
-      colour: p.colour,
-      size: p.size,
-      images: p.images,
-      image: p.images[0] || '',
-      rating: 5,
-      brand: 'TAVUSHA'
-    }));
+    const shaped = products.map((p) => {
+      const vars = Array.isArray(p.colorVariants) ? p.colorVariants : [];
+      const colors = vars.length > 0
+        ? vars.map(v => v.hex || v.color)
+        : (p.colour ? p.colour.split(',').map(s => s.trim()).filter(Boolean) : ['#1C1917']);
+      return {
+        id: `staff-${p._id}`,
+        name: p.title,
+        price: p.price,
+        category: [p.category],
+        colour: p.colour,
+        colorVariants: vars,
+        colors: colors.length ? colors : ['#1C1917'],
+        size: p.size,
+        sizes: p.size ? p.size.split(',').map(s => s.trim().toUpperCase()).filter(Boolean) : ['S', 'M', 'L'],
+        stock: p.stock || 0,
+        images: p.images,
+        image: p.images[0] || '',
+        rating: 5,
+        brand: 'TAVUSHA'
+      };
+    });
     res.setHeader('Content-Type', 'application/javascript');
     res.send(`// Auto-generated from admin-approved staff uploads.\nif (typeof TAVUSHA_PRODUCTS !== 'undefined') {\n  TAVUSHA_PRODUCTS.push(...${JSON.stringify(shaped)});\n}`);
   } catch (err) {
@@ -114,8 +124,21 @@ router.post('/', protect, requirePermission('canUpload'),
   upload.fields([{ name: 'images', maxCount: 10 }, { name: 'videos', maxCount: 5 }]),
   async (req, res) => {
     try {
-      const { title, price, colour, size, category, stock, description, cropData } = req.body;
+      const { title, price, colour, colorVariants, size, category, stock, description, cropData } = req.body;
       if (!title || !price) return res.status(400).json({ message: 'Title and price are required' });
+
+      let parsedVariants = [];
+      if (colorVariants) {
+        try { parsedVariants = typeof colorVariants === 'string' ? JSON.parse(colorVariants) : colorVariants; }
+        catch(e) { parsedVariants = []; }
+      }
+
+      let finalStock = Number(stock || 0);
+      if (parsedVariants.length > 0) {
+        finalStock = parsedVariants.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+      }
+
+      const finalColour = colour || (parsedVariants.length > 0 ? parsedVariants.map(v => v.color).join(', ') : '');
 
       const crops = cropData ? JSON.parse(cropData) : [];
       const imageFiles = req.files.images || [];
@@ -133,10 +156,13 @@ router.post('/', protect, requirePermission('canUpload'),
       }
 
       const product = await Product.create({
-        title, description, price, colour, size,
+        title, description, price,
+        colour: finalColour,
+        colorVariants: parsedVariants,
+        size,
         category: category || 'other',
-        stock: stock || 0,
-        inStock: Number(stock || 0) > 0,
+        stock: finalStock,
+        inStock: finalStock > 0,
         images: imagePaths,
         videos: videoPaths,
         status: 'pending',
@@ -160,14 +186,32 @@ router.put('/:id', protect, requirePermission('canEdit'),
         return res.status(403).json({ message: 'You can only edit products you uploaded' });
       }
 
-      const { title, price, colour, size, category, stock, description, cropData, removeImages } = req.body;
+      const { title, price, colour, colorVariants, size, category, stock, description, cropData, removeImages } = req.body;
       if (title !== undefined) product.title = title;
       if (description !== undefined) product.description = description;
       if (price !== undefined) product.price = price;
-      if (colour !== undefined) product.colour = colour;
       if (size !== undefined) product.size = size;
       if (category !== undefined) product.category = category;
-      if (stock !== undefined) { product.stock = stock; product.inStock = Number(stock) > 0; }
+
+      if (colorVariants !== undefined) {
+        let parsed = [];
+        try { parsed = typeof colorVariants === 'string' ? JSON.parse(colorVariants) : colorVariants; }
+        catch(e) { parsed = []; }
+        product.colorVariants = Array.isArray(parsed) ? parsed : [];
+        if (product.colorVariants.length > 0) {
+          product.colour = product.colorVariants.map(v => v.color).join(', ');
+          product.stock = product.colorVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+          product.inStock = product.stock > 0;
+        }
+      }
+
+      if (colour !== undefined && (!product.colorVariants || product.colorVariants.length === 0)) {
+        product.colour = colour;
+      }
+      if (stock !== undefined && (!product.colorVariants || product.colorVariants.length === 0)) {
+        product.stock = Number(stock);
+        product.inStock = Number(stock) > 0;
+      }
 
       if (removeImages) {
         const toRemove = JSON.parse(removeImages);

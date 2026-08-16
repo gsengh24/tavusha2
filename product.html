@@ -61,8 +61,14 @@
     .pdp-colour-swatch { width:34px; height:34px; border-radius:50%; cursor:pointer; border:2px solid transparent; outline:2px solid transparent; outline-offset:3px; transition:outline-color 0.2s, transform 0.2s; position:relative; }
     .pdp-colour-swatch:hover { transform:scale(1.12); }
     .pdp-colour-swatch.active { outline-color:var(--black); }
-    .pdp-colour-swatch .tooltip { position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:var(--black); color:#fff; font-size:0.6rem; font-weight:600; white-space:nowrap; padding:3px 8px; border-radius:4px; opacity:0; pointer-events:none; transition:opacity 0.15s; letter-spacing:0.06em; text-transform:uppercase; }
+    .pdp-colour-swatch.sold-out { opacity:0.45; }
+    .pdp-colour-swatch.sold-out::after { content:''; position:absolute; top:50%; left:0; right:0; height:2px; background:#b3261e; transform:rotate(-45deg); }
+    .pdp-colour-swatch .tooltip { position:absolute; bottom:calc(100% + 8px); left:50%; transform:translateX(-50%); background:var(--black); color:#fff; font-size:0.6rem; font-weight:600; white-space:nowrap; padding:3px 8px; border-radius:4px; opacity:0; pointer-events:none; transition:opacity 0.15s; letter-spacing:0.06em; text-transform:uppercase; z-index:10; }
     .pdp-colour-swatch:hover .tooltip { opacity:1; }
+    .pdp-stock-status { margin-top:8px; font-size:0.78rem; font-weight:600; display:flex; align-items:center; gap:6px; }
+    .pdp-stock-status.in-stock { color:#1e7a34; }
+    .pdp-stock-status.low-stock { color:#a07840; background:#fdf1dd; padding:4px 10px; border-radius:6px; display:inline-flex; }
+    .pdp-stock-status.out-of-stock { color:#b3261e; background:#fbe4e2; padding:4px 10px; border-radius:6px; display:inline-flex; }
     .pdp-sizes { display:flex; gap:8px; flex-wrap:wrap; }
     .pdp-size-btn { min-width:52px; height:44px; padding:0 12px; border:1.5px solid var(--border); border-radius:8px; font-size:0.78rem; font-weight:600; font-family:var(--font-ui); cursor:pointer; transition:all 0.18s var(--ease-snap); background:white; color:var(--black); display:flex; align-items:center; justify-content:center; }
     .pdp-size-btn:hover { border-color:var(--black); }
@@ -71,6 +77,7 @@
     .size-guide-link { font-size:0.72rem; color:var(--warm-grey); text-decoration:underline; cursor:pointer; background:none; border:none; font-family:var(--font-ui); }
     .size-guide-link:hover { color:var(--black); }
     .pdp-cta-row { display:flex; gap:12px; align-items:stretch; }
+    .pdp-add-btn.disabled { opacity:0.5; cursor:not-allowed; background:#888; pointer-events:none; }
     .pdp-qty { display:flex; align-items:center; border:1.5px solid var(--border); border-radius:10px; overflow:hidden; }
     .pdp-qty__btn { width:42px; height:54px; display:flex; align-items:center; justify-content:center; font-size:1.2rem; background:none; border:none; cursor:pointer; transition:background 0.15s; font-family:var(--font-ui); }
     .pdp-qty__btn:hover { background:var(--bg-wash-alt); }
@@ -214,6 +221,7 @@
       <div>
         <div class="pdp-section-label">Colour <span id="selectedColourName">&#8212;</span></div>
         <div class="pdp-colours" id="colourSwatches"></div>
+        <div id="pdpStockStatus" class="pdp-stock-status"></div>
       </div>
 
       <!-- Size -->
@@ -425,13 +433,35 @@
 <script src="js/auth.js" defer></script>
 <script>
 'use strict';
-const COLOUR_NAMES = {
+const KNOWN_PALETTE = {
   '#F5F0E8':'Ivory','#1C1917':'Black','#C9A96E':'Champagne Gold',
   '#E8D5B0':'Sand','#B09080':'Taupe','#FAFAF7':'Off-White',
   '#8B9E7A':'Sage Green','#78716C':'Stone','#C4693A':'Terracotta',
-  '#E8A4A4':'Rose Pink','#1E3A5F':'Navy Blue','#44403C':'Charcoal',
-  '#8B2240':'Deep Maroon'
+  '#E8A4A4':'Rose Pink','#F3C5C5':'Blush Pink','#1E3A5F':'Navy Blue','#44403C':'Charcoal',
+  '#8B2240':'Deep Maroon','#722F37':'Wine','#800020':'Burgundy','#1e7a34':'Emerald Green'
 };
+
+function guessColorHex(name) {
+  if (!name) return '#1C1917';
+  if (name.startsWith('#')) return name;
+  const clean = name.toLowerCase().trim();
+  const map = {
+    'pink':'#E8A4A4','rose':'#E8A4A4','rose pink':'#E8A4A4','blush':'#F3C5C5','blush pink':'#F3C5C5',
+    'black':'#1C1917','midnight black':'#1C1917','obsidian':'#1C1917','midnight':'#1C1917',
+    'gold':'#C9A96E','champagne':'#C9A96E','champagne gold':'#C9A96E',
+    'ivory':'#F5F0E8','white':'#FFFFFF','off-white':'#FAFAF7',
+    'green':'#8B9E7A','sage':'#8B9E7A','sage green':'#8B9E7A','emerald':'#1e7a34','emerald green':'#1e7a34',
+    'blue':'#1E3A5F','navy':'#1E3A5F','navy blue':'#1E3A5F','royal blue':'#1952a5',
+    'maroon':'#8B2240','deep maroon':'#8B2240','wine':'#722F37','burgundy':'#800020',
+    'red':'#b3261e','ruby':'#9b111e','rust':'#B7410E',
+    'sand':'#E8D5B0','taupe':'#B09080','stone':'#78716C','terracotta':'#C4693A','charcoal':'#44403C',
+    'mocha':'#826644','violet':'#8a2be2','purple':'#6a0dad','lilac':'#C8A2C8','lavender':'#E6E6FA'
+  };
+  if (map[clean]) return map[clean];
+  for (const k in map) { if (clean.includes(k)) return map[k]; }
+  return '#1C1917';
+}
+
 const EXTRA_IMAGES = [
   'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&q=85',
   'https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=600&q=85',
@@ -446,7 +476,7 @@ const FAKE_REVIEWS = [
   {name:'Divya Nair',initial:'D',text:'Exceeded my expectations! So lightweight and flowy. Perfect for my Goa vacation.',rating:5,date:'May 2026'},
   {name:'Ritika Jain',initial:'R',text:'Lovely design and great stitching. Sizing runs true to chart, so check the size guide.',rating:4,date:'July 2026'},
 ];
-let pdpProduct=null, pdpSelectedColor=null, pdpSelectedSize=null, pdpQtyVal=1;
+let pdpProduct=null, pdpSelectedColor=null, pdpSelectedColorName='', pdpSelectedColorStock=1, pdpSelectedSize=null, pdpQtyVal=1;
 
 function initPDP() {
   const idParam = new URLSearchParams(window.location.search).get('id');
@@ -505,44 +535,48 @@ function renderPDP(p) {
     return `<div class="pdp-gallery__thumb ${i===0?'active':''}" onclick="switchImg(${i},this,'${src}','${bgs[i%bgs.length]}')">
       <img src="${src}" alt="${p.name} ${i+1}" loading="lazy" onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='${fb}';}"></div>`;
   }).join('');
-  const COLOR_LOOKUP = {
-    'rose pink': '#E8A4A4', 'pink': '#E8A4A4', 'hot pink': '#EC4899', 'rebel pink': '#EC4899', 'glittered pink': '#EC4899',
-    'navy blue': '#1E3A5F', 'blue': '#1E3A5F', 'royal blue': '#1D4ED8', 'sky blue': '#38BDF8', 'ocean blue': '#0284C7', 'oceas blue': '#0284C7', 'starburst blue': '#1E40AF', 'warm blue': '#2563EB', 'crystal blue': '#38BDF8',
-    'maroon': '#8B2240', 'deep maroon': '#8B2240', 'bloody red': '#991B1B', 'crimson red': '#991B1B', 'pearl red': '#DC2626', 'red': '#DC2626', 'ruby red': '#B91C1C', 'cherry red': '#991B1B',
-    'emerald green': '#047857', 'emrald green': '#047857', 'sage green': '#8B9E7A', 'green': '#047857', 'guilty green': '#15803D', 'lime green': '#84CC16',
-    'black': '#1C1917', 'velvet black': '#1C1917', 'rare black': '#1C1917', 'midnight black': '#1C1917', 'charcoal': '#44403C',
-    'ivory': '#F5F0E8', 'off-white': '#FAFAF7', 'white': '#FFFFFF', 'perfect white': '#FFFFFF',
-    'champagne gold': '#C9A96E', 'gold': '#C9A96E', 'shining golden': '#EAB308', 'golden aura': '#EAB308', 'golden gleam': '#EAB308',
-    'orange': '#F97316', 'juicy orange': '#F97316', 'sunflare orange': '#F97316',
-    'yellow': '#EAB308', 'pearl yellow': '#FEF08A', 'radiant yellow': '#EAB308',
-    'lavender': '#E9D5FF', 'crystal lavender': '#E9D5FF', 'shimmer lavender': '#E9D5FF', 'mist purple': '#C084FC', 'purple': '#9333EA',
-    'silver': '#94A3B8', 'starlight silver': '#CBD5E1', 'sequined silver': '#CBD5E1'
-  };
-  const getSwatchBg = (c) => {
-    if (!c) return '#C9A96E';
-    if (c.startsWith('#') || c.startsWith('rgb')) return c;
-    const lower = c.trim().toLowerCase();
-    return COLOR_LOOKUP[lower] || '#C9A96E';
-  };
-
-  let colorList = [];
-  if (Array.isArray(p.colors) && p.colors.length) {
-    colorList = p.colors;
-  } else if (p.colour && typeof p.colour === 'string') {
-    colorList = p.colour.split(',').map(s => s.trim()).filter(Boolean);
-  } else if (p.color && typeof p.color === 'string') {
-    colorList = p.color.split(',').map(s => s.trim()).filter(Boolean);
+  // ── Multi-Colour Variants Parsing ──
+  let variants = [];
+  if (Array.isArray(p.colorVariants) && p.colorVariants.length > 0) {
+    variants = p.colorVariants.map(v => ({
+      color: v.color || '',
+      hex: v.hex || guessColorHex(v.color),
+      stock: Number(v.stock !== undefined ? v.stock : 10)
+    }));
+  } else if (p.colors && p.colors.length > 0) {
+    variants = p.colors.map(c => ({
+      color: KNOWN_PALETTE[c] || c,
+      hex: c.startsWith('#') ? c : guessColorHex(c),
+      stock: Number(p.stock !== undefined ? p.stock : 10)
+    }));
+  } else if (p.colour) {
+    const parts = p.colour.split(',').map(s => s.trim()).filter(Boolean);
+    const stockPer = Math.floor((Number(p.stock) || 10) / (parts.length || 1));
+    variants = parts.map((name, idx) => ({
+      color: name,
+      hex: guessColorHex(name),
+      stock: idx === 0 ? (stockPer + ((Number(p.stock) || 10) % (parts.length || 1))) : stockPer
+    }));
+  } else {
+    variants = [{ color: 'Standard', hex: '#1C1917', stock: Number(p.stock !== undefined ? p.stock : 10) }];
   }
-  if (!colorList.length) colorList = ['Rose Pink'];
 
-  document.getElementById('colourSwatches').innerHTML = colorList.map((c, i) => {
-    const nm = COLOUR_NAMES[c] || c;
-    const bg = getSwatchBg(c);
-    const light = isLight(bg);
-    return `<div class="pdp-colour-swatch ${i===0?'active':''}" style="background:${bg};border-color:${light?'rgba(0,0,0,0.15)':'transparent'}" onclick="selColor('${c}','${nm}',this)" title="${nm}"><span class="tooltip">${nm}</span></div>`;
+  // Render swatches
+  document.getElementById('colourSwatches').innerHTML = variants.map((v, i) => {
+    const nm = v.color;
+    const hex = v.hex || guessColorHex(nm);
+    const st = Number(v.stock !== undefined ? v.stock : 10);
+    const light = isLight(hex);
+    const isSoldOut = st <= 0;
+    return `<div class="pdp-colour-swatch ${i===0?'active':''} ${isSoldOut?'sold-out':''}" style="background:${hex};border-color:${light?'rgba(0,0,0,0.12)':'transparent'}" onclick="selColorVariant('${hex}','${nm.replace(/'/g, "\\'")}',${st},this)" title="${nm} (${isSoldOut ? 'Out of Stock' : (st <= 5 ? 'Only ' + st + ' left' : 'In Stock')})">
+      <span class="tooltip">${nm} ${isSoldOut ? '(Out of Stock)' : (st <= 5 ? '(' + st + ' left)' : '')}</span>
+    </div>`;
   }).join('');
-  pdpSelectedColor = colorList[0];
-  document.getElementById('selectedColourName').textContent = COLOUR_NAMES[pdpSelectedColor] || pdpSelectedColor;
+
+  if (variants.length > 0) {
+    const first = variants[0];
+    selColorVariant(first.hex, first.color, first.stock, document.querySelector('.pdp-colour-swatch'));
+  }
   document.getElementById('sizeButtons').innerHTML=p.sizes.map(s=>`
     <button class="pdp-size-btn" onclick="selSize('${s}',this)">${s}</button>`).join('');
   updatePdpWishBtn();
@@ -567,27 +601,70 @@ function switchImg(idx,el,src,bg){
   document.querySelectorAll('.pdp-gallery__thumb').forEach(t=>t.classList.remove('active'));
   el.classList.add('active');
 }
-function selColor(c,nm,el){
-  pdpSelectedColor=c;
-  document.getElementById('selectedColourName').textContent=nm;
-  document.querySelectorAll('.pdp-colour-swatch').forEach(s=>s.classList.remove('active'));
-  el.classList.add('active');
+
+function selColorVariant(hex, nm, stock, el){
+  pdpSelectedColor = hex;
+  pdpSelectedColorName = nm;
+  pdpSelectedColorStock = Number(stock);
+  
+  const nameEl = document.getElementById('selectedColourName');
+  if (nameEl) nameEl.textContent = nm;
+  
+  document.querySelectorAll('.pdp-colour-swatch').forEach(s => s.classList.remove('active'));
+  if (el) el.classList.add('active');
+
+  // Update stock status badge
+  const statusEl = document.getElementById('pdpStockStatus');
+  const addBtn = document.querySelector('.pdp-add-btn');
+  
+  if (statusEl) {
+    if (pdpSelectedColorStock <= 0) {
+      statusEl.className = 'pdp-stock-status out-of-stock';
+      statusEl.innerHTML = `✕ <span><strong>Out of Stock</strong> in ${nm}</span>`;
+      if (addBtn) {
+        addBtn.classList.add('disabled');
+        addBtn.innerHTML = `<span>Sold Out in ${nm}</span>`;
+      }
+    } else if (pdpSelectedColorStock <= 5) {
+      statusEl.className = 'pdp-stock-status low-stock';
+      statusEl.innerHTML = `⚡ <span>Only <strong>${pdpSelectedColorStock} left</strong> in ${nm} — Order soon!</span>`;
+      if (addBtn) {
+        addBtn.classList.remove('disabled');
+        addBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> Add to Bag`;
+      }
+    } else {
+      statusEl.className = 'pdp-stock-status in-stock';
+      statusEl.innerHTML = `✓ <span><strong>In Stock</strong> in ${nm} — Ready to ship</span>`;
+      if (addBtn) {
+        addBtn.classList.remove('disabled');
+        addBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg> Add to Bag`;
+      }
+    }
+  }
 }
+
 function selSize(s,el){
   pdpSelectedSize=s;
   document.getElementById('selectedSizeName').textContent=s;
   document.querySelectorAll('.pdp-size-btn').forEach(b=>b.classList.remove('active'));
   el.classList.add('active');
 }
+
 function changeQty(d){
   pdpQtyVal=Math.max(1,pdpQtyVal+d);
   document.getElementById('pdpQtyDisplay').textContent=pdpQtyVal;
 }
+
 function pdpAddToCart(){
+  if (pdpSelectedColorStock <= 0) {
+    showToast(`Sorry, ${pdpSelectedColorName || 'this colour'} is out of stock`, 'error');
+    return;
+  }
   if(!pdpSelectedSize){showToast('Please select a size first','error');return;}
-  for(let i=0;i<pdpQtyVal;i++) addToCart(pdpProduct,pdpSelectedSize);
+  for(let i=0;i<pdpQtyVal;i++) addToCart(pdpProduct, pdpSelectedSize, pdpSelectedColorName);
   setTimeout(openCart,300);
 }
+
 function pdpToggleWishlist(){
   if(!pdpProduct)return;
   const idx=TAVUSHA.wishlist.indexOf(pdpProduct.id);
@@ -596,11 +673,14 @@ function pdpToggleWishlist(){
   localStorage.setItem('tavusha_wishlist',JSON.stringify(TAVUSHA.wishlist));
   updateWishlistUI(); updatePdpWishBtn();
 }
+
 function updatePdpWishBtn(){
   const btn=document.getElementById('pdpWishBtn');
   if(!btn||!pdpProduct)return;
   const w=TAVUSHA.wishlist.includes(pdpProduct.id);
   btn.classList.toggle('active',w);
+  btn.querySelector('svg').setAttribute('fill',w?'currentColor':'none');
+}
   btn.querySelector('svg').setAttribute('fill',w?'currentColor':'none');
 }
 function renderRelated(p){

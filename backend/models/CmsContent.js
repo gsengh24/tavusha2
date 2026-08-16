@@ -88,25 +88,30 @@ class CmsModel {
   }
 
   static async updateSection(key, fields) {
-    const update = {
-      key,
-      updated_at: new Date().toISOString()
-    };
-    if (fields.visible !== undefined) update.visible = fields.visible;
-    if (fields.sort_order !== undefined) update.sort_order = fields.sort_order;
-    if (fields.config !== undefined) update.config = fields.config;
-    if (fields.label !== undefined) update.label = fields.label;
-    const { data, error } = await supabase
-      .from('cms_sections')
-      .upsert(update, { onConflict: 'key' })
-      .select()
-      .single();
-    if (error) throw error;
-    return data;
+    const now = new Date().toISOString();
+    const { data: existing } = await supabase.from('cms_sections').select('config, visible, sort_order, label').eq('key', key).maybeSingle();
+    if (existing) {
+      const update = { updated_at: now };
+      if (fields.visible !== undefined) update.visible = fields.visible;
+      if (fields.sort_order !== undefined) update.sort_order = fields.sort_order;
+      if (fields.label !== undefined) update.label = fields.label;
+      if (fields.config !== undefined) update.config = { ...(existing.config || {}), ...fields.config };
+      const { data, error } = await supabase.from('cms_sections').update(update).eq('key', key).select().single();
+      if (error) throw error;
+      return data;
+    } else {
+      const upsertData = { key, updated_at: now };
+      if (fields.visible !== undefined) upsertData.visible = fields.visible;
+      if (fields.sort_order !== undefined) upsertData.sort_order = fields.sort_order;
+      if (fields.config !== undefined) upsertData.config = fields.config;
+      if (fields.label !== undefined) upsertData.label = fields.label;
+      const { data, error } = await supabase.from('cms_sections').insert([upsertData]).select().single();
+      if (error) throw error;
+      return data;
+    }
   }
 
   static async upsertSection(key, label, fields) {
-    // Creates the row if missing, updates if present — safe for image URL saves
     const row = {
       key,
       label: label || key,

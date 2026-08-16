@@ -103,6 +103,63 @@
     padding: 6px 12px;
     font-size: 0.75rem;
   }
+  
+  /* Multi-color variant manager styles */
+  .sp-variant-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+    max-height: 280px;
+    overflow-y: auto;
+    padding-right: 4px;
+  }
+  .sp-variant-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #faf8f6;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 12px;
+  }
+  .sp-variant-color-input {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid var(--border);
+    border-radius: 50%;
+    cursor: pointer;
+    background: none;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+  .sp-variant-color-input::-webkit-color-swatch-wrapper {
+    padding: 0;
+  }
+  .sp-variant-color-input::-webkit-color-swatch {
+    border: none;
+    border-radius: 50%;
+  }
+  .sp-color-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.72rem;
+    background: #f4f0ec;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 6px;
+    margin: 2px 4px 2px 0;
+  }
+  .sp-color-dot {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,0.18);
+    flex-shrink: 0;
+  }
 </style>
 </head>
 <body>
@@ -160,17 +217,23 @@ async function handleMockApi(path, options = {}) {
   if (path === '/products') {
     if (method === 'GET') return prods;
     if (method === 'POST') {
-      let title = 'New Product', price = 0, stock = 0, colour = '', size = '', category = 'other', description = '';
+      let title = 'New Product', price = 0, stock = 0, colour = '', colorVariants = [], size = '', category = 'other', description = '';
       if (options.body instanceof FormData) {
         title = options.body.get('title') || title;
         price = Number(options.body.get('price') || 0);
         stock = Number(options.body.get('stock') || 0);
         colour = options.body.get('colour') || '';
+        const cv = options.body.get('colorVariants');
+        if (cv) { try { colorVariants = JSON.parse(cv); } catch(e) { colorVariants = []; } }
         size = options.body.get('size') || '';
         category = options.body.get('category') || 'other';
         description = options.body.get('description') || '';
       }
-      const newP = { _id: 'p_' + Date.now(), title, price, stock, colour, size, category, description, status: 'approved', images: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500'], created_at: new Date().toISOString() };
+      if (Array.isArray(colorVariants) && colorVariants.length > 0) {
+        stock = colorVariants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
+        colour = colorVariants.map(v => v.color).join(', ');
+      }
+      const newP = { _id: 'p_' + Date.now(), title, price, stock, colour, colorVariants, size, category, description, status: 'approved', images: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500'], created_at: new Date().toISOString() };
       prods.unshift(newP); saveMockProducts(prods);
       return newP;
     }
@@ -185,7 +248,20 @@ async function handleMockApi(path, options = {}) {
         if (options.body instanceof FormData) {
           if (options.body.get('title')) prods[idx].title = options.body.get('title');
           if (options.body.get('price')) prods[idx].price = Number(options.body.get('price'));
-          if (options.body.get('stock')) prods[idx].stock = Number(options.body.get('stock'));
+          if (options.body.get('description') !== null) prods[idx].description = options.body.get('description');
+          if (options.body.get('category')) prods[idx].category = options.body.get('category');
+          if (options.body.get('size')) prods[idx].size = options.body.get('size');
+          const cv = options.body.get('colorVariants');
+          if (cv !== null && cv !== undefined) {
+            try { prods[idx].colorVariants = JSON.parse(cv); } catch(e) { prods[idx].colorVariants = []; }
+            if (prods[idx].colorVariants && prods[idx].colorVariants.length > 0) {
+              prods[idx].stock = prods[idx].colorVariants.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+              prods[idx].colour = prods[idx].colorVariants.map(v => v.color).join(', ');
+            }
+          }
+          if (options.body.get('stock') && (!prods[idx].colorVariants || prods[idx].colorVariants.length === 0)) {
+            prods[idx].stock = Number(options.body.get('stock'));
+          }
         }
         saveMockProducts(prods); return prods[idx];
       }
@@ -342,6 +418,42 @@ async function loadStaffProducts() {
   renderFilteredStaffProductsTable();
 }
 
+const KNOWN_COLOR_PALETTE = {
+  'pink': '#E8A4A4', 'rose': '#E8A4A4', 'rose pink': '#E8A4A4', 'blush': '#F3C5C5', 'blush pink': '#F3C5C5',
+  'black': '#1C1917', 'midnight black': '#1C1917', 'obsidian': '#1C1917',
+  'gold': '#C9A96E', 'champagne': '#C9A96E', 'champagne gold': '#C9A96E',
+  'ivory': '#F5F0E8', 'white': '#FFFFFF', 'off-white': '#FAFAF7',
+  'green': '#8B9E7A', 'sage': '#8B9E7A', 'sage green': '#8B9E7A', 'emerald': '#1e7a34', 'emerald green': '#1e7a34',
+  'blue': '#1E3A5F', 'navy': '#1E3A5F', 'navy blue': '#1E3A5F', 'royal blue': '#1952a5',
+  'maroon': '#8B2240', 'deep maroon': '#8B2240', 'wine': '#722F37', 'burgundy': '#800020',
+  'red': '#b3261e', 'ruby': '#9b111e', 'rust': '#B7410E',
+  'sand': '#E8D5B0', 'taupe': '#B09080', 'stone': '#78716C', 'terracotta': '#C4693A', 'charcoal': '#44403C',
+  'mocha': '#826644', 'violet': '#8a2be2', 'purple': '#6a0dad', 'lilac': '#C8A2C8', 'lavender': '#E6E6FA'
+};
+
+function guessColorHex(name) {
+  if (!name) return '#1C1917';
+  const clean = name.toLowerCase().trim();
+  if (KNOWN_COLOR_PALETTE[clean]) return KNOWN_COLOR_PALETTE[clean];
+  for (const k in KNOWN_COLOR_PALETTE) {
+    if (clean.includes(k)) return KNOWN_COLOR_PALETTE[k];
+  }
+  return '#1C1917';
+}
+
+function renderProductColorBadges(p) {
+  if (Array.isArray(p.colorVariants) && p.colorVariants.length > 0) {
+    return `<div style="display:flex; flex-wrap:wrap; gap:4px; margin-top:4px">` + p.colorVariants.map(v => {
+      const st = Number(v.stock !== undefined ? v.stock : 0);
+      const isOut = st <= 0;
+      const isLow = st > 0 && st <= 5;
+      const stockColor = isOut ? '#b3261e' : (isLow ? '#a07840' : '#1e7a34');
+      return `<span class="sp-color-chip" title="${esc(v.color)}: ${st} in stock"><span class="sp-color-dot" style="background:${v.hex || '#1C1917'}"></span><span>${esc(v.color)}</span>: <strong style="color:${stockColor}">${st}</strong></span>`;
+    }).join('') + `</div>`;
+  }
+  return `<div style="font-size:0.75rem; color:var(--warm-grey); margin-top:3px">Colour: <span>${esc(p.colour || '—')}</span></div>`;
+}
+
 function renderFilteredStaffProductsTable() {
   const tbody = document.getElementById('staffProdTableBody');
   if (!tbody) return;
@@ -386,7 +498,8 @@ function renderFilteredStaffProductsTable() {
         </td>
         <td>
           <div style="font-weight:700; color:var(--black); font-size:0.9rem">${esc(p.title)}</div>
-          <div style="font-size:0.75rem; color:var(--warm-grey)">Category: <span class="sp-chip">${esc(p.category)}</span> | Colour: ${esc(p.colour || '—')}</div>
+          <div style="font-size:0.75rem; color:var(--warm-grey)">Category: <span class="sp-chip">${esc(p.category)}</span></div>
+          ${renderProductColorBadges(p)}
         </td>
         <td>
           <span style="font-family:monospace; font-size:0.75rem; background:#faf8f6; padding:2px 6px; border-radius:4px; border:1px solid var(--border)">${p._id.slice(-6).toUpperCase()}</span>
@@ -442,38 +555,154 @@ function openProductForm(product) {
   const modal = document.getElementById('formModal');
   const content = document.getElementById('formModalContent');
   modal.style.display = 'flex';
+
+  let variantList = [];
+  if (product && Array.isArray(product.colorVariants) && product.colorVariants.length > 0) {
+    variantList = product.colorVariants.map(v => ({
+      color: v.color || '',
+      hex: v.hex || guessColorHex(v.color),
+      stock: Number(v.stock !== undefined ? v.stock : 0)
+    }));
+  } else if (product && product.colour) {
+    const parts = product.colour.split(',').map(s => s.trim()).filter(Boolean);
+    const stockPer = Math.floor((Number(product.stock) || 0) / (parts.length || 1));
+    variantList = parts.map((name, i) => ({
+      color: name,
+      hex: guessColorHex(name),
+      stock: i === 0 ? (stockPer + ((Number(product.stock) || 0) % (parts.length || 1))) : stockPer
+    }));
+  }
+  if (variantList.length === 0) {
+    variantList = [{ color: 'Standard', hex: '#1C1917', stock: product ? Number(product.stock || 0) : 10 }];
+  }
+
   content.innerHTML = `
     <div class="sp-modal__head">
       <h2 class="sp-modal__title">${product ? 'Edit Product' : 'New Product'}</h2>
       <button id="closeForm" class="sp-close">&times;</button>
     </div>
+    <div id="formMsg" class="sp-form-msg" style="margin-bottom:8px"></div>
+
+    <label class="sp-field-label">Product Title *</label>
     <input id="f_title" placeholder="Product Title" class="sp-input" value="${product ? esc(product.title) : ''}"/>
-    <textarea id="f_desc" placeholder="Details / Description" class="sp-input" rows="2">${product ? esc(product.description || '') : ''}</textarea>
-    <div class="sp-grid2">
+
+    <label class="sp-field-label">Description</label>
+    <textarea id="f_desc" placeholder="Details / Description" class="sp-input sp-textarea" rows="2">${product ? esc(product.description || '') : ''}</textarea>
+
+    <div class="sp-section-label">Pricing</div>
+    <div class="sp-form-group">
+      <label class="sp-field-label">Price (₹) *</label>
       <input id="f_price" type="number" placeholder="Price (₹)" class="sp-input" value="${product ? product.price : ''}"/>
-      <input id="f_stock" type="number" placeholder="Stock qty" class="sp-input" value="${product ? product.stock : ''}"/>
-      <input id="f_colour" placeholder="Colour" class="sp-input" value="${product ? esc(product.colour || '') : ''}"/>
-      <input id="f_size" placeholder="Size (e.g. S, M, L)" class="sp-input" value="${product ? esc(product.size || '') : ''}"/>
     </div>
-    <select id="f_category" class="sp-input">
-      ${CATEGORIES.map(([v, label]) => `<option value="${v}" ${product && product.category === v ? 'selected' : ''}>${label}</option>`).join('')}
-    </select>
 
-    ${product && product.images.length ? `<div class="sp-existing-label">Existing photos (tap to remove)</div><div id="existingImgs" class="sp-thumb-row"></div>` : ''}
+    <!-- Multi-Colour & Per-Colour Stock Variants -->
+    <div class="sp-section-label" style="display:flex; justify-content:space-between; align-items:center; margin-top:20px;">
+      <span>Colours &amp; Stock per Colour</span>
+      <button type="button" id="addVarRowBtn" class="sp-mini-btn" style="background:var(--brand-dark);color:#fff;font-size:0.75rem;padding:5px 12px;border-radius:20px">+ Add Colour</button>
+    </div>
+    <div id="varRowsContainer" class="sp-variant-list"></div>
+    <div style="display:flex; justify-content:space-between; align-items:center; background:#faf8f6; border:1px dashed var(--border); border-radius:8px; padding:10px 14px; margin-top:8px; font-size:0.82rem;">
+      <span>Total Stock across colours: <strong id="totalVariantStock">0</strong></span>
+      <span id="variantCountLabel" style="color:var(--warm-grey); font-size:0.75rem">0 colours</span>
+    </div>
 
-    <label class="sp-field-label">Add Photos (tap to crop before upload)</label>
+    <div class="sp-section-label" style="margin-top:20px;">Sizes &amp; Category</div>
+    <div class="sp-form-grid">
+      <div class="sp-form-group">
+        <label class="sp-field-label">Sizes (comma separated)</label>
+        <input id="f_size" placeholder="Size (e.g. S, M, L)" class="sp-input" value="${product ? esc(product.size || '') : 'S, M, L'}"/>
+      </div>
+      <div class="sp-form-group">
+        <label class="sp-field-label">Category</label>
+        <select id="f_category" class="sp-input">
+          ${CATEGORIES.map(([v, label]) => `<option value="${v}" ${product && product.category === v ? 'selected' : ''}>${label}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="sp-section-label">Photos</div>
+    ${product && product.images && product.images.length ? `<div class="sp-existing-label">Existing photos (tap to remove)</div><div id="existingImgs" class="sp-thumb-row"></div>` : ''}
     <input id="f_images" type="file" accept="image/*" multiple capture="environment" class="sp-file"/>
     <div id="cropArea"></div>
 
-    <label class="sp-field-label">Add Video (optional)</label>
+    <div class="sp-section-label">Video <span style="font-weight:400;font-size:0.7rem">(optional)</span></div>
     <input id="f_videos" type="file" accept="video/*" multiple capture="environment" class="sp-file"/>
 
-    <button id="saveProductBtn" class="btn-pill sp-btn-block" style="margin-top:14px">${product ? 'Save Changes' : 'Upload Product'}</button>
-    <div id="formMsg" class="sp-form-msg"></div>`;
+    <button id="saveProductBtn" class="btn-pill sp-btn-block sp-save-btn" style="margin-top:14px">${product ? 'Save Changes' : 'Upload Product'}</button>
+  `;
+
   document.getElementById('closeForm').onclick = closeForm;
 
+  function renderVariantRows() {
+    const container = document.getElementById('varRowsContainer');
+    if (!container) return;
+    
+    container.innerHTML = variantList.map((v, i) => `
+      <div class="sp-variant-row" data-idx="${i}">
+        <input type="color" class="sp-variant-color-input varHex" value="${v.hex || '#1C1917'}" title="Pick Colour Swatch"/>
+        <input type="text" class="sp-input varName" placeholder="Colour (e.g. Rose Pink, Emerald)" value="${esc(v.color)}" style="flex:1; margin:0"/>
+        <div style="display:flex; align-items:center; gap:4px">
+          <label style="font-size:0.72rem; color:var(--warm-grey); white-space:nowrap">Stock:</label>
+          <input type="number" min="0" class="sp-input varStock" placeholder="0" value="${v.stock}" style="width:70px; margin:0; padding:6px 8px"/>
+        </div>
+        <button type="button" class="sp-mini-btn sp-mini-btn--danger varDelBtn" title="Remove colour" style="min-height:36px; padding:4px 10px; margin:0">✕</button>
+      </div>
+    `).join('');
+
+    // Bind inputs
+    container.querySelectorAll('.sp-variant-row').forEach(row => {
+      const idx = Number(row.dataset.idx);
+      const hexEl = row.querySelector('.varHex');
+      const nameEl = row.querySelector('.varName');
+      const stockEl = row.querySelector('.varStock');
+      const delBtn = row.querySelector('.varDelBtn');
+
+      hexEl.oninput = (e) => { variantList[idx].hex = e.target.value; };
+      nameEl.oninput = (e) => {
+        variantList[idx].color = e.target.value;
+        const autoHex = guessColorHex(e.target.value);
+        if (autoHex && autoHex !== '#1C1917' && (!variantList[idx].userChangedHex)) {
+          variantList[idx].hex = autoHex;
+          hexEl.value = autoHex;
+        }
+      };
+      hexEl.onchange = () => { variantList[idx].userChangedHex = true; };
+      stockEl.oninput = (e) => {
+        variantList[idx].stock = Math.max(0, parseInt(e.target.value || '0', 10));
+        updateVariantStockSum();
+      };
+      delBtn.onclick = () => {
+        if (variantList.length <= 1) {
+          variantList[0] = { color: '', hex: '#1C1917', stock: 0 };
+        } else {
+          variantList.splice(idx, 1);
+        }
+        renderVariantRows();
+      };
+    });
+
+    updateVariantStockSum();
+  }
+
+  function updateVariantStockSum() {
+    const total = variantList.reduce((s, v) => s + (Number(v.stock) || 0), 0);
+    const sumEl = document.getElementById('totalVariantStock');
+    const countEl = document.getElementById('variantCountLabel');
+    if (sumEl) sumEl.textContent = total;
+    if (countEl) countEl.textContent = `${variantList.length} colour variant${variantList.length === 1 ? '' : 's'}`;
+  }
+
+  renderVariantRows();
+
+  document.getElementById('addVarRowBtn').onclick = () => {
+    variantList.push({ color: '', hex: '#C9A96E', stock: 5 });
+    renderVariantRows();
+    const rows = document.querySelectorAll('.varName');
+    if (rows.length) rows[rows.length - 1].focus();
+  };
+
   const removeList = new Set();
-  if (product && product.images.length) {
+  if (product && product.images && product.images.length) {
     const wrap = document.getElementById('existingImgs');
     wrap.innerHTML = product.images.map(img => `<img src="${img}" data-src="${img}" class="sp-thumb sp-thumb--pick"/>`).join('');
     wrap.querySelectorAll('img').forEach(im => im.onclick = () => {
@@ -487,14 +716,35 @@ function openProductForm(product) {
 
   document.getElementById('saveProductBtn').onclick = async () => {
     const msg = document.getElementById('formMsg');
+    const title = document.getElementById('f_title').value.trim();
+    const price = document.getElementById('f_price').value.trim();
+    if (!title) { msg.textContent = 'Product title is required.'; msg.className = 'sp-form-msg sp-form-msg--error'; return; }
+    if (!price) { msg.textContent = 'Price is required.'; msg.className = 'sp-form-msg sp-form-msg--error'; return; }
+
+    const validVariants = variantList.filter(v => v.color && v.color.trim()).map(v => ({
+      color: v.color.trim(),
+      hex: v.hex || guessColorHex(v.color),
+      stock: Math.max(0, parseInt(v.stock || '0', 10))
+    }));
+
+    if (validVariants.length === 0) {
+      msg.textContent = 'Please specify at least one Colour name for the product.';
+      msg.className = 'sp-form-msg sp-form-msg--error';
+      return;
+    }
+
+    const totalCalculatedStock = validVariants.reduce((s, v) => s + v.stock, 0);
+    const colourNamesCombined = validVariants.map(v => v.color).join(', ');
+
     try {
       msg.textContent = 'Saving...'; msg.className = 'sp-form-msg sp-form-msg--pending';
       const fd = new FormData();
-      fd.append('title', document.getElementById('f_title').value);
+      fd.append('title', title);
       fd.append('description', document.getElementById('f_desc').value);
-      fd.append('price', document.getElementById('f_price').value);
-      fd.append('stock', document.getElementById('f_stock').value || 0);
-      fd.append('colour', document.getElementById('f_colour').value);
+      fd.append('price', price);
+      fd.append('stock', totalCalculatedStock);
+      fd.append('colour', colourNamesCombined);
+      fd.append('colorVariants', JSON.stringify(validVariants));
       fd.append('size', document.getElementById('f_size').value);
       fd.append('category', document.getElementById('f_category').value);
       if (product && removeList.size) fd.append('removeImages', JSON.stringify([...removeList]));
