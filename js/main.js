@@ -5,6 +5,12 @@
    ============================================================ */
 'use strict';
 
+function fixDriveUrl(url) {
+  if (!url) return '';
+  var m = url.match(/[?&]id=([^&]+)/) || url.match(/\/file\/d\/([^/]+)/) || url.match(/\/d\/([^/]+)/);
+  return (m && m[1]) ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w800' : url;
+}
+
 let parsedCart = [];
 try { parsedCart = JSON.parse(localStorage.getItem('tavusha_cart')) || []; } catch(e) {}
 if (!Array.isArray(parsedCart)) parsedCart = [];
@@ -980,6 +986,12 @@ async function loadCmsContent() {
     if (storedSecs) demoSecs = JSON.parse(storedSecs);
   } catch (e) {}
 
+  let demoBanners = null;
+  try {
+    const storedBanners = localStorage.getItem('sp_demo_banners');
+    if (storedBanners) demoBanners = JSON.parse(storedBanners);
+  } catch (e) {}
+
   // Merge sections from all available sources
   let sectionsMap = {};
 
@@ -1006,7 +1018,20 @@ async function loadCmsContent() {
 
   cms.sections = Object.values(sectionsMap);
   if (!cms.announcement && localCms?.announcement) cms.announcement = localCms.announcement;
-  if (!cms.heroBanners && localCms?.heroBanners) cms.heroBanners = localCms.heroBanners;
+
+  const DEFAULT_SITE_BANNERS = [
+    { id: 'b1', type: 'hero', title: 'Style Every Moment', subtitle: 'Discover curated elegance and edge.', badge_text: 'New Summer 2026', cta_text: 'Shop Now', cta_url: '#', image_url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900', visible: true, sort_order: 0 },
+    { id: 'b2', type: 'festival', title: 'Rakhi Celebrations Live', subtitle: 'Flat 10% Off First Order — Code TAVUSHA10', badge_text: 'Festival Special', cta_text: 'Explore Sale', cta_url: '#', image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=900', visible: true, sort_order: 1, festival_tag: 'Rakhi' }
+  ];
+
+  // Resolve banners (demoBanners -> localCms -> API -> DEFAULT_SITE_BANNERS)
+  let allBanners = (demoBanners && demoBanners.length) ? demoBanners :
+                   (localCms?.banners && localCms.banners.length) ? localCms.banners :
+                   (cms.banners && cms.banners.length) ? cms.banners :
+                   DEFAULT_SITE_BANNERS;
+
+  const heroBanners = allBanners.filter(b => b.visible !== false && (b.type === 'hero' || !b.type));
+  const festBanners = allBanners.filter(b => b.visible !== false && b.type === 'festival');
 
   // Announcement bar text
   if (cms.announcement) {
@@ -1017,18 +1042,45 @@ async function loadCmsContent() {
     }
   }
 
-  // Hero banners (replace hero__right slides)
-  if (cms.heroBanners && cms.heroBanners.length) {
+  // Hero banners rendering
+  if (heroBanners && heroBanners.length) {
+    const heroBanner = heroBanners[0];
     const heroImg = document.querySelector('.hero__model-img');
-    if (heroImg && cms.heroBanners[0]) {
-      heroImg.src = cms.heroBanners[0].image_url;
-      heroImg.alt = cms.heroBanners[0].title || '';
+    if (heroImg && heroBanner.image_url) {
+      const fixedImg = typeof fixDriveUrl === 'function' ? fixDriveUrl(heroBanner.image_url) : heroBanner.image_url;
+      heroImg.src = fixedImg;
+      heroImg.alt = heroBanner.title || 'TAVUSHA Hero Banner';
+    }
+    if (heroBanner.title) {
+      const displayEl = document.querySelector('.hero__display');
+      if (displayEl) displayEl.innerHTML = heroBanner.title;
+    }
+    if (heroBanner.subtitle) {
+      const taglineEl = document.querySelector('.hero__tagline');
+      if (taglineEl) taglineEl.textContent = heroBanner.subtitle;
+    }
+    if (heroBanner.badge_text) {
+      const badgeEl = document.querySelector('.hero__badge');
+      if (badgeEl) {
+        badgeEl.innerHTML = `<span class="hero__badge-dot"></span> ${heroBanner.badge_text}`;
+      }
+    }
+    if (heroBanner.cta_text || heroBanner.cta_url) {
+      const ctaBtn = document.querySelector('.hero__cta-row button');
+      if (ctaBtn) {
+        if (heroBanner.cta_text) {
+          ctaBtn.innerHTML = `${heroBanner.cta_text} <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m5 12 14 0M12 5l7 7-7 7"/></svg>`;
+        }
+        if (heroBanner.cta_url && heroBanner.cta_url !== '#') {
+          ctaBtn.setAttribute('onclick', `window.location.href='${heroBanner.cta_url}'`);
+        }
+      }
     }
   }
 
   // Festival / promo banners — inject into page if container exists
-  if (cms.festivalBanners && cms.festivalBanners.length) {
-    renderFestivalBanners(cms.festivalBanners);
+  if (festBanners && festBanners.length) {
+    renderFestivalBanners(festBanners);
   }
 
   // Section visibility & content

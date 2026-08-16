@@ -5,6 +5,7 @@ const path = require('path');
 const CmsContent = require('../models/CmsContent');
 const { protect, adminOnly } = require('../middleware/auth');
 const supabase = require('../supabase');
+const fileStore = require('../cms_store'); // JSON file fallback when Supabase unavailable
 
 const router = express.Router();
 
@@ -43,15 +44,32 @@ async function uploadBannerImage(buffer, type = 'hero') {
 // GET /api/cms/public — all CMS data the homepage needs in one request
 router.get('/public', async (req, res) => {
   try {
-    const [banners, sections, popup, announcement] = await Promise.all([
-      CmsContent.getPublicBanners(),
-      CmsContent.getSections(),
-      CmsContent.getActivePopup(),
-      CmsContent.getAnnouncement(),
-    ]);
-    res.json({ banners, sections, popup, announcement });
+    let banners, sections, popup, announcement;
+    try {
+      [banners, sections, popup, announcement] = await Promise.all([
+        CmsContent.getPublicBanners(),
+        CmsContent.getSections(),
+        CmsContent.getActivePopup(),
+        CmsContent.getAnnouncement(),
+      ]);
+    } catch (dbErr) {
+      // Supabase unavailable — use file store fallback
+      console.warn('[CMS] Supabase error, using file store:', dbErr.message);
+      const fallback = fileStore.getPublicData();
+      banners = fallback.banners;
+      sections = fallback.sections;
+      popup = fallback.popup;
+      announcement = fallback.announcement;
+    }
+    res.json({ banners: banners || [], sections: sections || [], popup: popup || null, announcement: announcement || '' });
   } catch (err) {
-    res.status(500).json({ message: 'CMS load error', error: err.message });
+    // Last resort: return file store data even on complete failure
+    try {
+      const fallback = fileStore.getPublicData();
+      res.json({ banners: fallback.banners, sections: fallback.sections, popup: fallback.popup, announcement: fallback.announcement });
+    } catch (e2) {
+      res.status(500).json({ message: 'CMS load error', error: err.message });
+    }
   }
 });
 
@@ -59,10 +77,15 @@ router.get('/public', async (req, res) => {
 router.get('/banners', async (req, res) => {
   try {
     const { type } = req.query;
-    const banners = await CmsContent.getPublicBanners(type || null);
-    res.json(banners);
+    let banners;
+    try {
+      banners = await CmsContent.getPublicBanners(type || null);
+    } catch (dbErr) {
+      banners = fileStore.getPublicBanners(type || null);
+    }
+    res.json(banners || []);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to load banners', error: err.message });
+    res.json(fileStore.getPublicBanners() || []);
   }
 });
 
@@ -100,14 +123,19 @@ router.get('/announcement', async (req, res) => {
 // ADMIN ROUTES (JWT auth required)
 // ═══════════════════════════════════════════════════════════
 
-// GET /api/cms/admin/banners — all banners (including invisible/scheduled)
+// GET /api/cms/admin/banners — all banners (including invisible/scheduled) — with file store fallback
 router.get('/admin/banners', protect, adminOnly, async (req, res) => {
   try {
     const { type } = req.query;
-    const banners = await CmsContent.getBanners(type || null);
-    res.json(banners);
+    let banners;
+    try {
+      banners = await CmsContent.getBanners(type || null);
+    } catch (dbErr) {
+      banners = fileStore.getBanners(type || null);
+    }
+    res.json(banners || []);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to load banners', error: err.message });
+    res.json(fileStore.getBanners() || []);
   }
 });
 
@@ -129,7 +157,13 @@ router.post('/admin/banners', protect, adminOnly,
         fields.mobile_image_url = await uploadBannerImage(req.files.mobile_image[0].buffer, 'mobile');
       }
 
-      const banner = await CmsContent.createBanner(fields);
+      let banner;
+      try {
+        banner = await CmsContent.createBanner(fields);
+      } catch (dbErr) {
+        console.warn('[CMS] Supabase createBanner failed, using file store:', dbErr.message);
+        banner = fileStore.createBanner(fields);
+      }
       res.status(201).json(banner);
     } catch (err) {
       res.status(500).json({ message: 'Failed to create banner', error: err.message });
@@ -155,7 +189,13 @@ router.put('/admin/banners/:id', protect, adminOnly,
         fields.mobile_image_url = await uploadBannerImage(req.files.mobile_image[0].buffer, 'mobile');
       }
 
-      const banner = await CmsContent.updateBanner(req.params.id, fields);
+      let banner;
+      try {
+        banner = await CmsContent.updateBanner(req.params.id, fields);
+      } catch (dbErr) {
+        console.warn('[CMS] Supabase updateBanner failed, using file store:', dbErr.message);
+        banner = fileStore.updateBanner(req.params.id, fields);
+      }
       res.json(banner);
     } catch (err) {
       res.status(500).json({ message: 'Failed to update banner', error: err.message });
@@ -166,7 +206,7 @@ router.put('/admin/banners/:id', protect, adminOnly,
 // DELETE /api/cms/admin/banners/:id
 router.delete('/admin/banners/:id', protect, adminOnly, async (req, res) => {
   try {
-    await CmsContent.deleteBanner(req.params.id);
+    try { await CmsContent.deleteBanner(req.params.id); } catch { fileStore.deleteBanner(req.params.id); }
     res.json({ message: 'Banner deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete banner', error: err.message });
@@ -214,7 +254,13 @@ router.put('/admin/sections/:key', protect, adminOnly, upload.fields([
       }
     }
 
-    const section = await CmsContent.updateSection(req.params.key, fields);
+    let section;
+    try {
+      section = await CmsContent.updateSection(req.params.key, fields);
+    } catch (dbErr) {
+      console.warn('[CMS] Supabase updateSection failed, using file store:', dbErr.message);
+      section = fileStore.upsertSection(req.params.key, fields);
+    }
     res.json(section);
   } catch (err) {
     res.status(500).json({ message: 'Failed to update section', error: err.message });
@@ -236,10 +282,11 @@ router.put('/admin/sections/reorder', protect, adminOnly, async (req, res) => {
 // ── Popups ────────────────────────────────────────────────────────────────────
 router.get('/admin/popups', protect, adminOnly, async (req, res) => {
   try {
-    const popups = await CmsContent.getAllPopups();
-    res.json(popups);
+    let popups;
+    try { popups = await CmsContent.getAllPopups(); } catch { popups = fileStore.getPopups(); }
+    res.json(popups || []);
   } catch (err) {
-    res.status(500).json({ message: 'Failed to load popups', error: err.message });
+    res.json(fileStore.getPopups() || []);
   }
 });
 
@@ -254,7 +301,8 @@ router.post('/admin/popups', protect, adminOnly,
       if (req.files && req.files.image && req.files.image[0]) {
         fields.image_url = await uploadBannerImage(req.files.image[0].buffer, 'popup');
       }
-      const popup = await CmsContent.createPopup(fields);
+      let popup;
+      try { popup = await CmsContent.createPopup(fields); } catch (dbErr) { popup = fileStore.createPopup(fields); }
       res.status(201).json(popup);
     } catch (err) {
       res.status(500).json({ message: 'Failed to create popup', error: err.message });
@@ -273,7 +321,8 @@ router.put('/admin/popups/:id', protect, adminOnly,
       if (req.files && req.files.image && req.files.image[0]) {
         fields.image_url = await uploadBannerImage(req.files.image[0].buffer, 'popup');
       }
-      const popup = await CmsContent.updatePopup(req.params.id, fields);
+      let popup;
+      try { popup = await CmsContent.updatePopup(req.params.id, fields); } catch (dbErr) { popup = fileStore.updatePopup(req.params.id, fields); }
       res.json(popup);
     } catch (err) {
       res.status(500).json({ message: 'Failed to update popup', error: err.message });

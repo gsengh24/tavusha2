@@ -508,13 +508,44 @@ function renderPDP(p) {
     return `<div class="pdp-gallery__thumb ${i===0?'active':''}" onclick="switchImg(${i},this,'${src}','${bgs[i%bgs.length]}')">
       <img src="${src}" alt="${p.name} ${i+1}" loading="lazy" onerror="if(!this.dataset.tried){this.dataset.tried='1';this.src='${fb}';}"></div>`;
   }).join('');
-  document.getElementById('colourSwatches').innerHTML=p.colors.map((c,i)=>{
-    const nm=COLOUR_NAMES[c]||c;
-    const light=isLight(c);
-    return `<div class="pdp-colour-swatch ${i===0?'active':''}" style="background:${c};border-color:${light?'rgba(0,0,0,0.12)':'transparent'}" onclick="selColor('${c}','${nm}',this)" title="${nm}"><span class="tooltip">${nm}</span></div>`;
+  const COLOR_LOOKUP = {
+    'rose pink': '#E8A4A4', 'pink': '#E8A4A4', 'hot pink': '#EC4899', 'rebel pink': '#EC4899', 'glittered pink': '#EC4899',
+    'navy blue': '#1E3A5F', 'blue': '#1E3A5F', 'royal blue': '#1D4ED8', 'sky blue': '#38BDF8', 'ocean blue': '#0284C7', 'oceas blue': '#0284C7', 'starburst blue': '#1E40AF', 'warm blue': '#2563EB', 'crystal blue': '#38BDF8',
+    'maroon': '#8B2240', 'deep maroon': '#8B2240', 'bloody red': '#991B1B', 'crimson red': '#991B1B', 'pearl red': '#DC2626', 'red': '#DC2626', 'ruby red': '#B91C1C', 'cherry red': '#991B1B',
+    'emerald green': '#047857', 'emrald green': '#047857', 'sage green': '#8B9E7A', 'green': '#047857', 'guilty green': '#15803D', 'lime green': '#84CC16',
+    'black': '#1C1917', 'velvet black': '#1C1917', 'rare black': '#1C1917', 'midnight black': '#1C1917', 'charcoal': '#44403C',
+    'ivory': '#F5F0E8', 'off-white': '#FAFAF7', 'white': '#FFFFFF', 'perfect white': '#FFFFFF',
+    'champagne gold': '#C9A96E', 'gold': '#C9A96E', 'shining golden': '#EAB308', 'golden aura': '#EAB308', 'golden gleam': '#EAB308',
+    'orange': '#F97316', 'juicy orange': '#F97316', 'sunflare orange': '#F97316',
+    'yellow': '#EAB308', 'pearl yellow': '#FEF08A', 'radiant yellow': '#EAB308',
+    'lavender': '#E9D5FF', 'crystal lavender': '#E9D5FF', 'shimmer lavender': '#E9D5FF', 'mist purple': '#C084FC', 'purple': '#9333EA',
+    'silver': '#94A3B8', 'starlight silver': '#CBD5E1', 'sequined silver': '#CBD5E1'
+  };
+  const getSwatchBg = (c) => {
+    if (!c) return '#C9A96E';
+    if (c.startsWith('#') || c.startsWith('rgb')) return c;
+    const lower = c.trim().toLowerCase();
+    return COLOR_LOOKUP[lower] || '#C9A96E';
+  };
+
+  let colorList = [];
+  if (Array.isArray(p.colors) && p.colors.length) {
+    colorList = p.colors;
+  } else if (p.colour && typeof p.colour === 'string') {
+    colorList = p.colour.split(',').map(s => s.trim()).filter(Boolean);
+  } else if (p.color && typeof p.color === 'string') {
+    colorList = p.color.split(',').map(s => s.trim()).filter(Boolean);
+  }
+  if (!colorList.length) colorList = ['Rose Pink'];
+
+  document.getElementById('colourSwatches').innerHTML = colorList.map((c, i) => {
+    const nm = COLOUR_NAMES[c] || c;
+    const bg = getSwatchBg(c);
+    const light = isLight(bg);
+    return `<div class="pdp-colour-swatch ${i===0?'active':''}" style="background:${bg};border-color:${light?'rgba(0,0,0,0.15)':'transparent'}" onclick="selColor('${c}','${nm}',this)" title="${nm}"><span class="tooltip">${nm}</span></div>`;
   }).join('');
-  pdpSelectedColor=p.colors[0];
-  document.getElementById('selectedColourName').textContent=COLOUR_NAMES[pdpSelectedColor]||pdpSelectedColor;
+  pdpSelectedColor = colorList[0];
+  document.getElementById('selectedColourName').textContent = COLOUR_NAMES[pdpSelectedColor] || pdpSelectedColor;
   document.getElementById('sizeButtons').innerHTML=p.sizes.map(s=>`
     <button class="pdp-size-btn" onclick="selSize('${s}',this)">${s}</button>`).join('');
   updatePdpWishBtn();

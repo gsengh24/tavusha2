@@ -325,6 +325,7 @@ async function handleMockApi(path, options = {}) {
     if (method === 'GET') return prods;
     if (method === 'POST') {
       let title = 'New Product', price = 0, stock = 0, colour = '', size = '', category = 'other', description = '';
+      let images = [];
       if (options.body instanceof FormData) {
         title = options.body.get('title') || title;
         price = Number(options.body.get('price') || 0);
@@ -333,6 +334,10 @@ async function handleMockApi(path, options = {}) {
         size = options.body.get('size') || '';
         category = options.body.get('category') || 'other';
         description = options.body.get('description') || '';
+        const imgDataStr = options.body.get('imagesData');
+        if (imgDataStr) {
+          try { images = JSON.parse(imgDataStr); } catch(e) {}
+        }
       } else if (options.body) {
         title = options.body.title || title;
         price = Number(options.body.price || 0);
@@ -341,8 +346,12 @@ async function handleMockApi(path, options = {}) {
         size = options.body.size || '';
         category = options.body.category || 'other';
         description = options.body.description || '';
+        if (Array.isArray(options.body.images)) images = options.body.images;
       }
-      const newP = { _id: 'p_' + Date.now(), title, price, stock, colour, size, category, description, status: 'approved', images: ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500'], created_at: new Date().toISOString() };
+      if (!images || !images.length) {
+        images = ['https://images.unsplash.com/photo-1572804013309-59a88b7e92f1?w=500'];
+      }
+      const newP = { _id: 'p_' + Date.now(), title, price, stock, colour, size, category, description, status: 'approved', images, created_at: new Date().toISOString() };
       prods.unshift(newP); setLocal('sp_demo_products', prods);
       return newP;
     }
@@ -363,6 +372,24 @@ async function handleMockApi(path, options = {}) {
           if (options.body.get('title')) prods[idx].title = options.body.get('title');
           if (options.body.get('price')) prods[idx].price = Number(options.body.get('price'));
           if (options.body.get('stock')) prods[idx].stock = Number(options.body.get('stock'));
+          if (options.body.get('description')) prods[idx].description = options.body.get('description');
+          if (options.body.get('colour')) prods[idx].colour = options.body.get('colour');
+          if (options.body.get('size')) prods[idx].size = options.body.get('size');
+          if (options.body.get('category')) prods[idx].category = options.body.get('category');
+          const removeStr = options.body.get('removeImages');
+          if (removeStr) {
+            try {
+              const rem = JSON.parse(removeStr);
+              prods[idx].images = (prods[idx].images || []).filter(img => !rem.includes(img));
+            } catch(e) {}
+          }
+          const imgDataStr = options.body.get('imagesData');
+          if (imgDataStr) {
+            try {
+              const newImgs = JSON.parse(imgDataStr);
+              if (newImgs.length) prods[idx].images = [...(prods[idx].images || []), ...newImgs];
+            } catch(e) {}
+          }
         } else if (options.body) {
           if (options.body.title) prods[idx].title = options.body.title;
           if (options.body.price) prods[idx].price = Number(options.body.price);
@@ -406,6 +433,7 @@ async function handleMockApi(path, options = {}) {
     if (method === 'GET') return banners;
     if (method === 'POST') {
       const body = options.body instanceof FormData ? Object.fromEntries(options.body.entries()) : (options.body || {});
+      const imgUrl = (typeof body.image_url === 'string' && body.image_url) ? body.image_url : (typeof body.image === 'string' ? body.image : 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600');
       const newB = {
         id: 'b_' + Date.now(),
         type: body.type || 'hero',
@@ -414,7 +442,7 @@ async function handleMockApi(path, options = {}) {
         badge_text: body.badge_text || '',
         cta_text: body.cta_text || 'Shop Now',
         cta_url: body.cta_url || '#',
-        image_url: body.image_url || 'https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=600',
+        image_url: imgUrl,
         visible: body.visible !== 'false' && body.visible !== false,
         sort_order: banners.length,
         festival_tag: body.festival_tag || ''
@@ -432,6 +460,7 @@ async function handleMockApi(path, options = {}) {
       if (method === 'PUT') {
         const body = options.body instanceof FormData ? Object.fromEntries(options.body.entries()) : (options.body || {});
         banners[idx] = { ...banners[idx], ...body };
+        if (body.image_url && typeof body.image_url === 'string') banners[idx].image_url = body.image_url;
         if (body.visible !== undefined) banners[idx].visible = body.visible === 'true' || body.visible === true;
         setLocal('sp_demo_banners', banners); return banners[idx];
       }
@@ -592,6 +621,11 @@ function render() {
 }
 
 function esc(s) { return (s || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function fixDriveUrl(url) {
+  if (!url) return '';
+  const m = url.match(/[?&]id=([^&]+)/) || url.match(/\/file\/d\/([^/]+)/) || url.match(/\/d\/([^/]+)/);
+  return (m && m[1]) ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w800' : url;
+}
 function statusPill(s) { return `<span class="sp-pill sp-pill--${s}">${s}</span>`; }
 function logout() { state = { token: null, user: null, isDemo: false, products: [], staffList: [] }; persist(); render(); }
 
@@ -869,8 +903,9 @@ function openProductForm(product) {
     <div class="sp-section-label">Product Details</div>
     <div class="sp-form-grid">
       <div class="sp-form-group">
-        <label class="sp-field-label">Colour</label>
-        <input id="f_colour" placeholder="e.g. Rose Pink" class="sp-input" value="${product ? esc(product.colour || '') : ''}"/>
+        <label class="sp-field-label">Colour(s)</label>
+        <input id="f_colour" placeholder="e.g. Rose Pink, Navy Blue, Maroon" class="sp-input" value="${product ? esc(product.colour || (Array.isArray(product.colors) ? product.colors.join(', ') : '')) : ''}"/>
+        <span style="font-size:0.72rem; color:var(--warm-grey); display:block; margin-top:3px">For multiple colours, separate with commas</span>
       </div>
       <div class="sp-form-group">
         <label class="sp-field-label">Size</label>
@@ -927,8 +962,16 @@ function openProductForm(product) {
       if (product && removeList.size) fd.append('removeImages', JSON.stringify([...removeList]));
 
       const crops = [];
+      const imagePromises = cropImages.map(ci => new Promise(res => {
+        const r = new FileReader();
+        r.onload = e => res(e.target.result);
+        r.readAsDataURL(ci.file);
+      }));
+      const dataUrls = await Promise.all(imagePromises);
+
       cropImages.forEach((ci) => { fd.append('images', ci.file); crops.push(ci.cropBox); });
       crops.length && fd.append('cropData', JSON.stringify(crops));
+      if (dataUrls.length) fd.append('imagesData', JSON.stringify(dataUrls));
       [...document.getElementById('f_videos').files].forEach(f => fd.append('videos', f));
 
       if (product) await api('/products/' + product._id, { method: 'PUT', body: fd });
@@ -1573,23 +1616,41 @@ async function showAdminTab(tab) {
 
         try {
           const visible = document.getElementById('cmsPosterVis').checked;
+          const mainFile = document.getElementById('cp_main_image_file')?.files?.[0];
+          const side1File = document.getElementById('cp_side1_image_file')?.files?.[0];
+          const side2File = document.getElementById('cp_side2_image_file')?.files?.[0];
+
+          const readFileAsDataUrl = (file) => new Promise(res => {
+            const r = new FileReader();
+            r.onload = e => res(e.target.result);
+            r.readAsDataURL(file);
+          });
+
+          let mainImgUrl = fixDriveUrl((document.getElementById('cp_main_image').value || '').trim());
+          let side1ImgUrl = fixDriveUrl((document.getElementById('cp_side1_image').value || '').trim());
+          let side2ImgUrl = fixDriveUrl((document.getElementById('cp_side2_image').value || '').trim());
+
+          if (mainFile) mainImgUrl = await readFileAsDataUrl(mainFile);
+          if (side1File) side1ImgUrl = await readFileAsDataUrl(side1File);
+          if (side2File) side2ImgUrl = await readFileAsDataUrl(side2File);
+
           const config = {
             eyebrow: document.getElementById('cp_eyebrow').value,
             title: document.getElementById('cp_title').value,
             
-            main_image: document.getElementById('cp_main_image').value,
+            main_image: mainImgUrl,
             main_badge: document.getElementById('cp_main_badge').value,
             main_title: document.getElementById('cp_main_title').value,
             main_desc: document.getElementById('cp_main_desc').value,
             main_link: document.getElementById('cp_main_link').value,
             
-            side1_image: document.getElementById('cp_side1_image').value,
+            side1_image: side1ImgUrl,
             side1_badge: document.getElementById('cp_side1_badge').value,
             side1_title: document.getElementById('cp_side1_title').value,
             side1_quote: document.getElementById('cp_side1_quote').value,
             side1_link: document.getElementById('cp_side1_link').value,
             
-            side2_image: document.getElementById('cp_side2_image').value,
+            side2_image: side2ImgUrl,
             side2_badge: document.getElementById('cp_side2_badge').value,
             side2_title: document.getElementById('cp_side2_title').value,
             side2_quote: document.getElementById('cp_side2_quote').value,
@@ -1599,11 +1660,7 @@ async function showAdminTab(tab) {
             quote_author: document.getElementById('cp_quote_author').value,
           };
 
-          const mainFile = document.getElementById('cp_main_image_file')?.files?.[0];
-          const side1File = document.getElementById('cp_side1_image_file')?.files?.[0];
-          const side2File = document.getElementById('cp_side2_image_file')?.files?.[0];
-
-          if (mainFile || side1File || side2File) {
+          if ((mainFile || side1File || side2File) && !state.isDemo) {
             const formData = new FormData();
             formData.append('visible', visible);
             formData.append('config', JSON.stringify(config));
@@ -1633,8 +1690,8 @@ async function showAdminTab(tab) {
       document.getElementById('addHeroBtn').onclick = () => openBannerModal(null, 'hero');
       document.getElementById('addFestBtn').onclick = () => openBannerModal(null, 'festival');
       content.querySelectorAll('.editBannerBtn').forEach(b => b.onclick = () => {
-        const ban = state.banners.find(x => x.id === b.dataset.id);
-        openBannerModal(ban, ban.type);
+        const ban = (state.banners || []).find(x => x.id === b.dataset.id);
+        openBannerModal(ban, ban ? ban.type : 'hero');
       });
       content.querySelectorAll('.delBannerBtn').forEach(b => b.onclick = async () => {
         if (confirm('Delete this banner?')) {
@@ -1650,6 +1707,7 @@ async function showAdminTab(tab) {
       content.querySelectorAll('.delPopupBtn').forEach(b => b.onclick = async () => {
         if (confirm('Delete this popup?')) {
           await api('/cms/admin/popups/' + b.dataset.id, { method: 'DELETE' });
+          await syncOfflineCmsData();
           showAdminTab('cms');
         }
       });
@@ -1754,6 +1812,7 @@ function openBannerModal(banner, type) {
   const content = document.getElementById('formModalContent');
   modal.style.display = 'flex';
   const isEdit = !!banner;
+  const initialImg = banner && banner.image_url ? fixDriveUrl(banner.image_url) : '';
 
   content.innerHTML = `
     <div class="sp-modal__head">
@@ -1787,8 +1846,14 @@ function openBannerModal(banner, type) {
       <input id="b_fest_tag" placeholder="e.g. Diwali" class="sp-input" value="${banner ? esc(banner.festival_tag) : ''}"/>
     ` : ''}
 
-    <label class="sp-field-label">Banner Photo URL *</label>
-    <input id="b_image_url" placeholder="https://images.unsplash.com/..." class="sp-input" value="${banner ? esc(banner.image_url) : ''}"/>
+    <label class="sp-field-label">Banner Photo *</label>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+      <img id="b_image_preview" src="${initialImg}" style="width:70px; height:70px; object-fit:cover; border-radius:6px; border:1px solid #ccc; flex-shrink:0; ${initialImg ? '' : 'display:none;'}">
+      <div style="flex:1;">
+        <input type="file" id="b_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:6px;"/>
+        <input id="b_image_url" placeholder="Or paste Image / Google Drive URL" class="sp-input" value="${banner ? esc(banner.image_url) : ''}"/>
+      </div>
+    </div>
 
     <label class="sp-toggle-row">
       <span class="sp-field-label" style="margin:0">Visible / Active</span>
@@ -1801,33 +1866,116 @@ function openBannerModal(banner, type) {
     <button id="saveBannerBtn" class="btn-pill sp-btn-block sp-save-btn">Save Banner</button>
   `;
 
+  const fileInp = document.getElementById('b_image_file');
+  const urlInp = document.getElementById('b_image_url');
+  const imgPrev = document.getElementById('b_image_preview');
+
+  if (fileInp) {
+    fileInp.onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          imgPrev.src = ev.target.result;
+          imgPrev.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  }
+
+  if (urlInp) {
+    urlInp.oninput = () => {
+      const fixed = fixDriveUrl(urlInp.value.trim());
+      if (fixed) {
+        imgPrev.src = fixed;
+        imgPrev.style.display = 'block';
+      } else if (!fileInp.files || !fileInp.files[0]) {
+        imgPrev.style.display = 'none';
+      }
+    };
+  }
+
   document.getElementById('closeForm').onclick = closeForm;
   document.getElementById('saveBannerBtn').onclick = async () => {
+    const saveBtn = document.getElementById('saveBannerBtn');
+    const msg = document.getElementById('formMsg');
     const title = document.getElementById('b_title').value.trim();
-    const image_url = document.getElementById('b_image_url').value.trim();
-    if (!title || !image_url) {
-      const msg = document.getElementById('formMsg');
-      msg.textContent = 'Title and Image URL are required.';
+    let image_url = fixDriveUrl(document.getElementById('b_image_url').value.trim());
+    const file = fileInp?.files?.[0];
+
+    if (!title) {
+      msg.textContent = 'Banner Title is required.';
       msg.className = 'sp-form-msg sp-form-msg--error';
       return;
     }
 
-    const body = {
-      type, title, subtitle: document.getElementById('b_sub').value,
-      badge_text: document.getElementById('b_badge').value,
-      cta_text: document.getElementById('b_cta_text').value,
-      cta_url: document.getElementById('b_cta_url').value,
-      image_url, visible: document.getElementById('b_visible').checked,
-      festival_tag: type === 'festival' ? document.getElementById('b_fest_tag').value : ''
-    };
-
-    if (isEdit) {
-      await api('/cms/admin/banners/' + banner.id, { method: 'PUT', body });
-    } else {
-      await api('/cms/admin/banners', { method: 'POST', body });
+    if (!image_url && !file) {
+      msg.textContent = 'Please choose an image file or enter an image URL.';
+      msg.className = 'sp-form-msg sp-form-msg--error';
+      return;
     }
-    closeForm();
-    showAdminTab('cms');
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving Banner...';
+
+    try {
+      let finalImageUrl = image_url;
+      if (file) {
+        finalImageUrl = await new Promise((resolve) => {
+          const reader = new FileReader();
+          reader.onload = (e) => resolve(e.target.result);
+          reader.readAsDataURL(file);
+        });
+      }
+
+      const visible = document.getElementById('b_visible').checked;
+      const subtitle = document.getElementById('b_sub').value;
+      const badge_text = document.getElementById('b_badge').value;
+      const cta_text = document.getElementById('b_cta_text').value;
+      const cta_url = document.getElementById('b_cta_url').value;
+      const festival_tag = type === 'festival' ? (document.getElementById('b_fest_tag')?.value || '') : '';
+
+      if (file && !state.isDemo) {
+        const fd = new FormData();
+        fd.append('type', type || 'hero');
+        fd.append('title', title);
+        fd.append('subtitle', subtitle);
+        fd.append('badge_text', badge_text);
+        fd.append('cta_text', cta_text);
+        fd.append('cta_url', cta_url);
+        fd.append('visible', visible);
+        if (festival_tag) fd.append('festival_tag', festival_tag);
+        fd.append('image', file);
+
+        if (isEdit) {
+          await api('/cms/admin/banners/' + banner.id, { method: 'PUT', body: fd });
+        } else {
+          await api('/cms/admin/banners', { method: 'POST', body: fd });
+        }
+      } else {
+        const body = {
+          type: type || 'hero',
+          title, subtitle, badge_text, cta_text, cta_url,
+          image_url: finalImageUrl || image_url,
+          visible, festival_tag
+        };
+        if (isEdit) {
+          await api('/cms/admin/banners/' + banner.id, { method: 'PUT', body });
+        } else {
+          await api('/cms/admin/banners', { method: 'POST', body });
+        }
+      }
+
+      await syncOfflineCmsData();
+      closeForm();
+      showAdminTab('cms');
+    } catch (err) {
+      msg.textContent = err.message || 'Failed to save banner';
+      msg.className = 'sp-form-msg sp-form-msg--error';
+      saveBtn.disabled = false;
+      saveBtn.textContent = 'Save Banner';
+    }
   };
 }
 
@@ -1836,12 +1984,14 @@ function openPopupModal(popup) {
   const content = document.getElementById('formModalContent');
   modal.style.display = 'flex';
   const isEdit = !!popup;
+  const initialImg = popup && popup.image_url ? fixDriveUrl(popup.image_url) : '';
 
   content.innerHTML = `
     <div class="sp-modal__head">
       <h2 class="sp-modal__title">${isEdit ? 'Edit' : 'Add'} Welcome Promo Popup</h2>
       <button id="closeForm" class="sp-close">&times;</button>
     </div>
+    <div id="formMsg" class="sp-form-msg" style="margin-bottom:8px"></div>
 
     <label class="sp-field-label">Popup Title</label>
     <input id="p_title" placeholder="e.g. Hello Fashionistas!" class="sp-input" value="${popup ? esc(popup.title) : ''}"/>
@@ -1849,8 +1999,14 @@ function openPopupModal(popup) {
     <label class="sp-field-label">Message Body</label>
     <textarea id="p_body" placeholder="Coupon codes, newsletter text..." class="sp-input sp-textarea" rows="3">${popup ? esc(popup.body) : ''}</textarea>
 
-    <label class="sp-field-label">Image URL</label>
-    <input id="p_image_url" placeholder="https://..." class="sp-input" value="${popup ? esc(popup.image_url) : ''}"/>
+    <label class="sp-field-label">Popup Image</label>
+    <div style="display:flex; gap:10px; align-items:center; margin-bottom:12px;">
+      <img id="p_image_preview" src="${initialImg}" style="width:60px; height:60px; object-fit:cover; border-radius:6px; border:1px solid #ccc; flex-shrink:0; ${initialImg ? '' : 'display:none;'}">
+      <div style="flex:1;">
+        <input type="file" id="p_image_file" accept="image/*" class="sp-input" style="padding:4px; font-size:0.8rem; margin-bottom:4px;"/>
+        <input id="p_image_url" placeholder="Or paste image / Google Drive URL" class="sp-input" value="${popup ? esc(popup.image_url) : ''}"/>
+      </div>
+    </div>
 
     <div class="sp-form-grid">
       <div class="sp-form-group">
@@ -1877,12 +2033,53 @@ function openPopupModal(popup) {
     <button id="savePopupBtn" class="btn-pill sp-btn-block sp-save-btn">Save Popup</button>
   `;
 
+  const fileInp = document.getElementById('p_image_file');
+  const urlInp = document.getElementById('p_image_url');
+  const imgPrev = document.getElementById('p_image_preview');
+
+  if (fileInp) {
+    fileInp.onchange = (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          imgPrev.src = ev.target.result;
+          imgPrev.style.display = 'block';
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+  }
+
+  if (urlInp) {
+    urlInp.oninput = () => {
+      const fixed = fixDriveUrl(urlInp.value.trim());
+      if (fixed) {
+        imgPrev.src = fixed;
+        imgPrev.style.display = 'block';
+      } else if (!fileInp.files || !fileInp.files[0]) {
+        imgPrev.style.display = 'none';
+      }
+    };
+  }
+
   document.getElementById('closeForm').onclick = closeForm;
   document.getElementById('savePopupBtn').onclick = async () => {
+    let image_url = fixDriveUrl(urlInp.value.trim());
+    const file = fileInp?.files?.[0];
+
+    if (file) {
+      image_url = await new Promise(res => {
+        const r = new FileReader();
+        r.onload = e => res(e.target.result);
+        r.readAsDataURL(file);
+      });
+    }
+
     const body = {
       title: document.getElementById('p_title').value,
       body: document.getElementById('p_body').value,
-      image_url: document.getElementById('p_image_url').value,
+      image_url,
       cta_text: document.getElementById('p_cta_text').value,
       cta_url: document.getElementById('p_cta_url').value,
       trigger_delay_seconds: Number(document.getElementById('p_delay').value),
@@ -1894,6 +2091,7 @@ function openPopupModal(popup) {
     } else {
       await api('/cms/admin/popups', { method: 'POST', body });
     }
+    await syncOfflineCmsData();
     closeForm();
     showAdminTab('cms');
   };
