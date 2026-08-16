@@ -2235,33 +2235,66 @@ async function syncOfflineCmsData() {
   const secObj = {};
   sections.forEach(s => {
     secObj[s.key === 'poster_spread' ? 'poster-spread' : s.key === 'categories' ? 'cat-browser' : s.key] = s.visible !== false;
-    // Embed the section config if it exists (like poster_spread)
-    if (s.key === 'poster_spread') {
-      secObj['poster_spread'] = { visible: s.visible !== false, config: s.config };
-    }
   });
-  
-  // Hero and festival banners
-  const heroBanners = banners.filter(b => b.type === 'hero' && b.visible);
-  const festivalBanners = banners.filter(b => b.type === 'festival' && b.visible);
-  
-  const cmsPayload = {
-    announcement: annText,
-    heroBanners,
-    festivalBanners,
-    sections: secObj,
-    popup: activePop ? {
-      enabled: true,
-      title: activePop.title,
-      body: activePop.body,
-      image_url: activePop.image_url,
-      cta_label: activePop.cta_text,
-      cta_url: activePop.cta_url,
-      delay: activePop.trigger_delay_seconds
-    } : { enabled: false }
-  };
-  
-  localStorage.setItem('cms_data', JSON.stringify(cmsPayload));
+
+  state.banners = banners;
+  state.sections = sections;
+  state.popups = popups;
+}
+
+function downloadCourierLabel(orderId) {
+  const order = state.orders.find(o => o.id === orderId);
+  if (!order) return alert('Order not found');
+
+  const printWindow = window.open('', '_blank');
+  const dAddr = order.delivery_address || {};
+  printWindow.document.write(`
+    <html>
+      <head>
+        <title>Shipping Label - ${order.order_number}</title>
+        <style>
+          body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 20px; }
+          .label-box { border: 2px solid #000; padding: 20px; width: 350px; margin: 0 auto; }
+          .header { text-align: center; border-bottom: 2px solid #000; padding-bottom: 10px; margin-bottom: 15px; }
+          .header h2 { margin: 0; font-size: 1.5rem; letter-spacing: 2px; }
+          .barcode { text-align: center; margin: 20px 0; font-family: "Courier New", Courier, monospace; letter-spacing: 1px; font-size: 1.1rem; }
+          .address { margin-bottom: 20px; font-size: 0.95rem; line-height: 1.4; }
+          .address strong { display: block; margin-bottom: 5px; font-size: 0.8rem; color: #555; text-transform: uppercase; }
+        </style>
+      </head>
+      <body>
+        <div class="label-box">
+          <div class="header">
+            <h2>TAVUSHA</h2>
+            <p style="margin: 4px 0 0; font-size: 0.75rem; letter-spacing: 1px;">PREMIUM COUTURE</p>
+          </div>
+          <div class="address" style="font-size: 1.1rem; font-weight: bold;">
+            <strong>SHIP TO:</strong>
+            ${order.customer_name}<br>
+            ${dAddr.line1 || ''}<br>
+            ${dAddr.city || ''}, ${dAddr.state || ''} - ${order.pincode || ''}<br>
+            <span style="font-size: 0.9rem; font-weight: normal; display: inline-block; margin-top: 4px;">Phone: ${order.customer_phone || ''}</span>
+          </div>
+          <div class="address">
+            <strong>FROM (RETURN ADDRESS):</strong>
+            Tavusha Fulfillment Center<br>
+            Sector 15, Noida, UP - 201301
+          </div>
+          <div class="barcode">
+            ||| || ||| || ||| || ||| || | |||<br>
+            ${order.tracking_number || order.order_number}
+          </div>
+          <p style="text-align:center; font-size: 0.75rem; border-top: 1px dashed #000; padding-top: 10px; margin-bottom: 0;">
+            ORDER: ${order.order_number} | PAY: ${order.payment_type === 'cod' ? 'COD' : 'PREPAID'} | WGT: 0.5kg
+          </p>
+        </div>
+        <script>
+          window.onload = () => { setTimeout(() => { window.print(); }, 500); };
+        <\/script>
+      </body>
+    </html>
+  `);
+  printWindow.document.close();
 }
 
 render();
