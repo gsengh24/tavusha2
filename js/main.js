@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initKeyboard();
   initCatBrowser();
   initMiniProductHover();
+  initBrandShowcase();
 });
 
 // ─── LOADER ───────────────────────────────────────────────────
@@ -362,6 +363,71 @@ function initMiniProductHover() {
     });
   });
 }
+
+// ─── BRAND SHOWCASE PANEL — ANIMATED COUNTERS ─────────────────
+function initBrandShowcase() {
+  const panel = document.querySelector('.brand-showcase-panel');
+  if (!panel) return;
+
+  const counters = panel.querySelectorAll('.bsp-stat__num[data-target]');
+  if (!counters.length) return;
+
+  let fired = false;
+
+  const runCounters = () => {
+    if (fired) return;
+    fired = true;
+    counters.forEach(el => {
+      const target = parseInt(el.dataset.target, 10);
+      const duration = 1600; // ms
+      const startTime = performance.now();
+      const easeOut = t => 1 - Math.pow(1 - t, 3); // cubic ease-out
+
+      const tick = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const value = Math.round(easeOut(progress) * target);
+
+        // Format large numbers with K
+        if (target >= 1000) {
+          el.textContent = value >= 1000
+            ? (value / 1000).toFixed(value % 1000 === 0 ? 0 : 1) + 'K'
+            : value;
+        } else {
+          el.textContent = value;
+        }
+
+        if (progress < 1) requestAnimationFrame(tick);
+        else {
+          // Final display — show exact formatted value
+          if (target >= 1000) {
+            el.textContent = (target / 1000) % 1 === 0
+              ? (target / 1000) + 'K'
+              : (target / 1000).toFixed(1) + 'K';
+          } else {
+            el.textContent = target;
+          }
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+  };
+
+  // Use IntersectionObserver — fires once when panel scrolls into view
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        runCounters();
+        obs.disconnect();
+      }
+    }, { threshold: 0.3 });
+    obs.observe(panel);
+  } else {
+    // Fallback: just run immediately
+    runCounters();
+  }
+}
+
 
 // ─── FILTER + SCROLL ──────────────────────────────────────────
 function filterAndGo(cat) {

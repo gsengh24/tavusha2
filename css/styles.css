@@ -1589,3 +1589,209 @@ ul { list-style: none; }
   .auth-popup__perks { gap: 8px; }
 }
 
+/* ─── BRAND SHOWCASE PANEL ───────────────────────────────────── */
+.brand-showcase-panel {
+  margin-top: 32px;
+  padding: 28px 0 4px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Stat counters row */
+.bsp-stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0;
+  background: linear-gradient(135deg, #fdfaf6 0%, #f7efe4 100%);
+  border-radius: 16px;
+  padding: 18px 24px;
+  border: 1px solid rgba(201,169,110,0.2);
+  box-shadow: 0 2px 12px rgba(201,169,110,0.08);
+  overflow: hidden;
+  position: relative;
+}
+.bsp-stats::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--brand), var(--brand-dark), var(--brand), transparent);
+  animation: bspShimmer 3s ease-in-out infinite;
+}
+@keyframes bspShimmer {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 1; }
+}
+
+.bsp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  position: relative;
+}
+.bsp-stat__prefix {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--brand-dark);
+  line-height: 1;
+  display: inline;
+}
+.bsp-stat__num {
+  font-family: var(--font-display);
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--black);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  display: inline;
+  transition: color 0.3s;
+}
+.bsp-stat__unit {
+  font-family: var(--font-display);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--brand-dark);
+  display: inline;
+}
+.bsp-stat__label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--warm-grey);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+.bsp-divider-v {
+  width: 1px;
+  height: 40px;
+  background: linear-gradient(180deg, transparent, rgba(201,169,110,0.4), transparent);
+  flex-shrink: 0;
+}
+
+/* Editorial rule divider */
+.bsp-rule {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+.bsp-rule__line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border), rgba(201,169,110,0.5));
+}
+.bsp-rule:last-of-type .bsp-rule__line {
+  background: linear-gradient(90deg, rgba(201,169,110,0.5), var(--border), transparent);
+}
+.bsp-rule__wordmark {
+  font-family: var(--font-display);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  color: var(--brand-dark);
+  text-transform: uppercase;
+  white-space: nowrap;
+  padding: 0 4px;
+  opacity: 0.7;
+}
+
+/* Tag chips */
+.bsp-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.bsp-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 5px 14px;
+  border-radius: var(--radius-pill);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  background: var(--bg-wash);
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+  white-space: nowrap;
+  transition: transform 0.25s ease;
+  animation: bspTagFloat 6s ease-in-out infinite;
+}
+.bsp-tag:nth-child(2) { animation-delay: 0.8s; }
+.bsp-tag:nth-child(3) { animation-delay: 1.6s; }
+.bsp-tag:nth-child(4) { animation-delay: 2.4s; }
+.bsp-tag:nth-child(5) { animation-delay: 3.2s; }
+
+@keyframes bspTagFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.bsp-tag--gold {
+  background: linear-gradient(135deg, var(--brand-light), #f9edd8);
+  color: var(--brand-dark);
+  border-color: rgba(201,169,110,0.4);
+  font-weight: 800;
+}
+.bsp-tag--outline {
+  background: transparent;
+  color: var(--black);
+  border-color: var(--black);
+}
+
+/* Trust badge bar */
+.bsp-trust {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  justify-content: center;
+  padding: 10px 16px;
+  background: rgba(12,10,9,0.03);
+  border-radius: 10px;
+  border: 1px dashed rgba(201,169,110,0.3);
+}
+.bsp-trust__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+.bsp-trust__sep {
+  color: var(--border);
+  font-size: 1rem;
+}
+.bsp-trust__pulse {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--brand-dark);
+  animation: bspPulse 2s ease-in-out infinite;
+  flex-shrink: 0;
+}
+.bsp-trust__pulse--green {
+  background: #22c55e;
+  animation-delay: 0.5s;
+}
+@keyframes bspPulse {
+  0%, 100% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 0 rgba(201,169,110,0.4); }
+  60% { transform: scale(1.15); box-shadow: 0 0 0 5px rgba(201,169,110,0); }
+}
+
+@media (max-width: 768px) {
+  .bsp-stats { gap: 0; padding: 14px 12px; }
+  .bsp-stat__num { font-size: 1.2rem; }
+  .bsp-stat__label { font-size: 0.52rem; }
+  .bsp-trust { flex-wrap: wrap; justify-content: flex-start; gap: 8px; }
+  .bsp-trust__sep { display: none; }
+}
+
