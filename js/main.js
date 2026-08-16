@@ -62,12 +62,14 @@ function initLoader() {
     document.body.style.overflow = '';
     triggerHeroAnimation();
   };
-  if (document.readyState === 'complete') {
-    setTimeout(hide, 50);
+  // Hide as soon as DOM is interactive
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(hide, 100);
   } else {
-    window.addEventListener('load', hide, { once: true });
-    setTimeout(hide, 250); // Fast safety fallback
+    document.addEventListener('DOMContentLoaded', () => setTimeout(hide, 100), { once: true });
   }
+  // Hard cap: never stay on screen more than 2.5s regardless of pending fetches
+  setTimeout(hide, 2500);
 }
 
 function triggerHeroAnimation() {
@@ -1050,10 +1052,10 @@ async function loadCmsContent() {
     }
   }
 
-  // Hero banners rendering
-  const heroBanners = cms.heroBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'hero' || !b.type) : []) || [];
-  if (heroBanners && heroBanners.length) {
-    const heroBanner = heroBanners[0];
+  // Hero banners rendering — use banners resolved above, falling back to cms.heroBanners
+  const cmsHeroBanners = heroBanners.length ? heroBanners : (cms.heroBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'hero' || !b.type) : []) || []);
+  if (cmsHeroBanners && cmsHeroBanners.length) {
+    const heroBanner = cmsHeroBanners[0];
     const heroImg = document.querySelector('.hero__model-img');
     if (heroImg && heroBanner.image_url) {
       const fixedImg = typeof fixDriveUrl === 'function' ? fixDriveUrl(heroBanner.image_url) : heroBanner.image_url;
@@ -1088,9 +1090,9 @@ async function loadCmsContent() {
   }
 
   // Festival / promo banners — inject into page if container exists
-  const festBanners = cms.festivalBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'festival') : []) || [];
-  if (festBanners && festBanners.length) {
-    renderFestivalBanners(festBanners);
+  const cmsFestBanners = festBanners.length ? festBanners : (cms.festivalBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'festival') : []) || []);
+  if (cmsFestBanners && cmsFestBanners.length) {
+    renderFestivalBanners(cmsFestBanners);
   }
 
   // Section visibility & dynamic configurations
