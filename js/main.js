@@ -288,12 +288,63 @@ function initCatBrowser() {
 function activateCat(el, cat) {
   document.querySelectorAll('.cat-item').forEach(i => i.classList.remove('active'));
   el.classList.add('active');
-  showToast(`Browsing ${el.textContent.trim()}`, 'info');
+  
+  const imgMain = document.querySelector('.cat-browser__img-main');
+  const imgSec = document.querySelector('.cat-browser__img-secondary');
+  if (imgMain && imgSec) {
+    imgMain.style.transition = 'opacity 0.15s ease';
+    imgSec.style.transition = 'opacity 0.15s ease';
+    
+    const catsData = {
+      party: { m: 'assets/images/party_wear.jpg', s: 'assets/images/wedding.jpg' },
+      coord: { m: 'assets/images/vacation.jpg', s: 'assets/images/workwear.jpg' },
+      maxi: { m: 'assets/images/hero_fashion.jpg', s: 'assets/images/ethnic.jpg' },
+      workwear: { m: 'assets/images/workwear.jpg', s: 'assets/images/party_wear.jpg' },
+      accessories: { m: 'assets/images/ethnic.jpg', s: 'assets/images/wedding.jpg' }
+    };
+    if (catsData[cat]) {
+      imgMain.style.opacity = '0'; imgSec.style.opacity = '0';
+      setTimeout(() => {
+        imgMain.src = catsData[cat].m;
+        imgSec.src = catsData[cat].s;
+        imgMain.style.opacity = '1'; imgSec.style.opacity = '1';
+      }, 150);
+    }
+    
+    // Ensure clicking image navigates to shop category
+    const stack = document.querySelector('.cat-browser__image-stack');
+    if (stack) {
+      stack.style.cursor = 'pointer';
+      stack.onclick = () => window.location.href = `shop.html?cat=${cat}`;
+    }
+  }
 }
 
 function setTabActive(btn) {
   btn.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
+  
+  // Also tweak images slightly based on Casual / Evening / Festive vibes to make it feel alive!
+  const imgMain = document.querySelector('.cat-browser__img-main');
+  const imgSec = document.querySelector('.cat-browser__img-secondary');
+  const mood = btn.textContent.toLowerCase();
+  if (imgMain && imgSec) {
+    imgMain.style.transition = 'opacity 0.15s ease';
+    imgSec.style.transition = 'opacity 0.15s ease';
+    
+    // Highlight the button effect
+    imgMain.style.opacity = '0'; imgSec.style.opacity = '0';
+    setTimeout(() => {
+      if (mood === 'evening') {
+        imgMain.src = 'assets/images/party_wear.jpg'; imgSec.src = 'assets/images/wedding.jpg';
+      } else if (mood === 'festive') {
+        imgMain.src = 'assets/images/ethnic.jpg'; imgSec.src = 'assets/images/party_wear.jpg';
+      } else {
+        imgMain.src = 'assets/images/hero_fashion.jpg'; imgSec.src = 'assets/images/vacation.jpg';
+      }
+      imgMain.style.opacity = '1'; imgSec.style.opacity = '1';
+    }, 150);
+  }
 }
 
 // ─── MINI PRODUCT HOVER ───────────────────────────────────────
