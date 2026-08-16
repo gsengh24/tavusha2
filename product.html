@@ -677,15 +677,19 @@ function selSize(s,el){
 function getDomMaxStock() {
   const plusBtn = document.getElementById('pdpQtyPlus');
   if (plusBtn && plusBtn.dataset.maxStock !== undefined) {
-    return Math.max(0, parseInt(plusBtn.dataset.maxStock, 10));
+    const parsed = parseInt(plusBtn.dataset.maxStock, 10);
+    if (!isNaN(parsed)) return Math.max(0, parsed); // only use if valid
   }
   // Fallback to pdpSelectedColorStock (set by selColorVariant)
-  if (typeof pdpSelectedColorStock !== 'undefined' && pdpSelectedColorStock > 0) {
+  if (typeof pdpSelectedColorStock !== 'undefined' && !isNaN(pdpSelectedColorStock) && pdpSelectedColorStock > 0) {
     return pdpSelectedColorStock;
   }
   // Last fallback: read from the product directly
-  if (pdpProduct && pdpProduct.stock !== undefined) return Math.max(0, Number(pdpProduct.stock));
-  return 99;
+  if (pdpProduct && pdpProduct.stock !== undefined) {
+    const s = Number(pdpProduct.stock);
+    if (!isNaN(s)) return Math.max(0, s);
+  }
+  return 1; // safe fallback — never allow unbounded incrementing
 }
 
 function updatePlusBtn() {
@@ -701,19 +705,17 @@ function updatePlusBtn() {
 
 function changeQty(d){
   const maxStock = getDomMaxStock();
-  const newVal = Math.min(maxStock, Math.max(1, pdpQtyVal + d));
-  if (d > 0 && newVal >= maxStock && pdpQtyVal < maxStock) {
-    // Reaching the limit — allow the increment but show warning
-  } else if (d > 0 && pdpQtyVal >= maxStock) {
-    // Already at max — block and toast
+  // Block increment if already at or above stock limit
+  if (d > 0 && pdpQtyVal >= maxStock) {
     if (typeof showToast === 'function') showToast(`Only ${maxStock} piece${maxStock !== 1 ? 's' : ''} available`, 'info');
     return;
   }
-  pdpQtyVal = newVal;
+  pdpQtyVal = Math.min(maxStock, Math.max(1, pdpQtyVal + d));
   document.getElementById('pdpQtyDisplay').textContent = pdpQtyVal;
   updatePlusBtn();
-  if (pdpQtyVal >= maxStock && typeof showToast === 'function') {
-    showToast(`Only ${maxStock} piece${maxStock !== 1 ? 's' : ''} available`, 'info');
+  // Notify user when they just hit the limit
+  if (d > 0 && pdpQtyVal >= maxStock && typeof showToast === 'function') {
+    showToast(`Maximum stock reached: ${maxStock} piece${maxStock !== 1 ? 's' : ''} available`, 'info');
   }
 }
 
