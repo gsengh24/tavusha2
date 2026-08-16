@@ -98,6 +98,26 @@ class CmsModel {
     return data;
   }
 
+  static async upsertSection(key, label, fields) {
+    // Creates the row if missing, updates if present — safe for image URL saves
+    const row = {
+      key,
+      label: label || key,
+      updated_at: new Date().toISOString(),
+    };
+    if (fields.visible !== undefined) row.visible = fields.visible;
+    if (fields.sort_order !== undefined) row.sort_order = fields.sort_order;
+    if (fields.config !== undefined) row.config = fields.config;
+    if (fields.label !== undefined) row.label = fields.label;
+    const { data, error } = await supabase
+      .from('cms_sections')
+      .upsert(row, { onConflict: 'key' })
+      .select()
+      .single();
+    if (error) throw error;
+    return data;
+  }
+
   static async reorderSections(orderedKeys) {
     const updates = orderedKeys.map((key, idx) =>
       supabase.from('cms_sections').update({ sort_order: idx }).eq('key', key)

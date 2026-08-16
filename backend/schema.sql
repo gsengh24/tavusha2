@@ -237,3 +237,20 @@ CREATE INDEX IF NOT EXISTS idx_orders_number ON orders (order_number);
 CREATE INDEX IF NOT EXISTS idx_orders_created_at ON orders (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_staff_login_id ON staff (login_id);
 
+-- ───────────────────────────────────────────────────────────────────────
+-- 10. CMS WRITE POLICIES (backend / admin panel)
+-- ───────────────────────────────────────────────────────────────────────
+
+-- Allow backend to write to CMS tables
+CREATE POLICY "Service role write cms_sections" ON cms_sections
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+CREATE POLICY "Authenticated write cms_sections" ON cms_sections
+  FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+CREATE POLICY "Service role write cms_banners" ON cms_banners
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+CREATE POLICY "Service role write cms_popups" ON cms_popups
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+
