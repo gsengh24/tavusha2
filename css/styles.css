@@ -60,7 +60,7 @@
 
 /* ─── Reset ──────────────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-html { font-size: 16px; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; overflow-x: hidden; }
+html { font-size: 16px; -webkit-font-smoothing: antialiased; scroll-behavior: smooth; }
 body { font-family: var(--font-ui); background: var(--bg-wash); color: var(--black); line-height: 1.6; overflow-x: hidden; }
 img { display: block; max-width: 100%; }
 a { text-decoration: none; color: inherit; }
@@ -98,7 +98,7 @@ ul { list-style: none; }
 /* ─── NAVIGATION ─────────────────────────────────────────────── */
 /* Reference: Logo CENTER · Links LEFT · Utility RIGHT */
 .nav {
-  position: sticky; top: 0; z-index: 500;
+  position: sticky; top: -64px; z-index: 500;
   background: var(--bg-wash);
   border-bottom: 1px solid var(--border);
 }
