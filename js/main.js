@@ -62,12 +62,14 @@ function initLoader() {
     document.body.style.overflow = '';
     triggerHeroAnimation();
   };
-  if (document.readyState === 'complete') {
-    setTimeout(hide, 50);
+  // Hide as soon as DOM is interactive
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(hide, 100);
   } else {
-    window.addEventListener('load', hide, { once: true });
-    setTimeout(hide, 250); // Fast safety fallback
+    document.addEventListener('DOMContentLoaded', () => setTimeout(hide, 100), { once: true });
   }
+  // Hard cap: never stay on screen more than 2.5s regardless of pending fetches
+  setTimeout(hide, 2500);
 }
 
 function triggerHeroAnimation() {
@@ -286,12 +288,63 @@ function initCatBrowser() {
 function activateCat(el, cat) {
   document.querySelectorAll('.cat-item').forEach(i => i.classList.remove('active'));
   el.classList.add('active');
-  showToast(`Browsing ${el.textContent.trim()}`, 'info');
+  
+  const imgMain = document.querySelector('.cat-browser__img-main');
+  const imgSec = document.querySelector('.cat-browser__img-secondary');
+  if (imgMain && imgSec) {
+    imgMain.style.transition = 'opacity 0.15s ease';
+    imgSec.style.transition = 'opacity 0.15s ease';
+    
+    const catsData = {
+      party: { m: 'assets/images/party_wear.jpg', s: 'assets/images/wedding.jpg' },
+      coord: { m: 'assets/images/vacation.jpg', s: 'assets/images/workwear.jpg' },
+      maxi: { m: 'assets/images/hero_fashion.jpg', s: 'assets/images/ethnic.jpg' },
+      workwear: { m: 'assets/images/workwear.jpg', s: 'assets/images/party_wear.jpg' },
+      accessories: { m: 'assets/images/ethnic.jpg', s: 'assets/images/wedding.jpg' }
+    };
+    if (catsData[cat]) {
+      imgMain.style.opacity = '0'; imgSec.style.opacity = '0';
+      setTimeout(() => {
+        imgMain.src = catsData[cat].m;
+        imgSec.src = catsData[cat].s;
+        imgMain.style.opacity = '1'; imgSec.style.opacity = '1';
+      }, 150);
+    }
+    
+    // Ensure clicking image navigates to shop category
+    const stack = document.querySelector('.cat-browser__image-stack');
+    if (stack) {
+      stack.style.cursor = 'pointer';
+      stack.onclick = () => window.location.href = `shop.html?cat=${cat}`;
+    }
+  }
 }
 
 function setTabActive(btn) {
   btn.closest('.cat-tabs').querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
+  
+  // Also tweak images slightly based on Casual / Evening / Festive vibes to make it feel alive!
+  const imgMain = document.querySelector('.cat-browser__img-main');
+  const imgSec = document.querySelector('.cat-browser__img-secondary');
+  const mood = btn.textContent.toLowerCase();
+  if (imgMain && imgSec) {
+    imgMain.style.transition = 'opacity 0.15s ease';
+    imgSec.style.transition = 'opacity 0.15s ease';
+    
+    // Highlight the button effect
+    imgMain.style.opacity = '0'; imgSec.style.opacity = '0';
+    setTimeout(() => {
+      if (mood === 'evening') {
+        imgMain.src = 'assets/images/party_wear.jpg'; imgSec.src = 'assets/images/wedding.jpg';
+      } else if (mood === 'festive') {
+        imgMain.src = 'assets/images/ethnic.jpg'; imgSec.src = 'assets/images/party_wear.jpg';
+      } else {
+        imgMain.src = 'assets/images/hero_fashion.jpg'; imgSec.src = 'assets/images/vacation.jpg';
+      }
+      imgMain.style.opacity = '1'; imgSec.style.opacity = '1';
+    }, 150);
+  }
 }
 
 // ─── MINI PRODUCT HOVER ───────────────────────────────────────
@@ -1143,10 +1196,10 @@ async function loadCmsContent() {
     }
   }
 
-  // Hero banners rendering
-  const heroBanners = cms.heroBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'hero' || !b.type) : []) || [];
-  if (heroBanners && heroBanners.length) {
-    const heroBanner = heroBanners[0];
+  // Hero banners rendering — use banners resolved above, falling back to cms.heroBanners
+  const cmsHeroBanners = heroBanners.length ? heroBanners : (cms.heroBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'hero' || !b.type) : []) || []);
+  if (cmsHeroBanners && cmsHeroBanners.length) {
+    const heroBanner = cmsHeroBanners[0];
     const heroImg = document.querySelector('.hero__model-img');
     if (heroImg && heroBanner.image_url) {
       const fixedImg = typeof fixDriveUrl === 'function' ? fixDriveUrl(heroBanner.image_url) : heroBanner.image_url;
@@ -1181,9 +1234,9 @@ async function loadCmsContent() {
   }
 
   // Festival / promo banners — inject into page if container exists
-  const festBanners = cms.festivalBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'festival') : []) || [];
-  if (festBanners && festBanners.length) {
-    renderFestivalBanners(festBanners);
+  const cmsFestBanners = festBanners.length ? festBanners : (cms.festivalBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'festival') : []) || []);
+  if (cmsFestBanners && cmsFestBanners.length) {
+    renderFestivalBanners(cmsFestBanners);
   }
 
   // Section visibility & dynamic configurations
