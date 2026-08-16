@@ -98,7 +98,7 @@ ul { list-style: none; }
 /* ─── NAVIGATION ─────────────────────────────────────────────── */
 /* Reference: Logo CENTER · Links LEFT · Utility RIGHT */
 .nav {
-  position: sticky; top: -64px; z-index: 500;
+  position: sticky; top: 0; z-index: 500;
   background: var(--bg-wash);
   border-bottom: 1px solid var(--border);
 }
@@ -140,17 +140,20 @@ ul { list-style: none; }
   color: var(--black); display: flex; align-items: center; justify-content: center;
 }
 
-/* Secondary Nav */
+/* Secondary Nav — Sticky on its own so it stays visible while scrolling */
 .nav__secondary {
   border-top: 1px solid var(--border);
   display: flex; justify-content: center; gap: 40px;
   padding: 10px var(--container-pad);
+  position: sticky; top: 0; z-index: 499;
+  background: var(--bg-wash);
 }
 .nav__secondary-link {
   font-size: 0.7rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
   color: var(--warm-grey); cursor: pointer; transition: color var(--dur-fast);
 }
 .nav__secondary-link:hover { color: var(--black); }
+
 
 .nav__hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
 .nav__hamburger span { display: block; width: 20px; height: 1.5px; background: var(--black); transition: all var(--dur-mid); }
