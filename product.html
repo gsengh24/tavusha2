@@ -235,10 +235,10 @@
 
       <!-- CTA -->
       <div class="pdp-cta-row">
-        <div class="pdp-qty">
-          <button class="pdp-qty__btn" onclick="changeQty(-1)">&minus;</button>
+        <div class="pdp-qty" id="pdpQtyWrap">
+          <button class="pdp-qty__btn" id="pdpQtyMinus" onclick="changeQty(-1)">&minus;</button>
           <span class="pdp-qty__num" id="pdpQtyDisplay">1</span>
-          <button class="pdp-qty__btn" onclick="changeQty(1)">+</button>
+          <button class="pdp-qty__btn" id="pdpQtyPlus" onclick="changeQty(1)">+</button>
         </div>
         <button class="pdp-add-btn" onclick="pdpAddToCart()">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
@@ -606,8 +606,23 @@ function switchImg(idx,el,src,bg){
 function selColorVariant(hex, nm, stock, el){
   pdpSelectedColor = hex;
   pdpSelectedColorName = nm;
-  pdpSelectedColorStock = Number(stock);
-  
+  pdpSelectedColorStock = Math.max(0, Number(stock));
+
+  // ── Write stock into the DOM so changeQty is always correct ──
+  // This is the single source of truth regardless of JS timing
+  const plusBtn = document.getElementById('pdpQtyPlus');
+  const qtyWrap = document.getElementById('pdpQtyWrap');
+  if (plusBtn) plusBtn.dataset.maxStock = pdpSelectedColorStock;
+  if (qtyWrap) qtyWrap.dataset.maxStock = pdpSelectedColorStock;
+
+  // Clamp current qty to new stock limit
+  if (pdpQtyVal > pdpSelectedColorStock) {
+    pdpQtyVal = Math.max(1, pdpSelectedColorStock);
+    const display = document.getElementById('pdpQtyDisplay');
+    if (display) display.textContent = pdpQtyVal;
+  }
+  updatePlusBtn();
+
   const nameEl = document.getElementById('selectedColourName');
   if (nameEl) nameEl.textContent = nm;
   
@@ -651,64 +666,82 @@ function selSize(s,el){
   el.classList.add('active');
 }
 
-// Inline stock helper — does NOT depend on main.js (which is deferred)
-// Uses pdpSelectedColorStock first (set by selColorVariant), then TAVUSHA_PRODUCTS
-function getLocalStock() {
-  // pdpSelectedColorStock is always set when a colour is selected — use it as primary source
+// ── DOM-level stock enforcer ─────────────────────────────────
+// Reads max stock directly from the + button's data-max-stock attribute.
+// This is set by selColorVariant and is always correct regardless of
+// script load order or JS variable timing issues.
+function getDomMaxStock() {
+  const plusBtn = document.getElementById('pdpQtyPlus');
+  if (plusBtn && plusBtn.dataset.maxStock !== undefined) {
+    return Math.max(0, parseInt(plusBtn.dataset.maxStock, 10));
+  }
+  // Fallback to pdpSelectedColorStock (set by selColorVariant)
   if (typeof pdpSelectedColorStock !== 'undefined' && pdpSelectedColorStock > 0) {
     return pdpSelectedColorStock;
   }
-  // Fallback: read directly from pdpProduct
+  // Last fallback: read from the product directly
   if (pdpProduct && pdpProduct.stock !== undefined) return Math.max(0, Number(pdpProduct.stock));
-  // Last resort: check localStorage admin overrides
-  try {
-    const stored = JSON.parse(localStorage.getItem('sp_demo_products') || '[]');
-    const pid = String(pdpProduct ? pdpProduct.id : '').replace(/\D/g, '');
-    const match = stored.find(p => String(p._id || p.id || '').replace(/\D/g, '') === pid);
-    if (match && match.stock !== undefined) return Math.max(0, Number(match.stock));
-  } catch(e) {}
-  return 99; // No data → uncapped
+  return 99;
+}
+
+function updatePlusBtn() {
+  const plusBtn = document.getElementById('pdpQtyPlus');
+  if (!plusBtn) return;
+  const maxStock = getDomMaxStock();
+  const atMax = pdpQtyVal >= maxStock;
+  plusBtn.disabled = atMax;
+  plusBtn.style.opacity = atMax ? '0.35' : '';
+  plusBtn.style.cursor = atMax ? 'not-allowed' : '';
+  plusBtn.title = atMax ? `Maximum stock: ${maxStock}` : '';
 }
 
 function changeQty(d){
-  // Use pdpSelectedColorStock as the authoritative cap (set by selColorVariant)
-  // Fall back to getLocalStock() only if color hasn't been selected yet
-  const maxStock = (typeof pdpSelectedColorStock !== 'undefined' && pdpSelectedColorStock > 0)
-    ? pdpSelectedColorStock
-    : getLocalStock();
-  pdpQtyVal = Math.min(maxStock, Math.max(1, pdpQtyVal + d));
+  const maxStock = getDomMaxStock();
+  const newVal = Math.min(maxStock, Math.max(1, pdpQtyVal + d));
+  if (d > 0 && newVal >= maxStock && pdpQtyVal < maxStock) {
+    // Reaching the limit — allow the increment but show warning
+  } else if (d > 0 && pdpQtyVal >= maxStock) {
+    // Already at max — block and toast
+    if (typeof showToast === 'function') showToast(`Only ${maxStock} piece${maxStock !== 1 ? 's' : ''} available`, 'info');
+    return;
+  }
+  pdpQtyVal = newVal;
   document.getElementById('pdpQtyDisplay').textContent = pdpQtyVal;
-  if (d > 0 && pdpQtyVal >= maxStock) {
+  updatePlusBtn();
+  if (pdpQtyVal >= maxStock && typeof showToast === 'function') {
     showToast(`Only ${maxStock} piece${maxStock !== 1 ? 's' : ''} available`, 'info');
   }
 }
 
 function pdpAddToCart(){
   if (pdpSelectedColorStock <= 0) {
-    showToast(`Sorry, ${pdpSelectedColorName || 'this colour'} is out of stock`, 'error');
+    if (typeof showToast === 'function') showToast(`Sorry, ${pdpSelectedColorName || 'this colour'} is out of stock`, 'error');
     return;
   }
-  if(!pdpSelectedSize){showToast('Please select a size first','error');return;}
-  // Use pdpSelectedColorStock as the definitive stock cap — it's always up to date
-  const maxStock = (typeof pdpSelectedColorStock !== 'undefined' && pdpSelectedColorStock > 0)
-    ? pdpSelectedColorStock
-    : getLocalStock();
+  if (!pdpSelectedSize) { if (typeof showToast === 'function') showToast('Please select a size first', 'error'); return; }
+
+  // Use DOM-level stock as the definitive cap — immune to timing issues
+  const maxStock = getDomMaxStock();
+
   const alreadyInCart = (TAVUSHA.cart.find(i => String(i.id) === String(pdpProduct.id) && i.size === pdpSelectedSize && (i.colour || '') === (pdpSelectedColorName || '')) || {qty: 0}).qty;
   const canAdd = Math.max(0, maxStock - alreadyInCart);
+
   if (canAdd <= 0) {
-    showToast(`You already have the maximum available stock (${maxStock}) in your bag`, 'info');
+    if (typeof showToast === 'function') showToast(`You already have the maximum available stock (${maxStock}) in your bag`, 'info');
     return;
   }
-  // Clamp qty to what's actually available
+
   const toAdd = Math.min(pdpQtyVal, canAdd);
-  if (toAdd < pdpQtyVal) {
+  if (toAdd < pdpQtyVal && typeof showToast === 'function') {
     showToast(`Only ${canAdd} more piece${canAdd !== 1 ? 's' : ''} can be added (${maxStock} in stock)`, 'info');
   }
-  // Reset qty display to 1 after adding
+
+  // Reset qty to 1 after adding
   pdpQtyVal = 1;
   document.getElementById('pdpQtyDisplay').textContent = pdpQtyVal;
-  for(let i=0;i<toAdd;i++) {
-    // Call addToCart if available (main.js loaded), otherwise push directly
+  updatePlusBtn();
+
+  for (let i = 0; i < toAdd; i++) {
     if (typeof addToCart === 'function') {
       addToCart(pdpProduct, pdpSelectedSize, pdpSelectedColorName);
     } else {
@@ -808,22 +841,49 @@ function isLight(hex){
   return (r*0.299+g*0.587+b*0.114)>186;
 }
 document.addEventListener('DOMContentLoaded', () => {
-  initAnnouncement(); updateCartUI(); updateWishlistUI(); initNav(); initCursor(); initScrollReveal(); initKeyboard();
-  const BACKEND = 'https://tavusha2-backend.onrender.com/api';
-  fetch(BACKEND + '/products/storefront.js')
-    .then(r => r.text())
+  // Run initPDP immediately from local products.js — don't wait for backend
+  // Backend products load in background and won't affect the initial render
+  initPDP();
+
+  // Try to load deferred UI functions once main.js has executed
+  const tryBoot = () => {
+    if (typeof initAnnouncement === 'function') initAnnouncement();
+    if (typeof updateCartUI === 'function') updateCartUI();
+    if (typeof updateWishlistUI === 'function') updateWishlistUI();
+    if (typeof initNav === 'function') initNav();
+    if (typeof initCursor === 'function') initCursor();
+    if (typeof initScrollReveal === 'function') initScrollReveal();
+    if (typeof initKeyboard === 'function') initKeyboard();
+  };
+  // main.js is defer so it runs after DOMContentLoaded — use setTimeout to catch it
+  if (typeof initAnnouncement === 'function') {
+    tryBoot();
+  } else {
+    setTimeout(tryBoot, 0);
+  }
+
+  // Load backend products in background (non-blocking)
+  const CACHE_KEY = 'tv_storefront_cache';
+  const CACHE_TTL = 5 * 60 * 1000;
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.code) {
+      try { new Function(cached.code)(); } catch(e) {}
+    }
+  } catch(e) {}
+
+  const controller = new AbortController();
+  const tid = setTimeout(() => controller.abort(), 5000);
+  fetch('https://tavusha2-backend.onrender.com/api/products/storefront.js', { signal: controller.signal })
+    .then(r => { clearTimeout(tid); return r.text(); })
     .then(code => {
       try {
-        // eslint-disable-next-line no-new-func
-        new Function('TAVUSHA_PRODUCTS', code)(TAVUSHA_PRODUCTS);
-      } catch (e) {
-        console.error('Failed to parse backend products', e);
-      }
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), code }));
+        new Function(code)();
+        // Re-render only if product wasn't already found in local data
+      } catch(e) {}
     })
-    .catch(() => console.warn('Backend unavailable or could not fetch products'))
-    .finally(() => {
-      initPDP();
-    });
+    .catch(() => { clearTimeout(tid); });
 });
 </script>
 <!-- CART DRAWER -->
