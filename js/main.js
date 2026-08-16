@@ -539,7 +539,9 @@ function addToCartFromQuickView() {
 
 function addToCart(product, size, colour) {
   const col = colour || (product.colour ? product.colour.split(',')[0].trim() : '');
-  const stock = getProductStock(product.id);
+  // Get live stock from product data; if unavailable, use stock stored on product object
+  const liveStock = getProductStock(product.id);
+  const stock = (liveStock < 99) ? liveStock : (product.stock !== undefined ? Math.max(0, Number(product.stock)) : liveStock);
 
   // Block add entirely if out of stock
   if (stock === 0) {
@@ -554,6 +556,7 @@ function addToCart(product, size, colour) {
       return;
     }
     existing.qty += 1;
+    existing.stock = stock; // keep stock fresh
   } else {
     TAVUSHA.cart.push({ id: product.id, name: product.name, price: product.price, image: product.image, brand: product.brand || 'TAVUSHA', size, colour: col, qty: 1, stock });
   }
@@ -572,8 +575,9 @@ function updateCartQty(id, size, delta, colour) {
   const item = TAVUSHA.cart.find(i => String(i.id) === String(id) && i.size === size && (colour === undefined || (i.colour || '') === (colour || '')));
   if (!item) return;
   if (delta > 0) {
-    // Refresh stock in case admin has updated it
-    const stock = getProductStock(id);
+    // Use tighter of live stock vs. stock saved on item at add-time
+    const liveStock = getProductStock(id);
+    const stock = Math.min(liveStock, item.stock !== undefined ? item.stock : liveStock);
     if (item.qty >= stock) {
       showToast(`Only ${stock} piece${stock !== 1 ? 's' : ''} available for this item`, 'info');
       return;
@@ -630,10 +634,14 @@ function renderCartItems() {
   if (footer) footer.style.display = 'block';
   c.innerHTML = TAVUSHA.cart.map(item => {
     const escapedCol = (item.colour || '').replace(/'/g, "\\'");
-    const itemStock = getProductStock(item.id);
+    // Use tighter of live stock vs. stock saved on item at add-time
+    const liveStock = getProductStock(item.id);
+    const itemStock = Math.min(liveStock, item.stock !== undefined ? item.stock : liveStock);
     const atMax = item.qty >= itemStock;
     const plusDisabled = atMax ? 'disabled style="opacity:0.35;cursor:not-allowed"' : '';
-    const stockNote = atMax ? `<div style="font-size:0.68rem;color:#a07840;margin-top:2px">Max qty reached (${itemStock} in stock)</div>` : '';
+    const stockNote = atMax
+      ? `<div style="font-size:0.68rem;color:#a07840;margin-top:2px">Max qty reached (${itemStock} in stock)</div>`
+      : `<div style="font-size:0.68rem;color:var(--warm-grey);margin-top:2px">${itemStock < 99 ? itemStock + ' in stock' : ''}</div>`;
     return `
     <div class="cart-item">
       <div class="cart-item__img"><img src="${item.image}" alt="${item.name}" loading="lazy"></div>
