@@ -417,7 +417,7 @@ function addToCartFromQuickView() {
     showToast('Please select a size', 'info');
     return;
   }
-  addToCart(TAVUSHA.quickViewProduct, TAVUSHA.selectedSize);
+  addToCart(TAVUSHA.quickViewProduct, TAVUSHA.selectedSize, TAVUSHA.selectedColour);
   setTimeout(() => {
     document.getElementById('quickViewOverlay').classList.remove('open');
     document.body.style.overflow = '';
@@ -425,28 +425,29 @@ function addToCartFromQuickView() {
   }, 350);
 }
 
-function addToCart(product, size) {
-  const existing = TAVUSHA.cart.find(i => i.id == product.id && i.size === size);
+function addToCart(product, size, colour) {
+  const col = colour || (product.colour ? product.colour.split(',')[0].trim() : '');
+  const existing = TAVUSHA.cart.find(i => String(i.id) === String(product.id) && i.size === size && (i.colour || '') === col);
   if (existing) { existing.qty += 1; }
   else {
-    TAVUSHA.cart.push({ id: product.id, name: product.name, price: product.price, image: product.image, brand: product.brand, size, qty: 1 });
+    TAVUSHA.cart.push({ id: product.id, name: product.name, price: product.price, image: product.image, brand: product.brand || 'TAVUSHA', size, colour: col, qty: 1 });
   }
   saveCart();
   updateCartUI();
-  showToast(`${product.name} added to your bag`, 'success');
+  showToast(`${product.name}${col ? ' (' + col + ')' : ''} added to your bag`, 'success');
   animateCartIcon();
 }
 
-function removeFromCart(id, size) {
-  TAVUSHA.cart = TAVUSHA.cart.filter(i => !(i.id == id && i.size === size));
+function removeFromCart(id, size, colour) {
+  TAVUSHA.cart = TAVUSHA.cart.filter(i => !(String(i.id) === String(id) && i.size === size && (colour === undefined || (i.colour || '') === (colour || ''))));
   saveCart(); updateCartUI(); renderCartItems();
 }
 
-function updateCartQty(id, size, delta) {
-  const item = TAVUSHA.cart.find(i => i.id == id && i.size === size);
+function updateCartQty(id, size, delta, colour) {
+  const item = TAVUSHA.cart.find(i => String(i.id) === String(id) && i.size === size && (colour === undefined || (i.colour || '') === (colour || '')));
   if (!item) return;
   item.qty += delta;
-  if (item.qty <= 0) { removeFromCart(id, size); return; }
+  if (item.qty <= 0) { removeFromCart(id, size, colour); return; }
   saveCart(); updateCartUI(); renderCartItems();
 }
 
@@ -467,6 +468,7 @@ function openCart() {
   document.getElementById('searchOverlay')?.classList.remove('open');
   TAVUSHA.quickViewProduct = null;
   TAVUSHA.selectedSize = null;
+  TAVUSHA.selectedColour = null;
   document.getElementById('cartOverlay')?.classList.add('open');
   document.getElementById('cartDrawer')?.classList.add('open');
   document.body.style.overflow = 'hidden';
@@ -493,25 +495,28 @@ function renderCartItems() {
     return;
   }
   if (footer) footer.style.display = 'block';
-  c.innerHTML = TAVUSHA.cart.map(item => `
+  c.innerHTML = TAVUSHA.cart.map(item => {
+    const escapedCol = (item.colour || '').replace(/'/g, "\\'");
+    return `
     <div class="cart-item">
       <div class="cart-item__img"><img src="${item.image}" alt="${item.name}" loading="lazy"></div>
       <div class="cart-item__info">
         <div>
           <div class="cart-item__name">${item.name}</div>
-          <div class="cart-item__meta">Size: ${item.size} · ${item.brand}</div>
+          <div class="cart-item__meta">Size: ${item.size}${item.colour ? ` · Colour: ${item.colour}` : ''} · ${item.brand || 'TAVUSHA'}</div>
         </div>
         <div class="cart-item__controls">
           <div class="cart-item__qty">
-            <button class="cart-item__qty-btn" onclick="updateCartQty(${item.id},'${item.size}',-1)">−</button>
+            <button class="cart-item__qty-btn" onclick="updateCartQty('${item.id}','${item.size}',-1,'${escapedCol}')">−</button>
             <span class="cart-item__qty-num">${item.qty}</span>
-            <button class="cart-item__qty-btn" onclick="updateCartQty(${item.id},'${item.size}',1)">+</button>
+            <button class="cart-item__qty-btn" onclick="updateCartQty('${item.id}','${item.size}',1,'${escapedCol}')">+</button>
           </div>
           <span class="cart-item__price">₹${(item.price * item.qty).toLocaleString('en-IN')}</span>
         </div>
-        <button class="cart-item__remove" onclick="removeFromCart(${item.id},'${item.size}')">Remove</button>
+        <button class="cart-item__remove" onclick="removeFromCart('${item.id}','${item.size}','${escapedCol}')">Remove</button>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   updateCartUI();
 }
 
