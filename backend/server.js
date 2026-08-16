@@ -42,6 +42,10 @@ app.use('/api/orders', orderRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, database: 'supabase', version: '2.0.0' }));
 
+// Serve frontend static files from the root directory
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../')));
+
 async function ensureAdminAccount() {
   try {
     const existingAdmin = await Staff.findOne({ role: 'admin' });
