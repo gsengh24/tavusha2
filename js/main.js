@@ -1009,68 +1009,81 @@ async function loadCmsContent() {
       if (el) el.style.display = s.visible !== false ? '' : 'none';
       
       // Load campaign poster contents if this is the poster spread section
-      if (s.key === 'poster_spread' && s.visible !== false && s.config) {
-        const cfg = s.config;
-        const elEyebrow = document.getElementById('p_spread_eyebrow');
-        if (elEyebrow && cfg.eyebrow) elEyebrow.textContent = cfg.eyebrow;
-        
-        const elTitle = document.getElementById('p_spread_title');
-        if (elTitle && cfg.title) elTitle.textContent = cfg.title;
+      const isPoster = (s.key === 'poster_spread' || s.key === 'poster-spread');
+      if (isPoster && s.visible !== false && s.config) {
+        let cfg = s.config;
+        if (typeof cfg === 'string') {
+          try { cfg = JSON.parse(cfg); } catch (e) {}
+        }
+        if (typeof cfg === 'object' && cfg !== null) {
+          const getImgUrl = (url) => {
+            if (!url) return '';
+            if (typeof fixDriveUrl === 'function') return fixDriveUrl(url);
+            var m = url.match(/[?&]id=([^&]+)/) || url.match(/\/file\/d\/([^/]+)/) || url.match(/\/d\/([^/]+)/);
+            return (m && m[1]) ? 'https://lh3.googleusercontent.com/d/' + m[1] + '=w800' : url;
+          };
 
-        // Main
-        const elMainImg = document.getElementById('p_spread_main_img');
-        if (elMainImg && cfg.main_image) elMainImg.src = cfg.main_image;
-        
-        const elMainBadge = document.getElementById('p_spread_main_badge');
-        if (elMainBadge && cfg.main_badge) elMainBadge.textContent = cfg.main_badge;
-        
-        const elMainTitle = document.getElementById('p_spread_main_title');
-        if (elMainTitle && cfg.main_title) elMainTitle.textContent = cfg.main_title;
-        
-        const elMainDesc = document.getElementById('p_spread_main_desc');
-        if (elMainDesc && cfg.main_desc) elMainDesc.textContent = cfg.main_desc;
-        
-        const elMainAction = document.getElementById('p_spread_main_action');
-        if (elMainAction && cfg.main_link) elMainAction.setAttribute('onclick', `window.location.href='product.html?id=${cfg.main_link}'`);
+          const elEyebrow = document.getElementById('p_spread_eyebrow');
+          if (elEyebrow && cfg.eyebrow) elEyebrow.textContent = cfg.eyebrow;
+          
+          const elTitle = document.getElementById('p_spread_title');
+          if (elTitle && cfg.title) elTitle.textContent = cfg.title;
 
-        // Side 1
-        const elSide1Img = document.getElementById('p_spread_side1_img');
-        if (elSide1Img && cfg.side1_image) elSide1Img.src = cfg.side1_image;
-        
-        const elSide1Badge = document.getElementById('p_spread_side1_badge');
-        if (elSide1Badge && cfg.side1_badge) elSide1Badge.textContent = cfg.side1_badge;
-        
-        const elSide1Title = document.getElementById('p_spread_side1_title');
-        if (elSide1Title && cfg.side1_title) elSide1Title.textContent = cfg.side1_title;
-        
-        const elSide1Quote = document.getElementById('p_spread_side1_quote');
-        if (elSide1Quote && cfg.side1_quote) elSide1Quote.textContent = cfg.side1_quote;
-        
-        const elSide1Action = document.getElementById('p_spread_side1_action');
-        if (elSide1Action && cfg.side1_link) elSide1Action.setAttribute('onclick', `window.location.href='product.html?id=${cfg.side1_link}'`);
+          // Main
+          const elMainImg = document.getElementById('p_spread_main_img');
+          if (elMainImg && cfg.main_image) elMainImg.src = getImgUrl(cfg.main_image);
+          
+          const elMainBadge = document.getElementById('p_spread_main_badge');
+          if (elMainBadge && cfg.main_badge) elMainBadge.textContent = cfg.main_badge;
+          
+          const elMainTitle = document.getElementById('p_spread_main_title');
+          if (elMainTitle && cfg.main_title) elMainTitle.textContent = cfg.main_title;
+          
+          const elMainDesc = document.getElementById('p_spread_main_desc');
+          if (elMainDesc && cfg.main_desc) elMainDesc.textContent = cfg.main_desc;
+          
+          const elMainAction = document.getElementById('p_spread_main_action');
+          if (elMainAction && cfg.main_link) elMainAction.setAttribute('onclick', `window.location.href='product.html?id=${cfg.main_link}'`);
 
-        // Side 2
-        const elSide2Img = document.getElementById('p_spread_side2_img');
-        if (elSide2Img && cfg.side2_image) elSide2Img.src = cfg.side2_image;
-        
-        const elSide2Badge = document.getElementById('p_spread_side2_badge');
-        if (elSide2Badge && cfg.side2_badge) elSide2Badge.textContent = cfg.side2_badge;
-        
-        const elSide2Title = document.getElementById('p_spread_side2_title');
-        if (elSide2Title && cfg.side2_title) elSide2Title.textContent = cfg.side2_title;
-        
-        const elSide2Quote = document.getElementById('p_spread_side2_quote');
-        if (elSide2Quote && cfg.side2_quote) elSide2Quote.textContent = cfg.side2_quote;
-        
-        const elSide2Action = document.getElementById('p_spread_side2_action');
-        if (elSide2Action && cfg.side2_link) elSide2Action.setAttribute('onclick', `window.location.href='product.html?id=${cfg.side2_link}'`);
+          // Side 1
+          const elSide1Img = document.getElementById('p_spread_side1_img');
+          if (elSide1Img && cfg.side1_image) elSide1Img.src = getImgUrl(cfg.side1_image);
+          
+          const elSide1Badge = document.getElementById('p_spread_side1_badge');
+          if (elSide1Badge && cfg.side1_badge) elSide1Badge.textContent = cfg.side1_badge;
+          
+          const elSide1Title = document.getElementById('p_spread_side1_title');
+          if (elSide1Title && cfg.side1_title) elSide1Title.textContent = cfg.side1_title;
+          
+          const elSide1Quote = document.getElementById('p_spread_side1_quote');
+          if (elSide1Quote && cfg.side1_quote) elSide1Quote.textContent = cfg.side1_quote;
+          
+          const elSide1Action = document.getElementById('p_spread_side1_action');
+          if (elSide1Action && cfg.side1_link) elSide1Action.setAttribute('onclick', `window.location.href='product.html?id=${cfg.side1_link}'`);
 
-        // Quote Box
-        const elQuoteText = document.getElementById('p_spread_quote_text');
-        if (elQuoteText && cfg.quote_text) elQuoteText.textContent = cfg.quote_text;
-        
-        const elQuoteAuthor = document.getElementById('p_spread_quote_author');
-        if (elQuoteAuthor && cfg.quote_author) elQuoteAuthor.textContent = cfg.quote_author;
+          // Side 2
+          const elSide2Img = document.getElementById('p_spread_side2_img');
+          if (elSide2Img && cfg.side2_image) elSide2Img.src = getImgUrl(cfg.side2_image);
+          
+          const elSide2Badge = document.getElementById('p_spread_side2_badge');
+          if (elSide2Badge && cfg.side2_badge) elSide2Badge.textContent = cfg.side2_badge;
+          
+          const elSide2Title = document.getElementById('p_spread_side2_title');
+          if (elSide2Title && cfg.side2_title) elSide2Title.textContent = cfg.side2_title;
+          
+          const elSide2Quote = document.getElementById('p_spread_side2_quote');
+          if (elSide2Quote && cfg.side2_quote) elSide2Quote.textContent = cfg.side2_quote;
+          
+          const elSide2Action = document.getElementById('p_spread_side2_action');
+          if (elSide2Action && cfg.side2_link) elSide2Action.setAttribute('onclick', `window.location.href='product.html?id=${cfg.side2_link}'`);
+
+          // Quote Box
+          const elQuoteText = document.getElementById('p_spread_quote_text');
+          if (elQuoteText && cfg.quote_text) elQuoteText.textContent = cfg.quote_text;
+          
+          const elQuoteAuthor = document.getElementById('p_spread_quote_author');
+          if (elQuoteAuthor && cfg.quote_author) elQuoteAuthor.textContent = cfg.quote_author;
+        }
       }
     });
   }

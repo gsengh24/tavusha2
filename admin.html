@@ -445,19 +445,33 @@ async function handleMockApi(path, options = {}) {
   if (path.startsWith('/cms/admin/sections/')) {
     const key = path.split('/')[4];
     const secs = getLocal('sp_demo_sections', DEFAULT_MOCK_SECTIONS);
-    const idx = secs.findIndex(s => s.key === key);
+    let idx = secs.findIndex(s => s.key === key || (key === 'poster_spread' && s.key === 'poster-spread'));
     if (method === 'PUT') {
       let body = options.body || {};
-      if (typeof body === 'string') {
-        try { body = JSON.parse(body); } catch (e) {}
+      let visibleVal = undefined;
+      let configVal = undefined;
+
+      if (typeof FormData !== 'undefined' && body instanceof FormData) {
+        if (body.has('visible')) visibleVal = body.get('visible') === 'true' || body.get('visible') === true;
+        const cfgStr = body.get('config');
+        if (cfgStr) {
+          try { configVal = JSON.parse(cfgStr); } catch (e) {}
+        }
+      } else {
+        if (typeof body === 'string') {
+          try { body = JSON.parse(body); } catch (e) {}
+        }
+        visibleVal = body.visible;
+        configVal = body.config;
       }
+
       if (idx !== -1) {
-        if (body.visible !== undefined) secs[idx].visible = body.visible;
-        if (body.config !== undefined) secs[idx].config = { ...secs[idx].config, ...body.config };
+        if (visibleVal !== undefined) secs[idx].visible = visibleVal;
+        if (configVal !== undefined) secs[idx].config = { ...secs[idx].config, ...(configVal || {}) };
         setLocal('sp_demo_sections', secs);
         return secs[idx];
       } else {
-        const newSec = { key, visible: body.visible !== false, config: body.config || {} };
+        const newSec = { key, visible: visibleVal !== false, config: configVal || {} };
         secs.push(newSec);
         setLocal('sp_demo_sections', secs);
         return newSec;
@@ -2277,25 +2291,38 @@ async function quickSavePriceStockTable(id, btn) {
 }
 
 async function syncOfflineCmsData() {
-  const banners = await api('/cms/admin/banners');
-  const sections = await api('/cms/sections');
-  const popups = await api('/cms/admin/popups');
-  
-  // Announcement text
-  const annText = sections.find(s => s.key === 'announcement')?.config?.text || '';
-  
-  // Active popup
-  const activePop = popups.find(p => p.visible);
-  
-  // Section visibilities
-  const secObj = {};
-  sections.forEach(s => {
-    secObj[s.key === 'poster_spread' ? 'poster-spread' : s.key === 'categories' ? 'cat-browser' : s.key] = s.visible !== false;
-  });
+  try {
+    const banners = await api('/cms/admin/banners');
+    const sections = await api('/cms/sections');
+    const popups = await api('/cms/admin/popups');
+    
+    // Announcement text
+    const annText = sections.find(s => s.key === 'announcement')?.config?.text || '';
+    
+    // Active popup
+    const activePop = popups.find(p => p.visible);
+    
+    // Section visibilities
+    const secObj = {};
+    sections.forEach(s => {
+      secObj[s.key === 'poster_spread' ? 'poster-spread' : s.key === 'categories' ? 'cat-browser' : s.key] = s.visible !== false;
+    });
 
-  state.banners = banners;
-  state.sections = sections;
-  state.popups = popups;
+    state.banners = banners;
+    state.sections = sections;
+    state.popups = popups;
+
+    // Cache in local storage for instant frontend rendering
+    localStorage.setItem('cms_data', JSON.stringify({
+      banners,
+      sections,
+      popup: activePop,
+      announcement: annText,
+      heroBanners: Array.isArray(banners) ? banners.filter(b => b.type === 'hero' || !b.type) : []
+    }));
+  } catch (e) {
+    console.warn('syncOfflineCmsData error:', e);
+  }
 }
 
 function downloadCourierLabel(orderId) {
