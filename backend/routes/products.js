@@ -106,6 +106,7 @@ router.get('/storefront.js', async (req, res) => {
         images: p.images,
         image: p.images[0] || '',
         rating: 5,
+        reviewCount: 0,
         brand: 'TAVUSHA'
       };
     });

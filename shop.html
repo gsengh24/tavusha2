@@ -247,14 +247,22 @@
 <script>
 (function() {
   const BACKEND = 'https://tavusha2-backend.onrender.com/api';
-  const CACHE_KEY = 'tv_storefront_cache';
+  // Use same cache key as index.html so both pages share fresh data
+  const CACHE_KEY = 'tv_storefront_cache_v2';
   const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // Remove legacy cache key to avoid stale data
+  try { localStorage.removeItem('tv_storefront_cache'); } catch(e) {}
+
+  function applyStorefrontCode(code) {
+    try { new Function(code)(); } catch(e) {}
+  }
 
   // Try to use cached storefront data first so page loads instantly
   try {
     const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
     if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.code) {
-      try { new Function(cached.code)(); } catch(e) {}
+      applyStorefrontCode(cached.code);
     }
   } catch(e) {}
 
@@ -267,11 +275,10 @@
     .then(r => { clearTimeout(timeoutId); return r.text(); })
     .then(code => {
       try {
-        // Cache for next visit
         localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), code }));
-        new Function(code)();
-        // Re-render only if grid is already shown (background refresh)
-        if (typeof renderShopGrid === 'function' && document.getElementById('shopGrid') && document.getElementById('shopGrid').children.length > 0) {
+        applyStorefrontCode(code);
+        // Always re-render to pick up newly approved admin products
+        if (typeof renderShopGrid === 'function') {
           renderShopGrid();
         }
       } catch(e) { console.warn('storefront.js exec error:', e); }

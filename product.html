@@ -436,6 +436,47 @@
 <!-- Razorpay loaded lazily only when payment is initiated, not on page load -->
 <script src="js/main.js?v=1786878809472" defer></script>
 <script src="js/auth.js?v=20260816" defer></script>
+<!-- Load admin-uploaded products from backend (adds to TAVUSHA_PRODUCTS) -->
+<script>
+(function() {
+  const BACKEND = 'https://tavusha2-backend.onrender.com/api';
+  const CACHE_KEY = 'tv_storefront_cache_v2';
+  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+  // Remove legacy cache key
+  try { localStorage.removeItem('tv_storefront_cache'); } catch(e) {}
+
+  function applyStorefrontCode(code) {
+    try { new Function(code)(); } catch(e) {}
+  }
+
+  // Apply cached storefront data first for instant load
+  try {
+    const cached = JSON.parse(localStorage.getItem(CACHE_KEY) || 'null');
+    if (cached && cached.ts && (Date.now() - cached.ts) < CACHE_TTL && cached.code) {
+      applyStorefrontCode(cached.code);
+    }
+  } catch(e) {}
+
+  // Fetch fresh data from backend
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+  fetch(BACKEND + '/products/storefront.js', { signal: controller.signal })
+    .then(r => { clearTimeout(timeoutId); return r.text(); })
+    .then(code => {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), code }));
+        applyStorefrontCode(code);
+        // Re-run PDP init in case the product was an admin product not yet loaded
+        if (typeof initPDP === 'function' && !window._pdpLoaded) {
+          initPDP();
+        }
+      } catch(e) {}
+    })
+    .catch(() => { clearTimeout(timeoutId); });
+})();
+</script>
 <script>
 'use strict';
 const KNOWN_PALETTE = {
@@ -486,10 +527,18 @@ let pdpProduct=null, pdpSelectedColor=null, pdpSelectedColorName='', pdpSelected
 function initPDP() {
   const idParam = new URLSearchParams(window.location.search).get('id');
   if (!idParam || typeof TAVUSHA_PRODUCTS==='undefined') return;
+  // Support both numeric IDs (static products) and string IDs like 'staff-<mongoId>' (admin products)
   const id = /^\d+$/.test(idParam) ? parseInt(idParam, 10) : idParam;
   
-  pdpProduct = TAVUSHA_PRODUCTS.find(p=>p.id===id);
-  if (!pdpProduct) { document.getElementById('infoName').textContent='Product not found'; return; }
+  pdpProduct = TAVUSHA_PRODUCTS.find(p=>String(p.id)===String(id));
+  if (!pdpProduct) {
+    // Product not yet in TAVUSHA_PRODUCTS — storefront.js may still be loading
+    // Don't show error yet; storefront loader will call initPDP() again when it finishes
+    if (!window._pdpLoaded) return;
+    document.getElementById('infoName').textContent='Product not found';
+    return;
+  }
+  window._pdpLoaded = true;
   renderPDP(pdpProduct);
   renderRelated(pdpProduct);
   renderReviews(pdpProduct);
