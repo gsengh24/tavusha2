@@ -461,7 +461,7 @@ function renderShopGrid(){
 
     return `<div class="product-card reveal visible" onclick="location.href='product.html?id=${p.id}'">
       <div class="product-card__media" style="--card-bg:${c}">
-        <img class="product-card__img" src="${imgSrc}" data-orig-src="${rawImg}" alt="${p.name || 'Product'}" loading="lazy" onerror="if(typeof tavushaImgError==='function'){tavushaImgError(this);}">
+        <img class="product-card__img" src="${imgSrc}" data-orig-src="${rawImg}" alt="${p.name || 'Product'}" loading="lazy" referrerpolicy="no-referrer" onerror="if(typeof tavushaImgError==='function'){tavushaImgError(this);}">
         ${bd}
         <div class="product-card__actions">
           <button class="product-card__action-btn ${w?'active':''}" onclick="event.stopPropagation();toggleWishlistCard(this,'${p.id}')" aria-label="Wishlist">

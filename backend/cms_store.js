@@ -120,6 +120,22 @@ module.exports = {
     const popup = (data.popups || []).find(p => p.visible) || null;
     const announcementSection = (data.sections || []).find(s => s.key === 'announcement');
     const announcement = announcementSection?.config?.text || '';
-    return { banners, sections: data.sections || [], popup, announcement };
+    const site_settings = data.site_settings || {};
+    return { banners, sections: data.sections || [], popup, announcement, site_settings };
+  },
+  getSiteSettings() {
+    const { site_settings } = load();
+    return site_settings || {};
+  },
+  getSiteSetting(key) {
+    const { site_settings } = load();
+    return site_settings?.[key] ? { key, value: site_settings[key] } : null;
+  },
+  updateSiteSetting(key, value) {
+    const data = load();
+    data.site_settings = data.site_settings || {};
+    data.site_settings[key] = value;
+    save(data);
+    return { key, value };
   }
 };

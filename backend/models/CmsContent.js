@@ -7,11 +7,8 @@ class CmsModel {
   static async getBanners(type = null) {
     let q = supabase.from('cms_banners').select('*');
     if (type) q = q.eq('type', type);
-    // Only return banners that are within their schedule window (or have no schedule)
     const now = new Date().toISOString();
-    q = q.or(`schedule_start.is.null,schedule_start.lte.${now}`)
-         .or(`schedule_end.is.null,schedule_end.gte.${now}`)
-         .order('sort_order', { ascending: true });
+    q = q.order('sort_order', { ascending: true });
     const { data, error } = await q;
     if (error) throw error;
     return data || [];
@@ -20,11 +17,28 @@ class CmsModel {
   static async getPublicBanners(type = null) {
     let q = supabase.from('cms_banners').select('*').eq('visible', true);
     if (type) q = q.eq('type', type);
-    const now = new Date().toISOString();
-    // Filter by schedule: either no start or start is in the past
-    // AND either no end or end is in the future
     const { data, error } = await q.order('sort_order', { ascending: true });
     if (error) throw error;
+    
+    // Seed defaults if database table is completely empty
+    if (!data || data.length === 0) {
+      try {
+        await CmsModel.createBanner({
+          type: 'hero',
+          title: 'Style Every Moment',
+          subtitle: 'Discover curated elegance and edge.',
+          badge_text: 'New Summer 2026',
+          cta_text: 'Shop Now',
+          cta_url: '#',
+          image_url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900',
+          visible: true,
+          sort_order: 0
+        });
+      } catch (e) {
+        console.warn('[CMS] Failed to seed default hero banner:', e.message);
+      }
+    }
+
     const active = (data || []).filter(b => {
       const afterStart = !b.schedule_start || new Date(b.schedule_start) <= new Date();
       const beforeEnd = !b.schedule_end || new Date(b.schedule_end) >= new Date();
@@ -61,9 +75,38 @@ class CmsModel {
       'mobile_image_url','bg_color','text_color','visible','sort_order',
       'schedule_start','schedule_end','festival_tag'];
     allowed.forEach(k => { if (fields[k] !== undefined) update[k] = fields[k]; });
-    const { data, error } = await supabase.from('cms_banners').update(update).eq('id', id).select().single();
+
+    // Try updating existing record first
+    const { data, error } = await supabase.from('cms_banners').update(update).eq('id', id).select().maybeSingle();
     if (error) throw error;
-    return data;
+    if (data) return data;
+
+    // If banner with this ID doesn't exist in Supabase, create/upsert it!
+    const newBannerObj = {
+      type: fields.type || 'hero',
+      title: fields.title || '',
+      subtitle: fields.subtitle || '',
+      badge_text: fields.badge_text || '',
+      cta_text: fields.cta_text || 'Shop Now',
+      cta_url: fields.cta_url || '#',
+      image_url: fields.image_url || '',
+      mobile_image_url: fields.mobile_image_url || '',
+      visible: fields.visible !== undefined ? fields.visible : true,
+      sort_order: fields.sort_order || 0,
+      festival_tag: fields.festival_tag || '',
+      ...update
+    };
+
+    // If ID is suitable as explicit string/UUID or integer, try inserting with ID
+    try {
+      const { data: createdWithId, error: err1 } = await supabase.from('cms_banners').insert([{ id, ...newBannerObj }]).select().single();
+      if (!err1 && createdWithId) return createdWithId;
+    } catch (e1) { /* fallback below */ }
+
+    // Otherwise insert with auto-generated ID
+    const { data: createdAuto, error: err2 } = await supabase.from('cms_banners').insert([newBannerObj]).select().single();
+    if (err2) throw err2;
+    return createdAuto;
   }
 
   static async deleteBanner(id) {
@@ -196,6 +239,26 @@ class CmsModel {
     };
     if (visible !== undefined) update.visible = visible;
     const { data, error } = await supabase.from('cms_sections').update(update).eq('key', 'announcement').select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  // ── Site Settings ────────────────────────────────────────────────────────────
+  static async getSiteSettings() {
+    const { data, error } = await supabase.from('site_settings').select('*');
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async getSiteSetting(key) {
+    const { data, error } = await supabase.from('site_settings').select('*').eq('key', key).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  static async updateSiteSetting(key, value) {
+    const row = { key, value, updated_at: new Date().toISOString() };
+    const { data, error } = await supabase.from('site_settings').upsert(row, { onConflict: 'key' }).select().single();
     if (error) throw error;
     return data;
   }

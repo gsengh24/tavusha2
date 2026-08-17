@@ -891,23 +891,47 @@ async function api(path, options = {}) {
   if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
   if (!(options.body instanceof FormData) && options.body) { headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(options.body); }
   
-  if (!state.isDemo) {
-    try {
-      const res = await fetch(API_BASE + path, { ...options, headers });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) return data;
-      if (path === '/auth/login') {
-        state.isDemo = true; persist(); return handleMockApi(path, options);
-      }
-      throw new Error(data.message || 'Something went wrong');
-    } catch (err) {
-      if (path === '/auth/login' || err.message.includes('fetch') || err.message.includes('Network') || state.isDemo) {
-        state.isDemo = true; persist(); return handleMockApi(path, options);
-      }
-      throw err;
-    }
-  } else {
+  // If we are holding a demo token, handle locally via handleMockApi
+  if (state.token && state.token.startsWith('demo_token_')) {
     return handleMockApi(path, options);
+  }
+
+  try {
+    const res = await fetch(API_BASE + path, { ...options, headers });
+    const data = await res.json().catch(() => ({}));
+    
+    if (res.ok) {
+      if (state.isDemo) {
+        state.isDemo = false;
+        persist();
+      }
+      return data;
+    }
+
+    if (res.status === 401 || res.status === 403) {
+      if (state.isDemo || (state.token && state.token.startsWith('demo_token_'))) {
+        return handleMockApi(path, options);
+      }
+      // Invalid/expired token for live backend: reset session so user can log in fresh
+      logout();
+      throw new Error(data.message || 'Invalid or expired session. Please log in again.');
+    }
+
+    if (path === '/auth/login') {
+      state.isDemo = true; persist(); return handleMockApi(path, options);
+    }
+    
+    // Fallback to mock API if live server returns error for GET requests
+    if ((options.method || 'GET').toUpperCase() === 'GET') {
+      return handleMockApi(path, options);
+    }
+    
+    throw new Error(data.message || 'Something went wrong');
+  } catch (err) {
+    if (path === '/auth/login' || err.message.includes('fetch') || err.message.includes('Network') || (options.method || 'GET').toUpperCase() === 'GET') {
+      return handleMockApi(path, options);
+    }
+    throw err;
   }
 }
 
@@ -2361,7 +2385,7 @@ async function showAdminTab(tab) {
             quote_author: document.getElementById('cp_quote_author').value,
           };
 
-          if ((mainFile || side1File || side2File) && !state.isDemo) {
+          if (mainFile || side1File || side2File) {
             const formData = new FormData();
             formData.append('visible', visible);
             formData.append('config', JSON.stringify(config));
@@ -2545,7 +2569,11 @@ async function showAdminTab(tab) {
       renderBulkImportTab(content);
     }
   } catch(err) {
-    content.innerHTML = `<div class="sp-form-msg sp-form-msg--error" style="margin-top:40px">${err.message || 'Error loading data. Check console.'}</div>`;
+    content.innerHTML = `
+      <div class="sp-form-msg sp-form-msg--error" style="margin-top:20px; padding:16px; border-radius:8px;">
+        <strong>Notice:</strong> ${esc(err.message || 'Error loading data.')}<br/>
+        <button onclick="logout()" class="sp-mini-btn" style="margin-top:10px; background:#1C1917; color:#fff; cursor:pointer;">Click here to Sign In again</button>
+      </div>`;
     console.error('Tab Load Error:', err);
   }
 }
@@ -3314,7 +3342,7 @@ function openBannerModal(banner, type) {
       const cta_url = document.getElementById('b_cta_url').value;
       const festival_tag = type === 'festival' ? (document.getElementById('b_fest_tag')?.value || '') : '';
 
-      if (file && !state.isDemo) {
+      if (file) {
         const fd = new FormData();
         fd.append('type', type || 'hero');
         fd.append('title', title);
@@ -3331,6 +3359,21 @@ function openBannerModal(banner, type) {
         } else {
           await api('/cms/admin/banners', { method: 'POST', body: fd });
         }
+
+        // Upload to site_settings banner endpoint for bucket 'banners' persistence and log responses
+        try {
+          const settingFd = new FormData();
+          settingFd.append('banner', file);
+          const postRes = await api('/cms/admin/site-settings/banner', { method: 'POST', body: settingFd });
+          console.log('[POST /api/cms/admin/site-settings/banner Response JSON]:', postRes);
+          console.log(JSON.stringify(postRes, null, 2));
+
+          const getRes = await api('/cms/site-settings/banner', { method: 'GET' });
+          console.log('[GET /api/cms/site-settings/banner Response JSON]:', getRes);
+          console.log(JSON.stringify(getRes, null, 2));
+        } catch (e) {
+          console.warn('Site setting banner sync notice:', e.message);
+        }
       } else {
         const body = {
           type: type || 'hero',
@@ -3342,6 +3385,18 @@ function openBannerModal(banner, type) {
           await api('/cms/admin/banners/' + banner.id, { method: 'PUT', body });
         } else {
           await api('/cms/admin/banners', { method: 'POST', body });
+        }
+
+        if (image_url || finalImageUrl) {
+          try {
+            const postRes = await api('/cms/admin/site-settings/banner', { method: 'POST', body: { banner_url: finalImageUrl || image_url } });
+            console.log('[POST /api/cms/admin/site-settings/banner Response JSON]:', postRes);
+            console.log(JSON.stringify(postRes, null, 2));
+
+            const getRes = await api('/cms/site-settings/banner', { method: 'GET' });
+            console.log('[GET /api/cms/site-settings/banner Response JSON]:', getRes);
+            console.log(JSON.stringify(getRes, null, 2));
+          } catch(e) {}
         }
       }
 
@@ -4256,31 +4311,36 @@ async function syncOfflineCmsData() {
     const banners = await api('/cms/admin/banners');
     const sections = await api('/cms/sections');
     const popups = await api('/cms/admin/popups');
-    
+
     // Announcement text
-    const annText = sections.find(s => s.key === 'announcement')?.config?.text || '';
-    
+    const annSec = sections.find(s => s.key === 'announcement');
+    const annText = annSec?.config?.text || '';
+
     // Active popup
     const activePop = popups.find(p => p.visible);
-    
-    // Section visibilities and configs
-    const secObj = {};
-    sections.forEach(s => {
-      secObj[s.key === 'poster_spread' ? 'poster-spread' : s.key === 'categories' ? 'cat-browser' : s.key === 'testimonials' ? 'reviews' : s.key] = s.visible !== false;
-      if (s.config) {
-        secObj[s.key] = { visible: s.visible !== false, config: s.config };
-      }
-    });
-    
-    // Hero and festival banners
-    const heroBanners = Array.isArray(banners) ? banners.filter(b => b.type === 'hero' && b.visible) : [];
-    const festivalBanners = Array.isArray(banners) ? banners.filter(b => b.type === 'festival' && b.visible) : [];
-    
+
+    // Store sections as a plain array so main.js can read them directly.
+    // Each entry keeps its original key, visible flag, and full config.
+    const sectionsArray = sections.map(s => ({
+      key: s.key,
+      label: s.label || s.key,
+      visible: s.visible !== false,
+      sort_order: s.sort_order || 0,
+      config: s.config || {}
+    }));
+
+    // All banners (hero + festival) stored as a flat array
+    const allBanners = Array.isArray(banners) ? banners.filter(b => b.visible !== false) : [];
+    const heroBanners = allBanners.filter(b => b.type === 'hero' || !b.type);
+    const festivalBanners = allBanners.filter(b => b.type === 'festival');
+
     const cmsPayload = {
+      _ts: Date.now(),          // version stamp so homepage detects fresh data
       announcement: annText,
+      banners: allBanners,
       heroBanners,
       festivalBanners,
-      sections: secObj,
+      sections: sectionsArray,  // array, not object — matches main.js expectations
       popup: activePop ? {
         enabled: true,
         title: activePop.title,
@@ -4291,7 +4351,7 @@ async function syncOfflineCmsData() {
         delay: activePop.trigger_delay_seconds
       } : { enabled: false }
     };
-    
+
     localStorage.setItem('cms_data', JSON.stringify(cmsPayload));
   } catch (e) {
     console.warn('syncOfflineCmsData error:', e);

@@ -52,6 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initKeyboard();
   initCatBrowser();
   initMiniProductHover();
+  initBrandShowcase();
 });
 
 // ─── LOADER ───────────────────────────────────────────────────
@@ -233,9 +234,9 @@ function renderProductCard(product, colorIdx) {
   const isWishlisted = TAVUSHA.wishlist.includes(product.id);
 
   return `
-    <div class="product-card reveal" data-id="${product.id}" onclick="openQuickView('${product.id}')">
+    <div class="product-card reveal visible" data-id="${product.id}" onclick="openQuickView('${product.id}')">
       <div class="product-card__media" style="--card-bg:${color}">
-        <img class="product-card__img" src="${typeof fixDriveUrl==='function'?fixDriveUrl(product.image):product.image}" data-orig-src="${product.image}" alt="${product.name}" loading="lazy"
+        <img class="product-card__img" src="${typeof fixDriveUrl==='function'?fixDriveUrl(product.image):product.image}" data-orig-src="${product.image}" alt="${product.name}" loading="lazy" referrerpolicy="no-referrer"
           onerror="if(typeof tavushaImgError==='function'){tavushaImgError(this);}">
         ${product.badge ? `<span class="product-card__badge ${badgeMap[product.badge] || ''}">${badgeLabelMap[product.badge] || product.badge}</span>` : ''}
         <!-- Two action circles — reference pattern -->
@@ -267,11 +268,11 @@ function renderProductCard(product, colorIdx) {
 // Reference: Horizontal 4-card row below split-header
 function renderHeroProductRow() {
   const grid = document.getElementById('heroProductRow');
-  if (!grid || typeof TAVUSHA_PRODUCTS === 'undefined') return;
+  if (!grid || typeof TAVUSHA_PRODUCTS === 'undefined' || !Array.isArray(TAVUSHA_PRODUCTS)) return;
 
-  // Show first 4 trending products
-  const picks = TAVUSHA_PRODUCTS
-    .sort((a, b) => b.reviewCount - a.reviewCount)
+  // Show first 4 trending products without mutating original TAVUSHA_PRODUCTS array
+  const picks = [...TAVUSHA_PRODUCTS]
+    .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
     .slice(0, 4);
 
   grid.innerHTML = picks.map((p, i) => renderProductCard(p, i)).join('');
@@ -362,6 +363,71 @@ function initMiniProductHover() {
     });
   });
 }
+
+// ─── BRAND SHOWCASE PANEL — ANIMATED COUNTERS ─────────────────
+function initBrandShowcase() {
+  const panel = document.querySelector('.brand-showcase-panel');
+  if (!panel) return;
+
+  const counters = panel.querySelectorAll('.bsp-stat__num[data-target]');
+  if (!counters.length) return;
+
+  let fired = false;
+
+  const runCounters = () => {
+    if (fired) return;
+    fired = true;
+    counters.forEach(el => {
+      const target = parseInt(el.dataset.target, 10);
+      const duration = 1600; // ms
+      const startTime = performance.now();
+      const easeOut = t => 1 - Math.pow(1 - t, 3); // cubic ease-out
+
+      const tick = (now) => {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const value = Math.round(easeOut(progress) * target);
+
+        // Format large numbers with K
+        if (target >= 1000) {
+          el.textContent = value >= 1000
+            ? (value / 1000).toFixed(value % 1000 === 0 ? 0 : 1) + 'K'
+            : value;
+        } else {
+          el.textContent = value;
+        }
+
+        if (progress < 1) requestAnimationFrame(tick);
+        else {
+          // Final display — show exact formatted value
+          if (target >= 1000) {
+            el.textContent = (target / 1000) % 1 === 0
+              ? (target / 1000) + 'K'
+              : (target / 1000).toFixed(1) + 'K';
+          } else {
+            el.textContent = target;
+          }
+        }
+      };
+      requestAnimationFrame(tick);
+    });
+  };
+
+  // Use IntersectionObserver — fires once when panel scrolls into view
+  if ('IntersectionObserver' in window) {
+    const obs = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting) {
+        runCounters();
+        obs.disconnect();
+      }
+    }, { threshold: 0.3 });
+    obs.observe(panel);
+  } else {
+    // Fallback: just run immediately
+    runCounters();
+  }
+}
+
 
 // ─── FILTER + SCROLL ──────────────────────────────────────────
 function filterAndGo(cat) {
@@ -1211,16 +1277,26 @@ function clearCart() {
 // ─── CMS / BANNER LOADER ──────────────────────────────────────
 async function loadCmsContent() {
   let cms = null;
+  let liveBannerUrl = null;
 
-  // Try live API first
+  // Fetch live site_settings & public CMS data from Supabase backend on every page load
   try {
-    const res = await fetch(`${API_BASE}/cms/public`);
-    if (res.ok) cms = await res.json();
+    const [publicRes, settingRes] = await Promise.all([
+      fetch(`${API_BASE}/cms/public?_t=` + Date.now(), { cache: 'no-store' }).catch(() => null),
+      fetch(`${API_BASE}/cms/site-settings/banner?_t=` + Date.now(), { cache: 'no-store' }).catch(() => null)
+    ]);
+
+    if (publicRes && publicRes.ok) cms = await publicRes.json();
+    if (settingRes && settingRes.ok) {
+      const settingData = await settingRes.json();
+      if (settingData && settingData.banner_url) liveBannerUrl = settingData.banner_url;
+    }
   } catch { /* backend offline */ }
 
   if (!cms) cms = {};
+  if (cms.banner_url && !liveBannerUrl) liveBannerUrl = cms.banner_url;
 
-  // Check localStorage for admin overrides / offline data
+  // Check localStorage for offline fallbacks
   let localCms = null;
   try {
     const stored = localStorage.getItem('cms_data');
@@ -1239,16 +1315,13 @@ async function loadCmsContent() {
     if (storedBanners) demoBanners = JSON.parse(storedBanners);
   } catch (e) {}
 
-  // Merge sections from all available sources
+  // Section priority: Live API > Local CMS > Demo local storage
   let sectionsMap = {};
 
-  // 1. Live API sections
-  if (cms.sections) {
-    const list = Array.isArray(cms.sections) ? cms.sections : Object.entries(cms.sections).map(([key, s]) => ({ key, ...s }));
-    list.forEach(s => { sectionsMap[s.key] = s; });
+  if (demoSecs && Array.isArray(demoSecs)) {
+    demoSecs.forEach(ds => { sectionsMap[ds.key] = ds; });
   }
 
-  // 2. Local CMS cache
   if (localCms && localCms.sections) {
     const list = Array.isArray(localCms.sections) ? localCms.sections : Object.entries(localCms.sections).map(([key, s]) => ({ key, ...s }));
     list.forEach(s => {
@@ -1256,10 +1329,10 @@ async function loadCmsContent() {
     });
   }
 
-  // 3. Admin demo section updates
-  if (demoSecs && Array.isArray(demoSecs)) {
-    demoSecs.forEach(ds => {
-      sectionsMap[ds.key] = { ...(sectionsMap[ds.key] || {}), ...ds };
+  if (cms.sections) {
+    const list = Array.isArray(cms.sections) ? cms.sections : Object.entries(cms.sections).map(([key, s]) => ({ key, ...s }));
+    list.forEach(s => {
+      sectionsMap[s.key] = { ...(sectionsMap[s.key] || {}), ...s };
     });
   }
 
@@ -1271,10 +1344,10 @@ async function loadCmsContent() {
     { id: 'b2', type: 'festival', title: 'Rakhi Celebrations Live', subtitle: 'Flat 10% Off First Order — Code TAVUSHA10', badge_text: 'Festival Special', cta_text: 'Explore Sale', cta_url: '#', image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=900', visible: true, sort_order: 1, festival_tag: 'Rakhi' }
   ];
 
-  // Resolve banners (demoBanners -> localCms -> API -> DEFAULT_SITE_BANNERS)
-  let allBanners = (demoBanners && demoBanners.length) ? demoBanners :
-                   (localCms?.banners && localCms.banners.length) ? localCms.banners :
-                   (cms.banners && cms.banners.length) ? cms.banners :
+  // Banner priority: Live API > Local CMS > Demo local storage > Default hardcoded
+  let allBanners = (cms.banners && cms.banners.length > 0) ? cms.banners :
+                   (localCms?.banners && localCms.banners.length > 0) ? localCms.banners :
+                   (demoBanners && demoBanners.length > 0) ? demoBanners :
                    DEFAULT_SITE_BANNERS;
 
   const heroBanners = allBanners.filter(b => b.visible !== false && (b.type === 'hero' || !b.type));
@@ -1292,13 +1365,14 @@ async function loadCmsContent() {
     }
   }
 
-  // Hero banners rendering — use banners resolved above, falling back to cms.heroBanners
+  // Hero banners rendering — live Supabase site_settings banner_url takes highest priority
   const cmsHeroBanners = heroBanners.length ? heroBanners : (cms.heroBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'hero' || !b.type) : []) || []);
   if (cmsHeroBanners && cmsHeroBanners.length) {
     const heroBanner = cmsHeroBanners[0];
+    const targetBannerUrl = liveBannerUrl || heroBanner.image_url;
     const heroImg = document.querySelector('.hero__model-img');
-    if (heroImg && heroBanner.image_url) {
-      const fixedImg = typeof fixDriveUrl === 'function' ? fixDriveUrl(heroBanner.image_url) : heroBanner.image_url;
+    if (heroImg && targetBannerUrl) {
+      const fixedImg = typeof fixDriveUrl === 'function' ? fixDriveUrl(targetBannerUrl) : targetBannerUrl;
       heroImg.src = fixedImg;
       heroImg.alt = heroBanner.title || 'TAVUSHA Hero Banner';
     }
