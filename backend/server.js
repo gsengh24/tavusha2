@@ -34,6 +34,9 @@ app.use('/api/orders/webhook', express.raw({ type: 'application/json' }));
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// ═══════════════════════════════════════════════════════════
+// API ROUTES (MUST be registered BEFORE static files & SPA catch-all)
+// ═══════════════════════════════════════════════════════════
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cms', cmsRoutes);
@@ -42,9 +45,24 @@ app.use('/api/orders', orderRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, database: 'supabase', version: '2.0.0' }));
 
-// Serve frontend static files from the root directory
+// Guard: Unmatched /api/* requests MUST return JSON 404, never fallback to index.html
+app.use('/api/*', (req, res) => {
+  res.status(404).json({ error: 'API route not found', path: req.originalUrl });
+});
+
+// ═══════════════════════════════════════════════════════════
+// FRONTEND STATIC FILES & SPA FALLBACK (AFTER API ROUTES)
+// ═══════════════════════════════════════════════════════════
 const path = require('path');
 app.use(express.static(path.join(__dirname, '../')));
+
+// SPA Catch-All: serve index.html only for non-API page routes
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ error: 'API route not found', path: req.originalUrl });
+  }
+  res.sendFile(path.join(__dirname, '../index.html'));
+});
 
 async function ensureAdminAccount() {
   try {
