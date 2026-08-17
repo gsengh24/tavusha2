@@ -891,9 +891,15 @@ async function api(path, options = {}) {
   if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
   if (!(options.body instanceof FormData) && options.body) { headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(options.body); }
   
+  // If we are holding a demo token, handle locally via handleMockApi
+  if (state.token && state.token.startsWith('demo_token_')) {
+    return handleMockApi(path, options);
+  }
+
   try {
     const res = await fetch(API_BASE + path, { ...options, headers });
     const data = await res.json().catch(() => ({}));
+    
     if (res.ok) {
       if (state.isDemo) {
         state.isDemo = false;
@@ -901,12 +907,28 @@ async function api(path, options = {}) {
       }
       return data;
     }
+
+    if (res.status === 401 || res.status === 403) {
+      if (state.isDemo || (state.token && state.token.startsWith('demo_token_'))) {
+        return handleMockApi(path, options);
+      }
+      // Invalid/expired token for live backend: reset session so user can log in fresh
+      logout();
+      throw new Error(data.message || 'Invalid or expired session. Please log in again.');
+    }
+
     if (path === '/auth/login') {
       state.isDemo = true; persist(); return handleMockApi(path, options);
     }
+    
+    // Fallback to mock API if live server returns error for GET requests
+    if ((options.method || 'GET').toUpperCase() === 'GET') {
+      return handleMockApi(path, options);
+    }
+    
     throw new Error(data.message || 'Something went wrong');
   } catch (err) {
-    if (path === '/auth/login' || (state.isDemo && (err.message.includes('fetch') || err.message.includes('Network')))) {
+    if (path === '/auth/login' || err.message.includes('fetch') || err.message.includes('Network') || (options.method || 'GET').toUpperCase() === 'GET') {
       return handleMockApi(path, options);
     }
     throw err;
@@ -2547,7 +2569,11 @@ async function showAdminTab(tab) {
       renderBulkImportTab(content);
     }
   } catch(err) {
-    content.innerHTML = `<div class="sp-form-msg sp-form-msg--error" style="margin-top:40px">${err.message || 'Error loading data. Check console.'}</div>`;
+    content.innerHTML = `
+      <div class="sp-form-msg sp-form-msg--error" style="margin-top:20px; padding:16px; border-radius:8px;">
+        <strong>Notice:</strong> ${esc(err.message || 'Error loading data.')}<br/>
+        <button onclick="logout()" class="sp-mini-btn" style="margin-top:10px; background:#1C1917; color:#fff; cursor:pointer;">Click here to Sign In again</button>
+      </div>`;
     console.error('Tab Load Error:', err);
   }
 }
