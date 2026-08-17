@@ -4256,31 +4256,36 @@ async function syncOfflineCmsData() {
     const banners = await api('/cms/admin/banners');
     const sections = await api('/cms/sections');
     const popups = await api('/cms/admin/popups');
-    
+
     // Announcement text
-    const annText = sections.find(s => s.key === 'announcement')?.config?.text || '';
-    
+    const annSec = sections.find(s => s.key === 'announcement');
+    const annText = annSec?.config?.text || '';
+
     // Active popup
     const activePop = popups.find(p => p.visible);
-    
-    // Section visibilities and configs
-    const secObj = {};
-    sections.forEach(s => {
-      secObj[s.key === 'poster_spread' ? 'poster-spread' : s.key === 'categories' ? 'cat-browser' : s.key === 'testimonials' ? 'reviews' : s.key] = s.visible !== false;
-      if (s.config) {
-        secObj[s.key] = { visible: s.visible !== false, config: s.config };
-      }
-    });
-    
-    // Hero and festival banners
-    const heroBanners = Array.isArray(banners) ? banners.filter(b => b.type === 'hero' && b.visible) : [];
-    const festivalBanners = Array.isArray(banners) ? banners.filter(b => b.type === 'festival' && b.visible) : [];
-    
+
+    // Store sections as a plain array so main.js can read them directly.
+    // Each entry keeps its original key, visible flag, and full config.
+    const sectionsArray = sections.map(s => ({
+      key: s.key,
+      label: s.label || s.key,
+      visible: s.visible !== false,
+      sort_order: s.sort_order || 0,
+      config: s.config || {}
+    }));
+
+    // All banners (hero + festival) stored as a flat array
+    const allBanners = Array.isArray(banners) ? banners.filter(b => b.visible !== false) : [];
+    const heroBanners = allBanners.filter(b => b.type === 'hero' || !b.type);
+    const festivalBanners = allBanners.filter(b => b.type === 'festival');
+
     const cmsPayload = {
+      _ts: Date.now(),          // version stamp so homepage detects fresh data
       announcement: annText,
+      banners: allBanners,
       heroBanners,
       festivalBanners,
-      sections: secObj,
+      sections: sectionsArray,  // array, not object — matches main.js expectations
       popup: activePop ? {
         enabled: true,
         title: activePop.title,
@@ -4291,7 +4296,7 @@ async function syncOfflineCmsData() {
         delay: activePop.trigger_delay_seconds
       } : { enabled: false }
     };
-    
+
     localStorage.setItem('cms_data', JSON.stringify(cmsPayload));
   } catch (e) {
     console.warn('syncOfflineCmsData error:', e);

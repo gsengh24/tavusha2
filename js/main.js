@@ -1278,15 +1278,15 @@ function clearCart() {
 async function loadCmsContent() {
   let cms = null;
 
-  // Try live API first
+  // Try live API first with cache-busting timestamp
   try {
-    const res = await fetch(`${API_BASE}/cms/public`);
+    const res = await fetch(`${API_BASE}/cms/public?_t=` + Date.now(), { cache: 'no-store' });
     if (res.ok) cms = await res.json();
   } catch { /* backend offline */ }
 
   if (!cms) cms = {};
 
-  // Check localStorage for admin overrides / offline data
+  // Check localStorage for offline fallbacks
   let localCms = null;
   try {
     const stored = localStorage.getItem('cms_data');
@@ -1305,16 +1305,13 @@ async function loadCmsContent() {
     if (storedBanners) demoBanners = JSON.parse(storedBanners);
   } catch (e) {}
 
-  // Merge sections from all available sources
+  // Section priority: Live API > Local CMS > Demo local storage
   let sectionsMap = {};
 
-  // 1. Live API sections
-  if (cms.sections) {
-    const list = Array.isArray(cms.sections) ? cms.sections : Object.entries(cms.sections).map(([key, s]) => ({ key, ...s }));
-    list.forEach(s => { sectionsMap[s.key] = s; });
+  if (demoSecs && Array.isArray(demoSecs)) {
+    demoSecs.forEach(ds => { sectionsMap[ds.key] = ds; });
   }
 
-  // 2. Local CMS cache
   if (localCms && localCms.sections) {
     const list = Array.isArray(localCms.sections) ? localCms.sections : Object.entries(localCms.sections).map(([key, s]) => ({ key, ...s }));
     list.forEach(s => {
@@ -1322,10 +1319,10 @@ async function loadCmsContent() {
     });
   }
 
-  // 3. Admin demo section updates
-  if (demoSecs && Array.isArray(demoSecs)) {
-    demoSecs.forEach(ds => {
-      sectionsMap[ds.key] = { ...(sectionsMap[ds.key] || {}), ...ds };
+  if (cms.sections) {
+    const list = Array.isArray(cms.sections) ? cms.sections : Object.entries(cms.sections).map(([key, s]) => ({ key, ...s }));
+    list.forEach(s => {
+      sectionsMap[s.key] = { ...(sectionsMap[s.key] || {}), ...s };
     });
   }
 
@@ -1337,10 +1334,10 @@ async function loadCmsContent() {
     { id: 'b2', type: 'festival', title: 'Rakhi Celebrations Live', subtitle: 'Flat 10% Off First Order — Code TAVUSHA10', badge_text: 'Festival Special', cta_text: 'Explore Sale', cta_url: '#', image_url: 'https://images.unsplash.com/photo-1610030469983-98e550d6193c?w=900', visible: true, sort_order: 1, festival_tag: 'Rakhi' }
   ];
 
-  // Resolve banners (demoBanners -> localCms -> API -> DEFAULT_SITE_BANNERS)
-  let allBanners = (demoBanners && demoBanners.length) ? demoBanners :
-                   (localCms?.banners && localCms.banners.length) ? localCms.banners :
-                   (cms.banners && cms.banners.length) ? cms.banners :
+  // Banner priority: Live API > Local CMS > Demo local storage > Default hardcoded
+  let allBanners = (cms.banners && cms.banners.length > 0) ? cms.banners :
+                   (localCms?.banners && localCms.banners.length > 0) ? localCms.banners :
+                   (demoBanners && demoBanners.length > 0) ? demoBanners :
                    DEFAULT_SITE_BANNERS;
 
   const heroBanners = allBanners.filter(b => b.visible !== false && (b.type === 'hero' || !b.type));

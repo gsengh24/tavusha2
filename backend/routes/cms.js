@@ -177,6 +177,7 @@ router.post('/admin/banners', protect, adminOnly,
       let banner;
       try {
         banner = await CmsContent.createBanner(fields);
+        try { fileStore.createBanner(fields); } catch(e) {}
       } catch (dbErr) {
         console.warn('[CMS] Supabase createBanner failed, using file store:', dbErr.message);
         banner = fileStore.createBanner(fields);
@@ -209,6 +210,7 @@ router.put('/admin/banners/:id', protect, adminOnly,
       let banner;
       try {
         banner = await CmsContent.updateBanner(req.params.id, fields);
+        try { fileStore.updateBanner(req.params.id, fields); } catch(e) {}
       } catch (dbErr) {
         console.warn('[CMS] Supabase updateBanner failed, using file store:', dbErr.message);
         banner = fileStore.updateBanner(req.params.id, fields);
@@ -223,7 +225,8 @@ router.put('/admin/banners/:id', protect, adminOnly,
 // DELETE /api/cms/admin/banners/:id
 router.delete('/admin/banners/:id', protect, adminOnly, async (req, res) => {
   try {
-    try { await CmsContent.deleteBanner(req.params.id); } catch { fileStore.deleteBanner(req.params.id); }
+    try { await CmsContent.deleteBanner(req.params.id); } catch(e) {}
+    try { fileStore.deleteBanner(req.params.id); } catch(e) {}
     res.json({ message: 'Banner deleted' });
   } catch (err) {
     res.status(500).json({ message: 'Failed to delete banner', error: err.message });
@@ -274,10 +277,12 @@ router.put('/admin/sections/:key', protect, adminOnly, upload.fields([
     let section;
     try {
       section = await CmsContent.updateSection(req.params.key, fields);
+      try { fileStore.upsertSection(req.params.key, fields); } catch(e) {}
     } catch (dbErr) {
       console.warn('[CMS] Supabase updateSection failed, using file store:', dbErr.message);
       section = fileStore.upsertSection(req.params.key, fields);
     }
+    res.json(section);
     res.json(section);
   } catch (err) {
     res.status(500).json({ message: 'Failed to update section', error: err.message });
