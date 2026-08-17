@@ -3360,11 +3360,17 @@ function openBannerModal(banner, type) {
           await api('/cms/admin/banners', { method: 'POST', body: fd });
         }
 
-        // Also upload to site_settings banner endpoint for bucket 'banners' persistence
+        // Upload to site_settings banner endpoint for bucket 'banners' persistence and log responses
         try {
           const settingFd = new FormData();
           settingFd.append('banner', file);
-          await api('/cms/admin/site-settings/banner', { method: 'POST', body: settingFd });
+          const postRes = await api('/cms/admin/site-settings/banner', { method: 'POST', body: settingFd });
+          console.log('[POST /api/cms/admin/site-settings/banner Response JSON]:', postRes);
+          console.log(JSON.stringify(postRes, null, 2));
+
+          const getRes = await api('/cms/site-settings/banner', { method: 'GET' });
+          console.log('[GET /api/cms/site-settings/banner Response JSON]:', getRes);
+          console.log(JSON.stringify(getRes, null, 2));
         } catch (e) {
           console.warn('Site setting banner sync notice:', e.message);
         }
@@ -3383,7 +3389,13 @@ function openBannerModal(banner, type) {
 
         if (image_url || finalImageUrl) {
           try {
-            await api('/cms/admin/site-settings/banner', { method: 'POST', body: { banner_url: finalImageUrl || image_url } });
+            const postRes = await api('/cms/admin/site-settings/banner', { method: 'POST', body: { banner_url: finalImageUrl || image_url } });
+            console.log('[POST /api/cms/admin/site-settings/banner Response JSON]:', postRes);
+            console.log(JSON.stringify(postRes, null, 2));
+
+            const getRes = await api('/cms/site-settings/banner', { method: 'GET' });
+            console.log('[GET /api/cms/site-settings/banner Response JSON]:', getRes);
+            console.log(JSON.stringify(getRes, null, 2));
           } catch(e) {}
         }
       }
