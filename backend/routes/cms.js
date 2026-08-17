@@ -80,6 +80,27 @@ async function uploadBannerImage(buffer, type = 'hero') {
 // PUBLIC ROUTES (no auth needed — storefront reads these)
 // ═══════════════════════════════════════════════════════════
 
+// GET /api/cms/site-settings/banner — public endpoint to fetch active banner_url from Supabase site_settings
+// (Registered BEFORE /site-settings to prevent route matching conflicts)
+const handleGetBannerSetting = async (req, res) => {
+  try {
+    let setting;
+    try {
+      setting = await CmsContent.getSiteSetting('banner_url');
+    } catch (dbErr) {
+      setting = fileStore.getSiteSetting('banner_url');
+    }
+    const bannerUrl = setting ? (setting.value || setting.banner_url || '') : '';
+    res.json({ banner_url: bannerUrl, key: 'banner_url', value: bannerUrl });
+  } catch (err) {
+    res.json({ banner_url: '', key: 'banner_url', value: '' });
+  }
+};
+
+router.get('/site-settings/banner', handleGetBannerSetting);
+router.get('/site-setting/banner', handleGetBannerSetting);
+router.get('/banner', handleGetBannerSetting);
+
 // GET /api/cms/site-settings — public endpoint to read site_settings from Supabase
 router.get('/site-settings', async (req, res) => {
   try {
@@ -98,22 +119,6 @@ router.get('/site-settings', async (req, res) => {
     res.json({ success: true, site_settings: map, banner_url: map.banner_url || '' });
   } catch (err) {
     res.json({ success: false, site_settings: {}, banner_url: '' });
-  }
-});
-
-// GET /api/cms/site-settings/banner — public endpoint to fetch active banner_url from Supabase site_settings
-router.get('/site-settings/banner', async (req, res) => {
-  try {
-    let setting;
-    try {
-      setting = await CmsContent.getSiteSetting('banner_url');
-    } catch (dbErr) {
-      setting = fileStore.getSiteSetting('banner_url');
-    }
-    const bannerUrl = setting ? (setting.value || setting.banner_url || '') : '';
-    res.json({ banner_url: bannerUrl, key: 'banner_url', value: bannerUrl });
-  } catch (err) {
-    res.json({ banner_url: '', key: 'banner_url', value: '' });
   }
 });
 
