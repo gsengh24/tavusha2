@@ -31,7 +31,22 @@ async function uploadBannerImage(buffer, type = 'hero') {
 
     const filename = `${type}/${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
 
-    // 1. Primary: Upload to 'banners' bucket in Supabase Storage
+    // 1. Primary: Upload to 'banner' bucket in Supabase Storage (exact user bucket)
+    try {
+      const { error } = await supabase.storage
+        .from('banner')
+        .upload(filename, optimized, { contentType: 'image/jpeg', upsert: true });
+      if (!error) {
+        const { data } = supabase.storage.from('banner').getPublicUrl(filename);
+        if (data && data.publicUrl) return data.publicUrl;
+      } else {
+        console.warn('[CMS Storage] Upload to "banner" bucket warning:', error.message);
+      }
+    } catch (e1) {
+      console.warn('[CMS Storage] Exception uploading to "banner" bucket:', e1.message);
+    }
+
+    // 2. Secondary fallback: 'banners' bucket
     try {
       const { error } = await supabase.storage
         .from('banners')
@@ -39,14 +54,10 @@ async function uploadBannerImage(buffer, type = 'hero') {
       if (!error) {
         const { data } = supabase.storage.from('banners').getPublicUrl(filename);
         if (data && data.publicUrl) return data.publicUrl;
-      } else {
-        console.warn('[CMS Storage] Upload to "banners" bucket warning:', error.message);
       }
-    } catch (e1) {
-      console.warn('[CMS Storage] Exception uploading to "banners" bucket:', e1.message);
-    }
+    } catch (e2) {}
 
-    // 2. Secondary fallback: 'tavusha-products' bucket
+    // 3. Tertiary fallback: 'tavusha-products' bucket
     try {
       const { error } = await supabase.storage
         .from('tavusha-products')
@@ -55,7 +66,7 @@ async function uploadBannerImage(buffer, type = 'hero') {
         const { data } = supabase.storage.from('tavusha-products').getPublicUrl(`cms/${filename}`);
         if (data && data.publicUrl) return data.publicUrl;
       }
-    } catch (e2) {}
+    } catch (e3) {}
 
     // 3. Fallback: Base64 data URL
     return `data:image/jpeg;base64,${optimized.toString('base64')}`;
