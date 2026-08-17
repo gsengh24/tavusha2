@@ -1277,14 +1277,24 @@ function clearCart() {
 // ─── CMS / BANNER LOADER ──────────────────────────────────────
 async function loadCmsContent() {
   let cms = null;
+  let liveBannerUrl = null;
 
-  // Try live API first with cache-busting timestamp
+  // Fetch live site_settings & public CMS data from Supabase backend on every page load
   try {
-    const res = await fetch(`${API_BASE}/cms/public?_t=` + Date.now(), { cache: 'no-store' });
-    if (res.ok) cms = await res.json();
+    const [publicRes, settingRes] = await Promise.all([
+      fetch(`${API_BASE}/cms/public?_t=` + Date.now(), { cache: 'no-store' }).catch(() => null),
+      fetch(`${API_BASE}/cms/site-settings/banner?_t=` + Date.now(), { cache: 'no-store' }).catch(() => null)
+    ]);
+
+    if (publicRes && publicRes.ok) cms = await publicRes.json();
+    if (settingRes && settingRes.ok) {
+      const settingData = await settingRes.json();
+      if (settingData && settingData.banner_url) liveBannerUrl = settingData.banner_url;
+    }
   } catch { /* backend offline */ }
 
   if (!cms) cms = {};
+  if (cms.banner_url && !liveBannerUrl) liveBannerUrl = cms.banner_url;
 
   // Check localStorage for offline fallbacks
   let localCms = null;
@@ -1355,13 +1365,14 @@ async function loadCmsContent() {
     }
   }
 
-  // Hero banners rendering — use banners resolved above, falling back to cms.heroBanners
+  // Hero banners rendering — live Supabase site_settings banner_url takes highest priority
   const cmsHeroBanners = heroBanners.length ? heroBanners : (cms.heroBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'hero' || !b.type) : []) || []);
   if (cmsHeroBanners && cmsHeroBanners.length) {
     const heroBanner = cmsHeroBanners[0];
+    const targetBannerUrl = liveBannerUrl || heroBanner.image_url;
     const heroImg = document.querySelector('.hero__model-img');
-    if (heroImg && heroBanner.image_url) {
-      const fixedImg = typeof fixDriveUrl === 'function' ? fixDriveUrl(heroBanner.image_url) : heroBanner.image_url;
+    if (heroImg && targetBannerUrl) {
+      const fixedImg = typeof fixDriveUrl === 'function' ? fixDriveUrl(targetBannerUrl) : targetBannerUrl;
       heroImg.src = fixedImg;
       heroImg.alt = heroBanner.title || 'TAVUSHA Hero Banner';
     }

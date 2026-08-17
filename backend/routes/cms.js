@@ -29,15 +29,35 @@ async function uploadBannerImage(buffer, type = 'hero') {
       .jpeg({ quality: 85, mozjpeg: true })
       .toBuffer();
 
-    const filename = `cms/${type}/${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
-    const { error } = await supabase.storage
-      .from('tavusha-products')
-      .upload(filename, optimized, { contentType: 'image/jpeg', upsert: false });
-    if (!error) {
-      const { data } = supabase.storage.from('tavusha-products').getPublicUrl(filename);
-      if (data && data.publicUrl) return data.publicUrl;
+    const filename = `${type}/${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
+
+    // 1. Primary: Upload to 'banners' bucket in Supabase Storage
+    try {
+      const { error } = await supabase.storage
+        .from('banners')
+        .upload(filename, optimized, { contentType: 'image/jpeg', upsert: true });
+      if (!error) {
+        const { data } = supabase.storage.from('banners').getPublicUrl(filename);
+        if (data && data.publicUrl) return data.publicUrl;
+      } else {
+        console.warn('[CMS Storage] Upload to "banners" bucket warning:', error.message);
+      }
+    } catch (e1) {
+      console.warn('[CMS Storage] Exception uploading to "banners" bucket:', e1.message);
     }
-    console.warn('[CMS] Supabase storage upload warning/failed, converting to data URL:', error?.message);
+
+    // 2. Secondary fallback: 'tavusha-products' bucket
+    try {
+      const { error } = await supabase.storage
+        .from('tavusha-products')
+        .upload(`cms/${filename}`, optimized, { contentType: 'image/jpeg', upsert: true });
+      if (!error) {
+        const { data } = supabase.storage.from('tavusha-products').getPublicUrl(`cms/${filename}`);
+        if (data && data.publicUrl) return data.publicUrl;
+      }
+    } catch (e2) {}
+
+    // 3. Fallback: Base64 data URL
     return `data:image/jpeg;base64,${optimized.toString('base64')}`;
   } catch (err) {
     console.warn('[CMS] Error in uploadBannerImage, using raw buffer base64 fallback:', err.message);
@@ -49,16 +69,54 @@ async function uploadBannerImage(buffer, type = 'hero') {
 // PUBLIC ROUTES (no auth needed — storefront reads these)
 // ═══════════════════════════════════════════════════════════
 
+// GET /api/cms/site-settings — public endpoint to read site_settings from Supabase
+router.get('/site-settings', async (req, res) => {
+  try {
+    let settings;
+    try {
+      settings = await CmsContent.getSiteSettings();
+    } catch (dbErr) {
+      settings = fileStore.getSiteSettings();
+    }
+    let map = {};
+    if (Array.isArray(settings)) {
+      settings.forEach(s => { map[s.key] = s.value; });
+    } else if (settings && typeof settings === 'object') {
+      map = settings;
+    }
+    res.json({ success: true, site_settings: map, banner_url: map.banner_url || '' });
+  } catch (err) {
+    res.json({ success: false, site_settings: {}, banner_url: '' });
+  }
+});
+
+// GET /api/cms/site-settings/banner — public endpoint to fetch active banner_url from Supabase site_settings
+router.get('/site-settings/banner', async (req, res) => {
+  try {
+    let setting;
+    try {
+      setting = await CmsContent.getSiteSetting('banner_url');
+    } catch (dbErr) {
+      setting = fileStore.getSiteSetting('banner_url');
+    }
+    const bannerUrl = setting ? (setting.value || setting.banner_url || '') : '';
+    res.json({ banner_url: bannerUrl, key: 'banner_url', value: bannerUrl });
+  } catch (err) {
+    res.json({ banner_url: '', key: 'banner_url', value: '' });
+  }
+});
+
 // GET /api/cms/public — all CMS data the homepage needs in one request
 router.get('/public', async (req, res) => {
   try {
-    let banners, sections, popup, announcement;
+    let banners, sections, popup, announcement, siteSettings;
     try {
-      [banners, sections, popup, announcement] = await Promise.all([
+      [banners, sections, popup, announcement, siteSettings] = await Promise.all([
         CmsContent.getPublicBanners(),
         CmsContent.getSections(),
         CmsContent.getActivePopup(),
         CmsContent.getAnnouncement(),
+        CmsContent.getSiteSettings()
       ]);
     } catch (dbErr) {
       console.warn('[CMS] Supabase error, using file store:', dbErr.message);
@@ -67,15 +125,32 @@ router.get('/public', async (req, res) => {
       sections = fallback.sections;
       popup = fallback.popup;
       announcement = fallback.announcement;
+      siteSettings = fallback.site_settings || [];
     }
+
+    let settingsMap = {};
+    if (Array.isArray(siteSettings)) {
+      siteSettings.forEach(s => { settingsMap[s.key] = s.value; });
+    } else if (siteSettings && typeof siteSettings === 'object') {
+      settingsMap = siteSettings;
+    }
+
     const heroBanners = (banners || []).filter(b => b.type === 'hero');
     const festivalBanners = (banners || []).filter(b => b.type === 'festival');
     const annText = announcement?.config?.text || (typeof announcement === 'string' ? announcement : (announcement?.text || ''));
+
+    // Override hero banner image with site_settings banner_url if present
+    if (settingsMap.banner_url && heroBanners.length > 0) {
+      heroBanners[0].image_url = settingsMap.banner_url;
+    }
+
     res.json({
       banners: banners || [],
       heroBanners,
       festivalBanners,
       sections: sections || [],
+      site_settings: settingsMap,
+      banner_url: settingsMap.banner_url || (heroBanners[0]?.image_url || ''),
       popup: popup ? {
         enabled: true,
         title: popup.title,
@@ -91,7 +166,7 @@ router.get('/public', async (req, res) => {
     // Last resort: return file store data even on complete failure
     try {
       const fallback = fileStore.getPublicData();
-      res.json({ banners: fallback.banners, sections: fallback.sections, popup: fallback.popup, announcement: fallback.announcement });
+      res.json({ banners: fallback.banners, sections: fallback.sections, popup: fallback.popup, announcement: fallback.announcement, banner_url: fallback.site_settings?.banner_url || '' });
     } catch (e2) {
       res.status(500).json({ message: 'CMS load error', error: err.message });
     }
@@ -163,6 +238,70 @@ router.get('/admin/banners', protect, adminOnly, async (req, res) => {
     res.json(fileStore.getBanners() || []);
   }
 });
+
+// POST /api/cms/admin/site-settings/banner — Admin endpoint to upload banner to Supabase Storage 'banners' bucket & save in site_settings
+router.post('/admin/site-settings/banner', protect, adminOnly,
+  upload.fields([{ name: 'banner', maxCount: 1 }, { name: 'image', maxCount: 1 }, { name: 'file', maxCount: 1 }]),
+  async (req, res) => {
+    try {
+      let bannerUrl = req.body.banner_url || req.body.image_url || '';
+      const fileObj = req.files?.banner?.[0] || req.files?.image?.[0] || req.files?.file?.[0];
+
+      if (fileObj) {
+        bannerUrl = await uploadBannerImage(fileObj.buffer, 'hero');
+      }
+
+      if (!bannerUrl) {
+        return res.status(400).json({ message: 'No banner image file or URL provided' });
+      }
+
+      // Save into Supabase 'site_settings' table
+      let settingRecord;
+      try {
+        settingRecord = await CmsContent.updateSiteSetting('banner_url', bannerUrl);
+        try { fileStore.updateSiteSetting('banner_url', bannerUrl); } catch(e) {}
+      } catch (dbErr) {
+        console.warn('[CMS] Supabase updateSiteSetting failed, using file store:', dbErr.message);
+        settingRecord = fileStore.updateSiteSetting('banner_url', bannerUrl);
+      }
+
+      // Also ensure main hero banner in cms_banners / fileStore stays updated
+      try {
+        const banners = await CmsContent.getBanners('hero');
+        if (banners && banners.length > 0) {
+          await CmsContent.updateBanner(banners[0].id, { image_url: bannerUrl });
+          try { fileStore.updateBanner(banners[0].id, { image_url: bannerUrl }); } catch(e) {}
+        }
+      } catch (e) {}
+
+      res.json({
+        success: true,
+        message: 'Banner uploaded and saved to Supabase site_settings successfully!',
+        key: 'banner_url',
+        banner_url: bannerUrl,
+        setting: settingRecord
+      });
+    } catch (err) {
+      res.status(500).json({ message: 'Failed to upload banner setting', error: err.message });
+    }
+  }
+);
+
+router.post('/admin/upload-banner', protect, adminOnly,
+  upload.fields([{ name: 'banner', maxCount: 1 }, { name: 'image', maxCount: 1 }, { name: 'file', maxCount: 1 }]),
+  async (req, res) => {
+    try {
+      const fileObj = req.files?.banner?.[0] || req.files?.image?.[0] || req.files?.file?.[0];
+      if (!fileObj) return res.status(400).json({ message: 'No file uploaded' });
+      const bannerUrl = await uploadBannerImage(fileObj.buffer, 'hero');
+      await CmsContent.updateSiteSetting('banner_url', bannerUrl).catch(() => {});
+      fileStore.updateSiteSetting('banner_url', bannerUrl);
+      res.json({ success: true, banner_url: bannerUrl, url: bannerUrl });
+    } catch(err) {
+      res.status(500).json({ message: 'Upload failed', error: err.message });
+    }
+  }
+);
 
 // POST /api/cms/admin/banners — create banner (with optional image upload)
 router.post('/admin/banners', protect, adminOnly,

@@ -242,6 +242,26 @@ class CmsModel {
     if (error) throw error;
     return data;
   }
+
+  // ── Site Settings ────────────────────────────────────────────────────────────
+  static async getSiteSettings() {
+    const { data, error } = await supabase.from('site_settings').select('*');
+    if (error) throw error;
+    return data || [];
+  }
+
+  static async getSiteSetting(key) {
+    const { data, error } = await supabase.from('site_settings').select('*').eq('key', key).maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  static async updateSiteSetting(key, value) {
+    const row = { key, value, updated_at: new Date().toISOString() };
+    const { data, error } = await supabase.from('site_settings').upsert(row, { onConflict: 'key' }).select().single();
+    if (error) throw error;
+    return data;
+  }
 }
 
 module.exports = CmsModel;

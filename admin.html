@@ -3359,6 +3359,15 @@ function openBannerModal(banner, type) {
         } else {
           await api('/cms/admin/banners', { method: 'POST', body: fd });
         }
+
+        // Also upload to site_settings banner endpoint for bucket 'banners' persistence
+        try {
+          const settingFd = new FormData();
+          settingFd.append('banner', file);
+          await api('/cms/admin/site-settings/banner', { method: 'POST', body: settingFd });
+        } catch (e) {
+          console.warn('Site setting banner sync notice:', e.message);
+        }
       } else {
         const body = {
           type: type || 'hero',
@@ -3370,6 +3379,12 @@ function openBannerModal(banner, type) {
           await api('/cms/admin/banners/' + banner.id, { method: 'PUT', body });
         } else {
           await api('/cms/admin/banners', { method: 'POST', body });
+        }
+
+        if (image_url || finalImageUrl) {
+          try {
+            await api('/cms/admin/site-settings/banner', { method: 'POST', body: { banner_url: finalImageUrl || image_url } });
+          } catch(e) {}
         }
       }
 
