@@ -22,19 +22,27 @@ const upload = multer({
 });
 
 async function uploadBannerImage(buffer, type = 'hero') {
-  const optimized = await sharp(buffer)
-    .rotate()
-    .resize({ width: 1920, height: 1080, fit: 'inside', withoutEnlargement: true })
-    .jpeg({ quality: 85, mozjpeg: true })
-    .toBuffer();
+  try {
+    const optimized = await sharp(buffer)
+      .rotate()
+      .resize({ width: 1920, height: 1080, fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 85, mozjpeg: true })
+      .toBuffer();
 
-  const filename = `cms/${type}/${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
-  const { error } = await supabase.storage
-    .from('tavusha-products')
-    .upload(filename, optimized, { contentType: 'image/jpeg', upsert: false });
-  if (error) throw new Error('Banner upload failed: ' + error.message);
-  const { data } = supabase.storage.from('tavusha-products').getPublicUrl(filename);
-  return data.publicUrl;
+    const filename = `cms/${type}/${Date.now()}-${Math.round(Math.random() * 1e9)}.jpg`;
+    const { error } = await supabase.storage
+      .from('tavusha-products')
+      .upload(filename, optimized, { contentType: 'image/jpeg', upsert: false });
+    if (!error) {
+      const { data } = supabase.storage.from('tavusha-products').getPublicUrl(filename);
+      if (data && data.publicUrl) return data.publicUrl;
+    }
+    console.warn('[CMS] Supabase storage upload warning/failed, converting to data URL:', error?.message);
+    return `data:image/jpeg;base64,${optimized.toString('base64')}`;
+  } catch (err) {
+    console.warn('[CMS] Error in uploadBannerImage, using raw buffer base64 fallback:', err.message);
+    return `data:image/jpeg;base64,${buffer.toString('base64')}`;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════
@@ -282,7 +290,6 @@ router.put('/admin/sections/:key', protect, adminOnly, upload.fields([
       console.warn('[CMS] Supabase updateSection failed, using file store:', dbErr.message);
       section = fileStore.upsertSection(req.params.key, fields);
     }
-    res.json(section);
     res.json(section);
   } catch (err) {
     res.status(500).json({ message: 'Failed to update section', error: err.message });

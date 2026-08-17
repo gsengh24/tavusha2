@@ -891,23 +891,25 @@ async function api(path, options = {}) {
   if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
   if (!(options.body instanceof FormData) && options.body) { headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(options.body); }
   
-  if (!state.isDemo) {
-    try {
-      const res = await fetch(API_BASE + path, { ...options, headers });
-      const data = await res.json().catch(() => ({}));
-      if (res.ok) return data;
-      if (path === '/auth/login') {
-        state.isDemo = true; persist(); return handleMockApi(path, options);
+  try {
+    const res = await fetch(API_BASE + path, { ...options, headers });
+    const data = await res.json().catch(() => ({}));
+    if (res.ok) {
+      if (state.isDemo) {
+        state.isDemo = false;
+        persist();
       }
-      throw new Error(data.message || 'Something went wrong');
-    } catch (err) {
-      if (path === '/auth/login' || err.message.includes('fetch') || err.message.includes('Network') || state.isDemo) {
-        state.isDemo = true; persist(); return handleMockApi(path, options);
-      }
-      throw err;
+      return data;
     }
-  } else {
-    return handleMockApi(path, options);
+    if (path === '/auth/login') {
+      state.isDemo = true; persist(); return handleMockApi(path, options);
+    }
+    throw new Error(data.message || 'Something went wrong');
+  } catch (err) {
+    if (path === '/auth/login' || (state.isDemo && (err.message.includes('fetch') || err.message.includes('Network')))) {
+      return handleMockApi(path, options);
+    }
+    throw err;
   }
 }
 
@@ -2361,7 +2363,7 @@ async function showAdminTab(tab) {
             quote_author: document.getElementById('cp_quote_author').value,
           };
 
-          if ((mainFile || side1File || side2File) && !state.isDemo) {
+          if (mainFile || side1File || side2File) {
             const formData = new FormData();
             formData.append('visible', visible);
             formData.append('config', JSON.stringify(config));
@@ -3314,7 +3316,7 @@ function openBannerModal(banner, type) {
       const cta_url = document.getElementById('b_cta_url').value;
       const festival_tag = type === 'festival' ? (document.getElementById('b_fest_tag')?.value || '') : '';
 
-      if (file && !state.isDemo) {
+      if (file) {
         const fd = new FormData();
         fd.append('type', type || 'hero');
         fd.append('title', title);
