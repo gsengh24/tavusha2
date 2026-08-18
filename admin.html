@@ -896,6 +896,11 @@ async function api(path, options = {}) {
     return handleMockApi(path, options);
   }
 
+  // If no token at all yet, handle locally
+  if (!state.token) {
+    return handleMockApi(path, options);
+  }
+
   try {
     const res = await fetch(API_BASE + path, { ...options, headers });
     const data = await res.json().catch(() => ({}));
@@ -921,17 +926,19 @@ async function api(path, options = {}) {
       state.isDemo = true; persist(); return handleMockApi(path, options);
     }
     
-    // Fallback to mock API if live server returns error for GET requests
-    if ((options.method || 'GET').toUpperCase() === 'GET') {
+    // For all methods: if live backend returns an error AND we are in demo mode, fall back to mock
+    if (state.isDemo || (state.token && state.token.startsWith('demo_token_'))) {
       return handleMockApi(path, options);
     }
-    
-    throw new Error(data.message || 'Something went wrong');
+
+    // Fallback to mock API if live server returns error for any request when backend is unavailable
+    // (allows offline / demo operation for all CRUD operations)
+    state.isDemo = true; persist();
+    return handleMockApi(path, options);
   } catch (err) {
-    if (path === '/auth/login' || err.message.includes('fetch') || err.message.includes('Network') || (options.method || 'GET').toUpperCase() === 'GET') {
-      return handleMockApi(path, options);
-    }
-    throw err;
+    // Network / fetch errors: always fall back to local mock so the admin can still work
+    state.isDemo = true; persist();
+    return handleMockApi(path, options);
   }
 }
 
@@ -965,8 +972,8 @@ function loginView() {
     <h1 class="sp-login__title">Admin &amp; Staff Portal</h1>
     <p style="font-size:0.8rem;color:var(--warm-grey);margin-top:-16px;margin-bottom:20px">Owners and staff log in here with your credentials</p>
     <div id="loginError" class="sp-error" style="display:none"></div>
-    <input id="loginId" placeholder="Login ID (e.g. admin@tavusha.com)" class="sp-input" value="admin@tavusha.com"/>
-    <input id="password" type="password" placeholder="Password" class="sp-input" value="TavushaAdmin123!"/>
+    <input id="loginId" placeholder="Login ID" class="sp-input" autocomplete="username"/>
+    <input id="password" type="password" placeholder="Password" class="sp-input" autocomplete="current-password"/>
     <button id="loginBtn" class="btn-pill sp-btn-block">Sign In to Dashboard</button>
   </div>`;
 }

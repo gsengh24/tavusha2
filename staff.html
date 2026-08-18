@@ -318,8 +318,8 @@ function loginView() {
     <h1 class="sp-login__title">Admin &amp; Staff Portal</h1>
     <p style="font-size:0.8rem;color:var(--warm-grey);margin-top:-16px;margin-bottom:20px">Owners and staff log in here with your credentials</p>
     <div id="loginError" class="sp-error" style="display:none"></div>
-    <input id="loginId" placeholder="Login ID (e.g. admin@tavusha.com)" class="sp-input" value="admin@tavusha.com"/>
-    <input id="password" type="password" placeholder="Password" class="sp-input" value="TavushaAdmin123!"/>
+    <input id="loginId" placeholder="Login ID" class="sp-input" autocomplete="username"/>
+    <input id="password" type="password" placeholder="Password" class="sp-input" autocomplete="current-password"/>
     <button id="loginBtn" class="btn-pill sp-btn-block">Sign In to Dashboard</button>
   </div>`;
 }
