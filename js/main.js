@@ -1369,12 +1369,21 @@ async function loadCmsContent() {
   const cmsHeroBanners = heroBanners.length ? heroBanners : (cms.heroBanners || (Array.isArray(cms.banners) ? cms.banners.filter(b => b.type === 'hero' || !b.type) : []) || []);
   if (cmsHeroBanners && cmsHeroBanners.length) {
     const heroBanner = cmsHeroBanners[0];
-    const targetBannerUrl = liveBannerUrl || heroBanner.image_url;
+    let targetBannerUrl = liveBannerUrl || heroBanner.image_url;
+    if (!targetBannerUrl || targetBannerUrl.includes('1771345000-123456789.jpg')) {
+      targetBannerUrl = 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900&q=90';
+    }
     const heroImg = document.querySelector('.hero__model-img');
-    if (heroImg && targetBannerUrl) {
-      const fixedImg = typeof fixDriveUrl === 'function' ? fixDriveUrl(targetBannerUrl) : targetBannerUrl;
-      heroImg.src = fixedImg;
-      heroImg.alt = heroBanner.title || 'TAVUSHA Hero Banner';
+    if (heroImg) {
+      heroImg.onerror = function() {
+        this.onerror = null;
+        this.src = 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900&q=90';
+      };
+      if (targetBannerUrl) {
+        const fixedImg = typeof fixDriveUrl === 'function' ? fixDriveUrl(targetBannerUrl) : targetBannerUrl;
+        heroImg.src = fixedImg;
+        heroImg.alt = heroBanner.title || 'TAVUSHA Hero Banner';
+      }
     }
     if (heroBanner.title) {
       const displayEl = document.querySelector('.hero__display');

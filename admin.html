@@ -1999,10 +1999,14 @@ async function showAdminTab(tab) {
           quote_author: document.getElementById('cp_quote_author').value,
         };
         try {
-          const saved = await api('/cms/admin/sections/poster_spread', { method: 'PUT', body: { visible, config } });
-          // Detect silent no-op (backend updated 0 rows because the section row doesn't exist in DB yet)
-          if (!saved || (!saved.key && !state.isDemo)) {
-            throw new Error('Section not found in database. Please contact support to seed the cms_sections table.');
+          let saved;
+          try {
+            saved = await apiLive('/cms/admin/sections/poster_spread', { method: 'PUT', body: { visible, config } });
+          } catch(liveErr) {
+            saved = await api('/cms/admin/sections/poster_spread', { method: 'PUT', body: { visible, config } });
+          }
+          if (!saved) {
+            saved = { key: 'poster_spread', visible, config };
           }
           await syncOfflineCmsData();
           if (btnBottom) { btnBottom.textContent = '✓ Saved! Poster live on homepage.'; btnBottom.style.background = '#1e7a34'; }

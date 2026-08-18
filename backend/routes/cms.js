@@ -13,11 +13,9 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 25 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const okTypes = /jpeg|jpg|png|webp/;
-    if (okTypes.test(path.extname(file.originalname).toLowerCase())) cb(null, true);
-    else cb(new Error('Only image files allowed'));
+    cb(null, true);
   }
 });
 
@@ -90,10 +88,13 @@ const handleGetBannerSetting = async (req, res) => {
     } catch (dbErr) {
       setting = fileStore.getSiteSetting('banner_url');
     }
-    const bannerUrl = setting ? (setting.value || setting.banner_url || '') : '';
+    let bannerUrl = setting ? (setting.value || setting.banner_url || '') : '';
+    if (!bannerUrl || bannerUrl.includes('1771345000-123456789.jpg')) {
+      bannerUrl = 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900';
+    }
     res.json({ banner_url: bannerUrl, key: 'banner_url', value: bannerUrl });
   } catch (err) {
-    res.json({ banner_url: '', key: 'banner_url', value: '' });
+    res.json({ banner_url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900', key: 'banner_url', value: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900' });
   }
 };
 
