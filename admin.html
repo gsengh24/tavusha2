@@ -947,7 +947,40 @@ async function apiLive(path, options = {}) {
   const res = await fetch(base + path, { ...options, headers });
   const data = await res.json().catch(() => ({}));
   if (res.ok) return data;
-  throw new Error(data.error || data.message || `Backend returned status ${res.status}`);
+}
+
+async function fetchAdminProducts() {
+  let backendProds = [];
+  try {
+    const res = await api('/products');
+    if (Array.isArray(res)) backendProds = res;
+  } catch(e) {
+    console.warn('Backend products fetch notice:', e);
+  }
+
+  const catalog = (typeof EXCEL_PRODUCTS !== 'undefined' && Array.isArray(EXCEL_PRODUCTS)) ? EXCEL_PRODUCTS : (typeof DEFAULT_MOCK_PRODS !== 'undefined' ? DEFAULT_MOCK_PRODS : []);
+  const merged = [...backendProds];
+
+  catalog.forEach(catItem => {
+    if (!catItem) return;
+    const catId = String(catItem._id || catItem.id || catItem.sku || '').toLowerCase();
+    const catSku = String(catItem.sku || '').toLowerCase();
+    const exists = merged.some(m => {
+      const mId = String(m._id || m.id || m.sku || '').toLowerCase();
+      const mSku = String(m.sku || '').toLowerCase();
+      return (catId && mId === catId) || (catSku && mSku === catSku);
+    });
+    if (!exists) {
+      merged.push({
+        ...catItem,
+        _id: catItem._id || catItem.id || catItem.sku || ('cat_' + Math.random().toString(36).substr(2, 9)),
+        title: catItem.title || catItem.name || 'Untitled Product',
+        status: catItem.status || 'approved'
+      });
+    }
+  });
+
+  return merged;
 }
 
 const ADMIN_EMAILS = ['admin@tavusha.com', (localStorage.getItem('sp_admin_email') || '').toLowerCase()];
@@ -1062,7 +1095,7 @@ function staffView() {
 }
 
 async function loadStaffProducts() {
-  state.products = await api('/products');
+  state.products = await fetchAdminProducts();
   
   window.staffSearchQuery = '';
   window.staffCategoryFilter = 'all';
@@ -1582,8 +1615,8 @@ async function showAdminTab(tab) {
   try {
     content.innerHTML = '<p class="sp-empty">Loading...</p>';
     if (tab === 'products') {
-      state.products = await api('/products');
-      
+      state.products = await fetchAdminProducts();
+
       // Initialize persistent filter states
       window.prodSearchQuery = window.prodSearchQuery || '';
       window.prodCategoryFilter = window.prodCategoryFilter || 'all';
@@ -1656,7 +1689,7 @@ async function showAdminTab(tab) {
       renderFilteredProductsTable();
     
     } else if (tab === 'inventory') {
-      state.products = await api('/products');
+      state.products = await fetchAdminProducts();
       
       const totalUnits = state.products.reduce((sum, p) => sum + (Number(p.stock) || 0), 0);
       const inStockCount = state.products.filter(p => (Number(p.stock) || 0) > 5).length;
@@ -1799,7 +1832,7 @@ async function showAdminTab(tab) {
 
     } else if (tab === 'posters') {
       state.sections = await api('/cms/sections');
-      state.products = await api('/products');
+      state.products = await fetchAdminProducts();
       const posterSpread = state.sections.find(s => s.key === 'poster_spread');
       const posterCfg = posterSpread?.config || {};
       
@@ -2037,7 +2070,7 @@ async function showAdminTab(tab) {
       state.banners = await api('/cms/admin/banners');
       state.sections = await api('/cms/sections');
       state.popups = await api('/cms/admin/popups');
-      state.products = await api('/products');
+      state.products = await fetchAdminProducts();
 
       const heroBanners = state.banners.filter(b => b.type === 'hero');
       const festBanners = state.banners.filter(b => b.type === 'festival');
@@ -3209,7 +3242,7 @@ function renderBulkImportTab(content) {
         `✅ ${result.imported} product${result.imported!==1?'s':''} imported! ${result.skipped?result.skipped+' row(s) skipped.':''}`,
         result.errors || []
       );
-      state.products = await api('/products');
+      state.products = await fetchAdminProducts();
     } catch(err) {
       btn.disabled = false;
       btn.innerHTML = '⬆ Import Products to Shop';
