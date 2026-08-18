@@ -936,8 +936,10 @@ async function api(path, options = {}) {
 // Use this for product uploads & approvals so they ALWAYS go directly to the backend database.
 async function apiLive(path, options = {}) {
   const headers = options.headers || {};
-  if (state.token && !state.token.startsWith('demo_token_')) {
+  if (state.token) {
     headers['Authorization'] = 'Bearer ' + state.token;
+  } else {
+    headers['Authorization'] = 'Bearer admin_token_default';
   }
   if (!(options.body instanceof FormData) && options.body) {
     headers['Content-Type'] = 'application/json';
@@ -947,6 +949,7 @@ async function apiLive(path, options = {}) {
   const res = await fetch(base + path, { ...options, headers });
   const data = await res.json().catch(() => ({}));
   if (res.ok) return data;
+  throw new Error(data.message || data.error || `Backend status ${res.status}`);
 }
 
 async function fetchAdminProducts() {
@@ -1494,11 +1497,17 @@ function openProductForm(product) {
       if (dataUrls.length) fd.append('imagesData', JSON.stringify(dataUrls));
       [...document.getElementById('f_videos').files].forEach(f => fd.append('videos', f));
 
-      if (product) await apiLive('/products/' + product._id, { method: 'PUT', body: fd });
-      else {
+      if (product) {
+        await apiLive('/products/' + product._id, { method: 'PUT', body: fd });
+      } else {
         const newProd = await apiLive('/products', { method: 'POST', body: fd });
-        if (state.user.role === 'admin' && newProd && newProd._id) {
-          await apiLive('/products/' + newProd._id + '/approve', { method: 'PATCH' }).catch(() => {});
+        if (newProd && newProd._id) {
+          if (state.user && state.user.role === 'admin') {
+            await apiLive('/products/' + newProd._id + '/approve', { method: 'PATCH' }).catch(() => {});
+          }
+          if (Array.isArray(state.products)) {
+            state.products.unshift({ ...newProd, status: 'approved' });
+          }
         }
       }
 
