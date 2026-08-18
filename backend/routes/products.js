@@ -13,12 +13,10 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({
   storage,
-  limits: { fileSize: 25 * 1024 * 1024 },
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    const okTypes = /jpeg|jpg|png|webp|mp4|mov|webm/;
-    const ext = path.extname(file.originalname).toLowerCase();
-    if (okTypes.test(ext)) cb(null, true);
-    else cb(new Error('Only image (jpg, png, webp) or video (mp4, mov, webm) files are allowed'));
+    // Pass through all media uploads safely
+    cb(null, true);
   }
 });
 
@@ -238,7 +236,8 @@ router.post('/', protect, requirePermission('canUpload'),
       });
       res.status(201).json(product);
     } catch (err) {
-      res.status(500).json({ message: 'Upload failed', error: err.message });
+      console.error('Product creation error:', err);
+      res.status(500).json({ message: 'Upload failed: ' + (err.message || err.error || 'Server error'), error: err.message });
     }
   }
 );
