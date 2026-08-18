@@ -530,7 +530,7 @@ function initPDP() {
   // Support both numeric IDs (static products) and string IDs like 'staff-<mongoId>' (admin products)
   const id = /^\d+$/.test(idParam) ? parseInt(idParam, 10) : idParam;
   
-  pdpProduct = TAVUSHA_PRODUCTS.find(p=>String(p.id)===String(id));
+  pdpProduct = TAVUSHA_PRODUCTS.find(p=>String(p.id || p._id)===String(id));
   if (!pdpProduct) {
     // Product not yet in TAVUSHA_PRODUCTS — storefront.js may still be loading
     // Don't show error yet; storefront loader will call initPDP() again when it finishes
@@ -545,18 +545,20 @@ function initPDP() {
 }
 
 function renderPDP(p) {
-  document.title = p.name+' \u2014 TAVUSHA';
-  document.getElementById('bcName').textContent = p.name;
+  const pName = p.title || p.name || 'Product';
+  document.title = pName +' \u2014 TAVUSHA';
+  document.getElementById('bcName').textContent = pName;
+  const catArr = Array.isArray(p.category) ? p.category : (typeof p.category === 'string' ? [p.category] : ['all']);
   const catLink = document.getElementById('bcCat');
-  catLink.textContent = (p.category[0]||'shop').replace(/^\w/,c=>c.toUpperCase());
-  catLink.href = 'shop.html?cat='+(p.category[0]||'all');
-  document.getElementById('infoBrand').textContent = p.brand;
-  document.getElementById('infoName').textContent  = p.name;
+  catLink.textContent = (catArr[0]||'shop').replace(/^\w/,c=>c.toUpperCase());
+  catLink.href = 'shop.html?cat='+(catArr[0]||'all');
+  document.getElementById('infoBrand').textContent = p.brand || 'TAVUSHA';
+  document.getElementById('infoName').textContent  = pName;
   const starFn = (n,size)=>Array.from({length:5},(_,i)=>`<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="${i<Math.round(n)?'currentColor':'none'}" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`).join('');
-  document.getElementById('infoStars').innerHTML=starFn(p.rating,14);
-  document.getElementById('infoRatingScore').textContent=p.rating;
-  document.getElementById('infoRatingCount').textContent=p.reviewCount+' reviews';
-  document.getElementById('infoPrice').textContent='\u20b9'+p.price.toLocaleString('en-IN');
+  document.getElementById('infoStars').innerHTML=starFn(p.rating || 5,14);
+  document.getElementById('infoRatingScore').textContent=p.rating || 5;
+  document.getElementById('infoRatingCount').textContent=(p.reviewCount || 0)+' reviews';
+  document.getElementById('infoPrice').textContent='\u20b9'+(p.price || 0).toLocaleString('en-IN');
   if(p.originalPrice){
     const save=Math.round((1-p.price/p.originalPrice)*100);
     document.getElementById('infoPriceOrig').textContent='\u20b9'+p.originalPrice.toLocaleString('en-IN');
@@ -564,19 +566,22 @@ function renderPDP(p) {
     document.getElementById('infoPriceSave').textContent=save+'% OFF';
     document.getElementById('infoPriceSave').style.display='';
   }
-  document.getElementById('infoDesc').textContent=p.description;
-  let imgs = [p.image];
-  if(p.imageAlt && p.imageAlt !== p.image) imgs.push(p.imageAlt);
+  document.getElementById('infoDesc').textContent=p.description || '';
+  let imgs = Array.isArray(p.images) && p.images.length ? [...p.images] : [p.image || p.imageAlt || ''];
+  if(p.imageAlt && p.imageAlt !== p.image && !imgs.includes(p.imageAlt)) imgs.push(p.imageAlt);
+  imgs = imgs.filter(Boolean);
+  if (!imgs.length) imgs = [''];
   const bgs=['var(--card-champagne)','var(--card-rose)','var(--card-sage)','var(--card-blush)'];
   const gMain=document.getElementById('galleryMain');
-  const mainDriveId = p.image.match(/[?&]id=([^&]+)/);
-  const mainFallback = mainDriveId ? `https://lh3.googleusercontent.com/d/${mainDriveId[1]}=w800` : (p.imageAlt || p.image);
+  const mainDriveMatch = (imgs[0]||'').match(/[?&]id=([^&]+)/);
+  const mainDriveId = mainDriveMatch ? mainDriveMatch[1] : '';
+  const mainFallback = mainDriveId ? `https://lh3.googleusercontent.com/d/${mainDriveId}=w800` : (p.imageAlt || imgs[0]);
   gMain.referrerPolicy = 'no-referrer';
   gMain.onerror = function() {
     if(!this.dataset.tried){this.dataset.tried='1';this.src=mainFallback;}
     else{this.src='data:image/svg+xml,<svg xmlns=\'http://www.w3.org/2000/svg\' width=\'100%25\' height=\'100%25\'><rect fill=\'%23ede0c0\'/><text x=\'50%25\' y=\'50%25\' font-family=\'serif\' font-size=\'14\' fill=\'%23a07840\' text-anchor=\'middle\' dy=\'.3em\'>TAVUSHA</text></svg>';}
   };
-  gMain.src=imgs[0]; gMain.alt=p.name;
+  gMain.src=imgs[0]; gMain.alt=pName;
   document.getElementById('galleryMainWrap').style.background=bgs[0];
   if(p.badge){
     const bd=document.getElementById('galleryBadge');

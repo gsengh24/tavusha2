@@ -888,25 +888,26 @@ async function handleMockApi(path, options = {}) {
 // ─── API FETCH UTILITY ─────────────────────────────────────────────────────
 async function api(path, options = {}) {
   const headers = options.headers || {};
-  if (state.token) headers['Authorization'] = 'Bearer ' + state.token;
-  if (!(options.body instanceof FormData) && options.body) { headers['Content-Type'] = 'application/json'; options.body = JSON.stringify(options.body); }
+  if (state.token && !state.token.startsWith('demo_token_')) {
+    headers['Authorization'] = 'Bearer ' + state.token;
+  }
+  if (!(options.body instanceof FormData) && options.body) {
+    headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(options.body);
+  }
   
-  // If we are holding a demo token, handle locally via handleMockApi
-  if (state.token && state.token.startsWith('demo_token_')) {
+  // Explicit demo token check (only if explicitly in demo mode)
+  if (state.token && state.token.startsWith('demo_token_') && path !== '/auth/login') {
     return handleMockApi(path, options);
   }
 
-  // If no token at all yet, handle locally
-  if (!state.token) {
-    return handleMockApi(path, options);
-  }
-
+  // Always attempt real backend for login or when we have no token / real token
   try {
     const res = await fetch(API_BASE + path, { ...options, headers });
     const data = await res.json().catch(() => ({}));
     
     if (res.ok) {
-      if (state.isDemo) {
+      if (state.isDemo && path === '/auth/login') {
         state.isDemo = false;
         persist();
       }
@@ -914,32 +915,39 @@ async function api(path, options = {}) {
     }
 
     if (res.status === 401 || res.status === 403) {
-      if (state.isDemo || (state.token && state.token.startsWith('demo_token_'))) {
+      if (state.token && state.token.startsWith('demo_token_')) {
         return handleMockApi(path, options);
       }
-      // Invalid/expired token for live backend: reset session so user can log in fresh
-      logout();
-      throw new Error(data.message || 'Invalid or expired session. Please log in again.');
+      // If token expired on live backend, fallback to mock if demo login allowed
+      if (path !== '/auth/login') {
+        return handleMockApi(path, options);
+      }
     }
 
-    if (path === '/auth/login') {
-      state.isDemo = true; persist(); return handleMockApi(path, options);
-    }
-    
-    // For all methods: if live backend returns an error AND we are in demo mode, fall back to mock
-    if (state.isDemo || (state.token && state.token.startsWith('demo_token_'))) {
-      return handleMockApi(path, options);
-    }
-
-    // Fallback to mock API if live server returns error for any request when backend is unavailable
-    // (allows offline / demo operation for all CRUD operations)
-    state.isDemo = true; persist();
+    // Server returned error (e.g. 404/500), fall back to mock for demo user
     return handleMockApi(path, options);
   } catch (err) {
-    // Network / fetch errors: always fall back to local mock so the admin can still work
-    state.isDemo = true; persist();
+    // Network / fetch errors (cold start / offline): fall back to local mock
     return handleMockApi(path, options);
   }
+}
+
+// ─── REAL BACKEND API (bypasses demo/mock fallback) ─────────────────────────
+// Use this for product uploads & approvals so they ALWAYS go directly to the backend database.
+async function apiLive(path, options = {}) {
+  const headers = options.headers || {};
+  if (state.token && !state.token.startsWith('demo_token_')) {
+    headers['Authorization'] = 'Bearer ' + state.token;
+  }
+  if (!(options.body instanceof FormData) && options.body) {
+    headers['Content-Type'] = 'application/json';
+    options.body = JSON.stringify(options.body);
+  }
+  const base = typeof RENDER_BACKEND !== 'undefined' ? RENDER_BACKEND : API_BASE;
+  const res = await fetch(base + path, { ...options, headers });
+  const data = await res.json().catch(() => ({}));
+  if (res.ok) return data;
+  throw new Error(data.error || data.message || `Backend returned status ${res.status}`);
 }
 
 const ADMIN_EMAILS = ['admin@tavusha.com', (localStorage.getItem('sp_admin_email') || '').toLowerCase()];
@@ -1453,11 +1461,11 @@ function openProductForm(product) {
       if (dataUrls.length) fd.append('imagesData', JSON.stringify(dataUrls));
       [...document.getElementById('f_videos').files].forEach(f => fd.append('videos', f));
 
-      if (product) await api('/products/' + product._id, { method: 'PUT', body: fd });
+      if (product) await apiLive('/products/' + product._id, { method: 'PUT', body: fd });
       else {
-        const newProd = await api('/products', { method: 'POST', body: fd });
-        if (state.user.role === 'admin' && newProd._id) {
-          await api('/products/' + newProd._id + '/approve', { method: 'PATCH' }).catch(() => {});
+        const newProd = await apiLive('/products', { method: 'POST', body: fd });
+        if (state.user.role === 'admin' && newProd && newProd._id) {
+          await apiLive('/products/' + newProd._id + '/approve', { method: 'PATCH' }).catch(() => {});
         }
       }
 

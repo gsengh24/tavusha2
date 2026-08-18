@@ -178,7 +178,8 @@ router.post('/', protect, requirePermission('canUpload'),
         inStock: finalStock > 0,
         images: imagePaths,
         videos: videoPaths,
-        status: 'pending',
+        status: req.user.role === 'admin' ? 'approved' : 'pending',
+        approvedBy: req.user.role === 'admin' ? req.user._id : undefined,
         createdBy: req.user._id
       });
       res.status(201).json(product);

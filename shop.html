@@ -249,7 +249,7 @@
   const BACKEND = 'https://tavusha2-backend.onrender.com/api';
   // Use same cache key as index.html so both pages share fresh data
   const CACHE_KEY = 'tv_storefront_cache_v2';
-  const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+  const CACHE_TTL = 1 * 60 * 1000; // 1 minute — reduced so new admin products show faster
 
   // Remove legacy cache key to avoid stale data
   try { localStorage.removeItem('tv_storefront_cache'); } catch(e) {}
@@ -283,7 +283,12 @@
         }
       } catch(e) { console.warn('storefront.js exec error:', e); }
     })
-    .catch(() => { clearTimeout(timeoutId); }); // Silently fail — local products still show
+    .catch(() => {
+      clearTimeout(timeoutId);
+      if (typeof renderShopGrid === 'function') {
+        renderShopGrid();
+      }
+    });
 })();
 </script>
 <script>
@@ -361,9 +366,12 @@ function getFiltered(){
   if (currentQuery) {
     const q = currentQuery.toLowerCase();
     p = p.filter(x => x && (
+      (x.title && x.title.toLowerCase().includes(q)) ||
       (x.name && x.name.toLowerCase().includes(q)) ||
       (x.brand && x.brand.toLowerCase().includes(q)) ||
       (x.description && x.description.toLowerCase().includes(q)) ||
+      (x.colour && x.colour.toLowerCase().includes(q)) ||
+      (typeof x.category === 'string' && x.category.toLowerCase().includes(q)) ||
       (Array.isArray(x.category) && x.category.some(c => c && c.toLowerCase().includes(q)))
     ));
   } else if (currentCat === 'sale') {
@@ -454,27 +462,27 @@ function renderShopGrid(){
     const w = wishlistArr.includes(p.id);
     const bd = p.badge ? `<span class="product-card__badge ${p.badge==='sale'?'badge badge--red':p.badge==='limited'?'badge badge--warm':p.badge==='bestseller'?'badge badge--gold':'badge'}">${p.badgeText||p.badge}</span>` : '';
     const disc = (p.originalPrice && p.price) ? `<div style="font-size:0.68rem;font-weight:700;color:#B91C1C;margin-top:2px">${Math.round((1 - p.price / p.originalPrice) * 100)}% OFF</div>` : '';
-    const rawImg = p.image || p.imageAlt || '';
+    const rawImg = p.image || (Array.isArray(p.images) && p.images[0]) || p.imageAlt || '';
     const imgSrc = (typeof fixDriveUrl === 'function') ? fixDriveUrl(rawImg) : rawImg;
     const safePrice = p.price ? p.price.toLocaleString('en-IN') : '0';
     const safeOrigPrice = p.originalPrice ? p.originalPrice.toLocaleString('en-IN') : '';
 
-    return `<div class="product-card reveal visible" onclick="location.href='product.html?id=${p.id}'">
+    return `<div class="product-card reveal visible" onclick="location.href='product.html?id=${p.id || p._id}'">
       <div class="product-card__media" style="--card-bg:${c}">
-        <img class="product-card__img" src="${imgSrc}" data-orig-src="${rawImg}" alt="${p.name || 'Product'}" loading="lazy" referrerpolicy="no-referrer" onerror="if(typeof tavushaImgError==='function'){tavushaImgError(this);}">
+        <img class="product-card__img" src="${imgSrc}" data-orig-src="${rawImg}" alt="${p.title || p.name || 'Product'}" loading="lazy" referrerpolicy="no-referrer" onerror="if(typeof tavushaImgError==='function'){tavushaImgError(this);}">
         ${bd}
         <div class="product-card__actions">
-          <button class="product-card__action-btn ${w?'active':''}" onclick="event.stopPropagation();toggleWishlistCard(this,'${p.id}')" aria-label="Wishlist">
+          <button class="product-card__action-btn ${w?'active':''}" onclick="event.stopPropagation();toggleWishlistCard(this,'${p.id || p._id}')" aria-label="Wishlist">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="${w?'currentColor':'none'}" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
           </button>
-          <button class="product-card__action-btn" onclick="event.stopPropagation();openQuickView('${p.id}')" aria-label="Quick View">
+          <button class="product-card__action-btn" onclick="event.stopPropagation();openQuickView('${p.id || p._id}')" aria-label="Quick View">
             <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
           </button>
         </div>
       </div>
       <div class="product-card__body">
         <div style="font-size:0.6rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--brand-dark);margin-bottom:2px">${p.brand || 'TAVUSHA'}</div>
-        <div class="product-card__name">${p.name || 'Product'}</div>
+        <div class="product-card__name">${p.title || p.name || 'Product'}</div>
         <div style="display:flex;align-items:center;gap:4px;margin:4px 0">
           <span style="color:var(--star);font-size:0.7rem">${'&#9733;'.repeat(Math.round(p.rating || 5))}</span>
           <span style="font-size:0.7rem;color:var(--warm-grey)">${p.rating || 5} (${p.reviewCount || 0})</span>
