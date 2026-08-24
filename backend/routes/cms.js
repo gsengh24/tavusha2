@@ -275,6 +275,22 @@ router.post('/admin/site-settings/banner', protect, adminOnly,
       // Save into Supabase 'site_settings' table
       let settingRecord;
       try {
+        // Fetch old banner to delete it from server
+        const oldSetting = await CmsContent.getSiteSetting('banner_url').catch(() => null);
+        const oldBannerUrl = oldSetting ? (oldSetting.value || oldSetting.banner_url) : null;
+        
+        if (oldBannerUrl && oldBannerUrl !== bannerUrl && oldBannerUrl.includes('/storage/v1/object/public/')) {
+          try {
+            const bucketAndPath = oldBannerUrl.split('/storage/v1/object/public/')[1];
+            const firstSlash = bucketAndPath.indexOf('/');
+            if (firstSlash > -1) {
+              const bucket = bucketAndPath.substring(0, firstSlash);
+              const filePath = bucketAndPath.substring(firstSlash + 1);
+              await supabase.storage.from(bucket).remove([filePath]).catch(() => {});
+            }
+          } catch(e) {}
+        }
+        
         settingRecord = await CmsContent.updateSiteSetting('banner_url', bannerUrl);
         try { fileStore.updateSiteSetting('banner_url', bannerUrl); } catch(e) {}
       } catch (dbErr) {
