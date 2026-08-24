@@ -3402,21 +3402,14 @@ function openBannerModal(banner, type) {
     saveBtn.textContent = 'Saving Banner...';
 
     try {
-      let finalImageUrl = image_url;
-      if (file) {
-        finalImageUrl = await new Promise((resolve) => {
-          const reader = new FileReader();
-          reader.onload = (e) => resolve(e.target.result);
-          reader.readAsDataURL(file);
-        });
-      }
-
       const visible = document.getElementById('b_visible').checked;
       const subtitle = document.getElementById('b_sub').value;
       const badge_text = document.getElementById('b_badge').value;
       const cta_text = document.getElementById('b_cta_text').value;
       const cta_url = document.getElementById('b_cta_url').value;
       const festival_tag = type === 'festival' ? (document.getElementById('b_fest_tag')?.value || '') : '';
+
+      let uploadedUrl = image_url;
 
       if (file) {
         const fd = new FormData();
@@ -3430,49 +3423,67 @@ function openBannerModal(banner, type) {
         if (festival_tag) fd.append('festival_tag', festival_tag);
         fd.append('image', file);
 
-        if (isEdit) {
-          await api('/cms/admin/banners/' + banner.id, { method: 'PUT', body: fd });
-        } else {
-          await api('/cms/admin/banners', { method: 'POST', body: fd });
+        let res;
+        try {
+          if (isEdit) {
+            res = await apiLive('/cms/admin/banners/' + banner.id, { method: 'PUT', body: fd });
+          } else {
+            res = await apiLive('/cms/admin/banners', { method: 'POST', body: fd });
+          }
+        } catch (eLive) {
+          console.warn('[Banner Upload] apiLive warning, trying api fallback:', eLive.message);
+          if (isEdit) {
+            res = await api('/cms/admin/banners/' + banner.id, { method: 'PUT', body: fd });
+          } else {
+            res = await api('/cms/admin/banners', { method: 'POST', body: fd });
+          }
         }
 
-        // Upload to site_settings banner endpoint for bucket 'banners' persistence and log responses
+        if (res && (res.image_url || res.banner_url || res.url)) {
+          uploadedUrl = res.image_url || res.banner_url || res.url;
+        }
+
+        // Also upload to site_settings/banner so live site header banner gets remote public URL
         try {
           const settingFd = new FormData();
           settingFd.append('banner', file);
-          const postRes = await api('/cms/admin/site-settings/banner', { method: 'POST', body: settingFd });
-          console.log('[POST /api/cms/admin/site-settings/banner Response JSON]:', postRes);
-          console.log(JSON.stringify(postRes, null, 2));
-
-          const getRes = await api('/cms/site-settings/banner', { method: 'GET' });
-          console.log('[GET /api/cms/site-settings/banner Response JSON]:', getRes);
-          console.log(JSON.stringify(getRes, null, 2));
-        } catch (e) {
-          console.warn('Site setting banner sync notice:', e.message);
+          await apiLive('/cms/admin/site-settings/banner', { method: 'POST', body: settingFd });
+        } catch (e1) {
+          try {
+            const settingFd = new FormData();
+            settingFd.append('banner', file);
+            await api('/cms/admin/site-settings/banner', { method: 'POST', body: settingFd });
+          } catch (e2) {}
         }
       } else {
         const body = {
           type: type || 'hero',
           title, subtitle, badge_text, cta_text, cta_url,
-          image_url: finalImageUrl || image_url,
+          image_url: uploadedUrl,
           visible, festival_tag
         };
-        if (isEdit) {
-          await api('/cms/admin/banners/' + banner.id, { method: 'PUT', body });
-        } else {
-          await api('/cms/admin/banners', { method: 'POST', body });
+
+        let res;
+        try {
+          if (isEdit) {
+            res = await apiLive('/cms/admin/banners/' + banner.id, { method: 'PUT', body });
+          } else {
+            res = await apiLive('/cms/admin/banners', { method: 'POST', body });
+          }
+        } catch (eLive) {
+          if (isEdit) {
+            res = await api('/cms/admin/banners/' + banner.id, { method: 'PUT', body });
+          } else {
+            res = await api('/cms/admin/banners', { method: 'POST', body });
+          }
         }
 
-        if (image_url || finalImageUrl) {
+        if (uploadedUrl) {
           try {
-            const postRes = await api('/cms/admin/site-settings/banner', { method: 'POST', body: { banner_url: finalImageUrl || image_url } });
-            console.log('[POST /api/cms/admin/site-settings/banner Response JSON]:', postRes);
-            console.log(JSON.stringify(postRes, null, 2));
-
-            const getRes = await api('/cms/site-settings/banner', { method: 'GET' });
-            console.log('[GET /api/cms/site-settings/banner Response JSON]:', getRes);
-            console.log(JSON.stringify(getRes, null, 2));
-          } catch(e) {}
+            await apiLive('/cms/admin/site-settings/banner', { method: 'POST', body: { banner_url: uploadedUrl } });
+          } catch (e1) {
+            try { await api('/cms/admin/site-settings/banner', { method: 'POST', body: { banner_url: uploadedUrl } }); } catch (e2) {}
+          }
         }
       }
 
