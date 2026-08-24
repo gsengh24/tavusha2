@@ -56,23 +56,27 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ─── LOADER ───────────────────────────────────────────────────
+let isLoaderHidden = false;
+function hideLoader() {
+  const loader = document.getElementById('loader');
+  if (!loader || isLoaderHidden) return;
+  isLoaderHidden = true;
+  loader.classList.add('hidden');
+  document.body.style.overflow = '';
+  triggerHeroAnimation();
+}
+
 function initLoader() {
   const loader = document.getElementById('loader');
   if (!loader) return;
-  const hide = () => {
-    if (loader.classList.contains('hidden')) return;
-    loader.classList.add('hidden');
-    document.body.style.overflow = '';
-    triggerHeroAnimation();
-  };
-  // Hide as soon as DOM is interactive
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    setTimeout(hide, 100);
-  } else {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(hide, 100), { once: true });
+
+  const heroImg = document.querySelector('.hero__model-img');
+  if (heroImg && heroImg.complete && heroImg.naturalWidth > 0 && heroImg.src && !heroImg.src.startsWith('data:image/gif')) {
+    setTimeout(hideLoader, 150);
   }
-  // Hard cap: never stay on screen more than 2.5s regardless of pending fetches
-  setTimeout(hide, 2500);
+
+  // Safety fallback cap: hide loader after max 1.2s
+  setTimeout(hideLoader, 1200);
 }
 
 function triggerHeroAnimation() {
@@ -1381,8 +1385,21 @@ async function loadCmsContent() {
       };
       if (targetBannerUrl) {
         const fixedImg = typeof fixDriveUrl === 'function' ? fixDriveUrl(targetBannerUrl) : targetBannerUrl;
-        heroImg.src = fixedImg;
-        heroImg.alt = heroBanner.title || 'TAVUSHA Hero Banner';
+        
+        try { localStorage.setItem('tavusha_last_hero_banner', fixedImg); } catch(e){}
+
+        if (heroImg.src === fixedImg && heroImg.complete) {
+          heroImg.alt = heroBanner.title || 'TAVUSHA Hero Banner';
+          if (typeof hideLoader === 'function') hideLoader();
+        } else {
+          const pImg = new Image();
+          pImg.onload = pImg.onerror = function() {
+            heroImg.src = fixedImg;
+            heroImg.alt = heroBanner.title || 'TAVUSHA Hero Banner';
+            if (typeof hideLoader === 'function') hideLoader();
+          };
+          pImg.src = fixedImg;
+        }
       }
     }
     if (heroBanner.title) {
@@ -1535,6 +1552,9 @@ async function loadCmsContent() {
   if (cms.popup && cms.popup.enabled) {
     setTimeout(() => showCmsPopup(cms.popup), (cms.popup.delay || 5) * 1000);
   }
+
+  // Ensure loader hides smoothly once CMS content is fully applied
+  if (typeof hideLoader === 'function') hideLoader();
 }
 
 function handleLinkNavigation(url) {

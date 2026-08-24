@@ -228,8 +228,19 @@
 
       <div class="hero__model-wrap">
         <!-- mix-blend-mode: multiply creates cut-out effect on cream wash bg -->
-        <img class="hero__model-img" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
+        <img class="hero__model-img" id="heroModelImg" src="https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900&q=90"
           alt="TAVUSHA — Style Every Moment" fetchpriority="high">
+        <script>
+          (function(){
+            try {
+              var cached = localStorage.getItem('tavusha_last_hero_banner');
+              if (cached) {
+                var img = document.getElementById('heroModelImg');
+                if (img) img.src = cached;
+              }
+            } catch(e){}
+          })();
+        </script>
       </div>
     </div>
 
