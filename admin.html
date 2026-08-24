@@ -2103,13 +2103,19 @@ async function showAdminTab(tab) {
       window.currentReviews = Array.isArray(testiCfg.reviews) && testiCfg.reviews.length > 0 ? testiCfg.reviews : defaultReviews;
       const currentReviews = window.currentReviews;
 
+      let rawAnnText = (state.sections.find(s => s.key === 'announcement')?.config?.text) || '';
+      let cleanAnnText = (typeof sanitizeCmsText === 'function' ? sanitizeCmsText(rawAnnText) : rawAnnText);
+      if (!cleanAnnText || cleanAnnText.includes('âœ') || cleanAnnText.includes('â‚')) {
+        cleanAnnText = '✦  Free Shipping on Orders Above ₹2,499  ·  Code TAVUSHA10 — 10% Off First Order  ·  New Arrivals Every Friday  ✦';
+      }
+
       content.innerHTML = `
         <!-- ANNOUNCEMENT BAR -->
         <div class="cms-group">
           <div class="cms-group__title">Top Announcement Bar</div>
           <div class="sp-qe-field" style="margin-bottom:12px">
             <label class="sp-qe-label">Announcement Text</label>
-            <input type="text" id="cmsAnnText" class="sp-input" value="${esc((state.sections.find(s => s.key === 'announcement')?.config?.text) || '')}"/>
+            <input type="text" id="cmsAnnText" class="sp-input" value="${esc(cleanAnnText)}"/>
           </div>
           <label class="sp-toggle-row">
             <span class="sp-field-label" style="margin:0">Visible</span>
@@ -2388,11 +2394,20 @@ async function showAdminTab(tab) {
 
       // Handlers
       document.getElementById('saveCmsAnn').onclick = async () => {
-        const text = document.getElementById('cmsAnnText').value;
+        const rawText = document.getElementById('cmsAnnText').value;
+        const text = (typeof sanitizeCmsText === 'function' ? sanitizeCmsText(rawText) : rawText);
         const visible = document.getElementById('cmsAnnVis').checked;
         await api('/cms/admin/sections/announcement', { method: 'PUT', body: { visible, config: { text } } });
+        let annSec = state.sections.find(s => s.key === 'announcement');
+        if (annSec) {
+          annSec.visible = visible;
+          if (!annSec.config) annSec.config = {};
+          annSec.config.text = text;
+        } else {
+          state.sections.push({ key: 'announcement', visible, config: { text } });
+        }
         await syncOfflineCmsData();
-        alert('Announcement saved!');
+        alert('Announcement saved successfully!');
         showAdminTab('cms');
       };
       document.getElementById('saveCmsPoster').onclick = async () => {
@@ -4365,6 +4380,19 @@ function downloadCourierLabel(orderId) {
     </html>
   `);
   printWindow.document.close();
+}
+
+function sanitizeCmsText(str) {
+  if (!str || typeof str !== 'string') return str || '';
+  return str
+    .replace(/âœ¦/g, '✦')
+    .replace(/â‚¹/g, '₹')
+    .replace(/Â·/g, '·')
+    .replace(/â€”/g, '—')
+    .replace(/â€“/g, '–')
+    .replace(/Ã¢â‚¬â€/g, '—')
+    .replace(/Ã¢â‚¬Â/g, '’')
+    .trim();
 }
 
 async function syncOfflineCmsData() {

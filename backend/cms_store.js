@@ -21,7 +21,16 @@ function load() {
     banners: [
       { id: 'b1', type: 'hero', title: 'Style Every Moment', subtitle: 'Discover curated elegance and edge.', badge_text: 'New Summer 2026', cta_text: 'Shop Now', cta_url: '#', image_url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900', visible: true, sort_order: 0 }
     ],
-    sections: [],
+    sections: [
+      {
+        key: 'announcement',
+        label: 'Top Announcement Bar',
+        visible: true,
+        config: {
+          text: '✦  Free Shipping on Orders Above ₹2,499  ·  Code TAVUSHA10 — 10% Off First Order  ·  New Arrivals Every Friday  ✦'
+        }
+      }
+    ],
     popups: []
   };
 }

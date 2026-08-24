@@ -216,10 +216,43 @@ router.get('/popup', async (req, res) => {
   }
 });
 
+function cleanUtf8Text(str) {
+  if (!str || typeof str !== 'string') return str || '';
+  return str
+    .replace(/âœ¦/g, '✦')
+    .replace(/â‚¹/g, '₹')
+    .replace(/Â·/g, '·')
+    .replace(/â€”/g, '—')
+    .replace(/â€“/g, '–')
+    .replace(/Ã¢â‚¬â€/g, '—')
+    .replace(/Ã¢â‚¬Â/g, '’');
+}
+
 // GET /api/cms/sections
 router.get('/sections', async (req, res) => {
   try {
-    const sections = await CmsContent.getSections();
+    let sections;
+    try {
+      sections = await CmsContent.getSections();
+    } catch (e) {
+      sections = fileStore.getSections();
+    }
+    if (!Array.isArray(sections)) sections = [];
+
+    // Ensure announcement section exists in list
+    let ann = sections.find(s => s.key === 'announcement');
+    if (!ann) {
+      ann = {
+        key: 'announcement',
+        label: 'Top Announcement Bar',
+        visible: true,
+        config: { text: '✦  Free Shipping on Orders Above ₹2,499  ·  Code TAVUSHA10 — 10% Off First Order  ·  New Arrivals Every Friday  ✦' }
+      };
+      sections.unshift(ann);
+    } else if (ann.config?.text) {
+      ann.config.text = cleanUtf8Text(ann.config.text);
+    }
+
     res.json(sections);
   } catch (err) {
     res.status(500).json({ message: 'Failed to load sections', error: err.message });
@@ -229,7 +262,20 @@ router.get('/sections', async (req, res) => {
 // GET /api/cms/announcement
 router.get('/announcement', async (req, res) => {
   try {
-    const ann = await CmsContent.getAnnouncement();
+    let ann;
+    try { ann = await CmsContent.getAnnouncement(); } catch (e) {}
+    if (!ann) {
+      const sections = fileStore.getSections();
+      ann = sections.find(s => s.key === 'announcement') || {
+        key: 'announcement',
+        label: 'Top Announcement Bar',
+        visible: true,
+        config: { text: '✦  Free Shipping on Orders Above ₹2,499  ·  Code TAVUSHA10 — 10% Off First Order  ·  New Arrivals Every Friday  ✦' }
+      };
+    }
+    if (ann?.config?.text) {
+      ann.config.text = cleanUtf8Text(ann.config.text);
+    }
     res.json(ann);
   } catch (err) {
     res.status(500).json({ message: 'Failed to load announcement', error: err.message });
