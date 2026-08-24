@@ -154,18 +154,31 @@ router.get('/public', async (req, res) => {
 
     const heroBanners = (banners || []).filter(b => b.type === 'hero');
     const festivalBanners = (banners || []).filter(b => b.type === 'festival');
-    const annText = announcement?.config?.text || (typeof announcement === 'string' ? announcement : (announcement?.text || ''));
+    const annText = cleanUtf8Text(announcement?.config?.text || (typeof announcement === 'string' ? announcement : (announcement?.text || '')));
 
     // Override hero banner image with site_settings banner_url if present
     if (settingsMap.banner_url && heroBanners.length > 0) {
       heroBanners[0].image_url = settingsMap.banner_url;
     }
 
+    // Sanitize section config text fields to fix mojibake
+    const textConfigKeys = ['eyebrow','title','main_badge','main_title','main_desc','side1_badge','side1_title','side1_quote','side2_badge','side2_title','side2_quote','quote_text','quote_author','text'];
+    const cleanedSections = (sections || []).map(s => {
+      if (!s.config || typeof s.config !== 'object') return s;
+      const cleanConfig = { ...s.config };
+      textConfigKeys.forEach(k => {
+        if (cleanConfig[k] && typeof cleanConfig[k] === 'string') {
+          cleanConfig[k] = cleanUtf8Text(cleanConfig[k]);
+        }
+      });
+      return { ...s, config: cleanConfig };
+    });
+
     res.json({
       banners: banners || [],
       heroBanners,
       festivalBanners,
-      sections: sections || [],
+      sections: cleanedSections,
       site_settings: settingsMap,
       banner_url: settingsMap.banner_url || (heroBanners[0]?.image_url || ''),
       popup: popup ? {

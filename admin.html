@@ -2090,6 +2090,14 @@ async function showAdminTab(tab) {
       const posterSpread = state.sections.find(s => s.key === 'poster_spread' || s.key === 'poster-spread');
       let posterCfg = posterSpread?.config || {};
       if (typeof posterCfg === 'string') { try { posterCfg = JSON.parse(posterCfg); } catch(e) {} }
+
+      // Sanitize all poster text fields to fix UTF-8 mojibake
+      const posterTextFields = ['eyebrow','title','main_badge','main_title','main_desc','side1_badge','side1_title','side1_quote','side2_badge','side2_title','side2_quote','quote_text','quote_author'];
+      posterTextFields.forEach(k => {
+        if (posterCfg[k] && typeof sanitizeCmsText === 'function') {
+          posterCfg[k] = sanitizeCmsText(posterCfg[k]);
+        }
+      });
       const testiSec = state.sections.find(s => s.key === 'testimonials' || s.key === 'reviews');
       let testiCfg = testiSec?.config || {};
       if (typeof testiCfg === 'string') { try { testiCfg = JSON.parse(testiCfg); } catch(e) {} }
@@ -2431,10 +2439,6 @@ async function showAdminTab(tab) {
           let side1ImgUrl = fixDriveUrl((document.getElementById('cp_side1_image').value || '').trim());
           let side2ImgUrl = fixDriveUrl((document.getElementById('cp_side2_image').value || '').trim());
 
-          if (mainFile) mainImgUrl = await readFileAsDataUrl(mainFile);
-          if (side1File) side1ImgUrl = await readFileAsDataUrl(side1File);
-          if (side2File) side2ImgUrl = await readFileAsDataUrl(side2File);
-
           const config = {
             eyebrow: document.getElementById('cp_eyebrow').value,
             title: document.getElementById('cp_title').value,
@@ -2461,21 +2465,32 @@ async function showAdminTab(tab) {
             quote_author: document.getElementById('cp_quote_author').value,
           };
 
-          if (mainFile || side1File || side2File) {
-            const formData = new FormData();
-            formData.append('visible', visible);
-            formData.append('config', JSON.stringify(config));
-            if (mainFile) formData.append('main_image', mainFile);
-            if (side1File) formData.append('side1_image', side1File);
-            if (side2File) formData.append('side2_image', side2File);
+          // Always use FormData so images go to Supabase Storage on the real backend
+          const formData = new FormData();
+          formData.append('visible', visible);
+          formData.append('config', JSON.stringify(config));
+          if (mainFile) formData.append('main_image', mainFile);
+          if (side1File) formData.append('side1_image', side1File);
+          if (side2File) formData.append('side2_image', side2File);
 
+          try {
+            await apiLive('/cms/admin/sections/poster_spread', { method: 'PUT', body: formData });
+          } catch (eLive) {
+            console.warn('[Poster Save] apiLive failed, using api fallback:', eLive.message);
             await api('/cms/admin/sections/poster_spread', { method: 'PUT', body: formData });
+          }
+
+          // Update in-memory state so CMS tab shows correct values after save
+          const secIdx = state.sections.findIndex(s => s.key === 'poster_spread' || s.key === 'poster-spread');
+          if (secIdx >= 0) {
+            state.sections[secIdx].visible = visible;
+            state.sections[secIdx].config = config;
           } else {
-            await api('/cms/admin/sections/poster_spread', { method: 'PUT', body: { visible, config } });
+            state.sections.push({ key: 'poster_spread', label: 'Campaign Poster Spread', visible, config });
           }
 
           await syncOfflineCmsData();
-          alert('Campaign Poster Spread configuration saved!');
+          alert('Campaign Poster Spread saved and synced to live site!');
           showAdminTab('cms');
         } catch (err) {
           alert('Error saving poster configuration: ' + (err.message || 'Server error'));
