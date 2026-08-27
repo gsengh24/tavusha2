@@ -354,6 +354,48 @@ router.patch('/:id/reject', protect, adminOnly, async (req, res) => {
   }
 });
 
+// DELETE /api/products/cleanup/untitled  (admin only — bulk purge untitled records)
+router.delete('/cleanup/untitled', protect, adminOnly, async (req, res) => {
+  try {
+    const supabaseClient = require('../supabase');
+    // Find all untitled products
+    const { data: rows, error: fetchErr } = await supabaseClient
+      .from('products')
+      .select('id, title, images, videos')
+      .or('title.is.null,title.eq.,title.ilike.untitled product');
+
+    if (fetchErr) return res.status(500).json({ message: 'Fetch failed', error: fetchErr.message });
+    if (!rows || rows.length === 0) return res.json({ message: 'No untitled products found', deleted: 0 });
+
+    const ids = rows.map(r => r.id);
+
+    // Best-effort remove storage assets
+    const allStorageKeys = rows.flatMap(r => [
+      ...(r.images || []),
+      ...(r.videos || [])
+    ])
+      .filter(url => url && url.includes('tavusha-products'))
+      .map(url => url.split('/tavusha-products/')[1])
+      .filter(Boolean);
+
+    if (allStorageKeys.length) {
+      await supabaseClient.storage.from('tavusha-products').remove(allStorageKeys).catch(() => {});
+    }
+
+    // Hard delete from DB
+    const { error: delErr } = await supabaseClient
+      .from('products')
+      .delete()
+      .in('id', ids);
+
+    if (delErr) return res.status(500).json({ message: 'Delete failed', error: delErr.message });
+
+    res.json({ message: `Deleted ${ids.length} untitled product(s)`, deleted: ids.length, ids });
+  } catch (err) {
+    res.status(500).json({ message: 'Cleanup failed', error: err.message });
+  }
+});
+
 // DELETE /api/products/:id/permanent
 router.delete('/:id/permanent', protect, adminOnly, async (req, res) => {
   try {

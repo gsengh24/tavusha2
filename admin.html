@@ -1023,13 +1023,28 @@ async function fetchAdminProducts() {
     console.warn('Backend products fetch notice:', e);
   }
 
+  // Load IDs that have been soft/hard deleted so catalog duplicates are not re-merged
+  let deletedIds = [];
+  try {
+    deletedIds = JSON.parse(localStorage.getItem('sp_deleted_products') || '[]').map(d => String(d).toLowerCase());
+  } catch(e) {}
+
   const catalog = (typeof EXCEL_PRODUCTS !== 'undefined' && Array.isArray(EXCEL_PRODUCTS)) ? EXCEL_PRODUCTS : (typeof DEFAULT_MOCK_PRODS !== 'undefined' ? DEFAULT_MOCK_PRODS : []);
   const merged = [...backendProds];
 
   catalog.forEach(catItem => {
     if (!catItem) return;
+    const rawTitle = catItem.title || catItem.name || '';
+    // Skip untitled catalog entries — they are invalid/placeholder rows
+    if (!rawTitle.trim() || rawTitle.trim().toLowerCase() === 'untitled product') return;
+
     const catId = String(catItem._id || catItem.id || catItem.sku || '').toLowerCase();
     const catSku = String(catItem.sku || '').toLowerCase();
+
+    // Skip if this ID was previously deleted by admin
+    if (catId && deletedIds.includes(catId)) return;
+    if (catSku && deletedIds.includes(catSku)) return;
+
     const exists = merged.some(m => {
       const mId = String(m._id || m.id || m.sku || '').toLowerCase();
       const mSku = String(m.sku || '').toLowerCase();
@@ -1039,13 +1054,17 @@ async function fetchAdminProducts() {
       merged.push({
         ...catItem,
         _id: catItem._id || catItem.id || catItem.sku || ('cat_' + Math.random().toString(36).substr(2, 9)),
-        title: catItem.title || catItem.name || 'Untitled Product',
+        title: rawTitle,
         status: catItem.status || 'approved'
       });
     }
   });
 
-  return merged;
+  // Filter any remaining untitled entries that may have come from backend
+  return merged.filter(p => {
+    const t = (p.title || '').trim();
+    return t && t.toLowerCase() !== 'untitled product';
+  });
 }
 
 const ADMIN_EMAILS = ['admin@tavusha.com', (localStorage.getItem('sp_admin_email') || '').toLowerCase()];
@@ -1723,6 +1742,9 @@ async function showAdminTab(tab) {
       window.prodCategoryFilter = window.prodCategoryFilter || 'all';
       window.prodStockFilter = window.prodStockFilter || 'all';
       
+      // Count untitled products that can be bulk-removed
+      const untitledCount = state.products.filter(p => !p.title || p.title.trim().toLowerCase() === 'untitled product').length;
+
       content.innerHTML = `
         <div class="control-panel">
           <div class="control-panel__search">
@@ -1750,6 +1772,7 @@ async function showAdminTab(tab) {
               <option value="outofstock" ${window.prodStockFilter === 'outofstock' ? 'selected' : ''}>Out of Stock</option>
             </select>
           </div>
+          ${untitledCount > 0 ? `<button id="removeUntitledBtn" class="sp-mini-btn sp-mini-btn--danger" style="white-space:nowrap; padding:8px 14px; font-size:0.8rem;">🗑 Remove All Untitled (${untitledCount})</button>` : ''}
         </div>
         
         <div class="table-container">
@@ -1786,7 +1809,39 @@ async function showAdminTab(tab) {
       searchInput.oninput = filterFn;
       catSelect.onchange = filterFn;
       stockSelect.onchange = filterFn;
-      
+
+      // Bulk remove all untitled products
+      const removeUntitledBtn = document.getElementById('removeUntitledBtn');
+      if (removeUntitledBtn) {
+        removeUntitledBtn.onclick = async () => {
+          const untitled = state.products.filter(p => !p.title || p.title.trim().toLowerCase() === 'untitled product');
+          const totalToDelete = untitled.length;
+          if (!totalToDelete) return;
+          if (!confirm(`Permanently delete ${totalToDelete} untitled product(s) from the database? This cannot be undone.`)) return;
+          removeUntitledBtn.disabled = true;
+          removeUntitledBtn.textContent = `⏳ Cleaning database…`;
+
+          // Try backend bulk-cleanup first (clears entire untitled set in one call)
+          let backendCleaned = 0;
+          try {
+            const result = await apiLive('/products/cleanup/untitled', { method: 'DELETE' });
+            backendCleaned = result.deleted || 0;
+          } catch(e) {
+            console.warn('Backend bulk cleanup unavailable, falling back to per-record delete:', e);
+          }
+
+          // Per-record cleanup for any remaining local entries not covered by backend
+          let done = backendCleaned;
+          for (const p of untitled) {
+            if (backendCleaned > 0 && !String(p._id).startsWith('cat_')) continue; // already deleted by backend route
+            await deleteProductById(p._id, true);
+            done++;
+            removeUntitledBtn.textContent = `⏳ Deleted ${done}/${totalToDelete}…`;
+          }
+          showAdminTab('products');
+        };
+      }
+
       renderFilteredProductsTable();
     
     } else if (tab === 'inventory') {
@@ -4158,9 +4213,31 @@ function renderFilteredProductsTable() {
   // Bind actions
   tbody.querySelectorAll('.tblEditBtn').forEach(b => b.onclick = () => openProductForm(state.products.find(p => p._id === b.dataset.id)));
   tbody.querySelectorAll('.tblSaveBtn').forEach(b => b.onclick = () => quickSavePriceStockTable(b.dataset.id, b));
-  tbody.querySelectorAll('.tblApprBtn').forEach(b => b.onclick = async () => { await api('/products/' + b.dataset.id + '/approve', { method: 'PATCH' }); showAdminTab('products'); });
-  tbody.querySelectorAll('.tblRejBtn').forEach(b => b.onclick = async () => { const reason = prompt('Reason for rejection?') || ''; await api('/products/' + b.dataset.id + '/reject', { method: 'PATCH', body: { reason } }); showAdminTab('products'); });
-  tbody.querySelectorAll('.tblDelBtn').forEach(b => b.onclick = async () => { if (confirm('Permanently delete this product?')) { await deleteProductById(b.dataset.id, true); showAdminTab('products'); } });
+  tbody.querySelectorAll('.tblApprBtn').forEach(b => b.onclick = async () => {
+    try {
+      await apiLive('/products/' + b.dataset.id + '/approve', { method: 'PATCH' });
+    } catch(e) {
+      await api('/products/' + b.dataset.id + '/approve', { method: 'PATCH' });
+    }
+    showAdminTab('products');
+  });
+  tbody.querySelectorAll('.tblRejBtn').forEach(b => b.onclick = async () => {
+    const reason = prompt('Reason for rejection?') || '';
+    try {
+      await apiLive('/products/' + b.dataset.id + '/reject', { method: 'PATCH', body: { reason } });
+    } catch(e) {
+      await api('/products/' + b.dataset.id + '/reject', { method: 'PATCH', body: { reason } });
+    }
+    showAdminTab('products');
+  });
+  tbody.querySelectorAll('.tblDelBtn').forEach(b => b.onclick = async () => {
+    if (confirm('Permanently delete this product? This cannot be undone.')) {
+      b.disabled = true;
+      b.textContent = '…';
+      await deleteProductById(b.dataset.id, true);
+      showAdminTab('products');
+    }
+  });
 }
 
 function stepProdTableStock(id, delta) {
