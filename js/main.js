@@ -269,7 +269,7 @@ function renderProductCard(product, colorIdx) {
     `<svg width="10" height="10" viewBox="0 0 24 24" fill="${i < Math.round(product.rating) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
   ).join('');
 
-  const isWishlisted = TAVUSHA.wishlist.includes(product.id);
+  const isWishlisted = TAVUSHA.wishlist.includes(String(product.id));
 
   return `
     <div class="product-card reveal visible" data-id="${product.id}" onclick="openQuickView('${product.id}')">
@@ -501,7 +501,7 @@ function openQuickView(id) {
   ).join('');
 
   const wishBtn = document.getElementById('quickViewWishBtn');
-  const isWish  = TAVUSHA.wishlist.includes(id);
+  const isWish  = TAVUSHA.wishlist.includes(String(id));
   wishBtn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="${isWish ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
   ${isWish ? 'Remove from Wishlist' : 'Add to Wishlist'}`;
 
@@ -1548,17 +1548,12 @@ async function loadCmsContent() {
   const swDiscount = liveSitewideDiscount || cms.site_settings?.sitewide_discount || localCms?.site_settings?.sitewide_discount || localSw;
   if (swDiscount) {
     TAVUSHA.sitewideDiscount = swDiscount;
-    if (swDiscount.enabled && swDiscount.title) {
-      const bar = document.getElementById('announcement');
-      if (bar) {
-        const textEl = bar.querySelector('.announcement__text');
-        if (textEl) textEl.textContent = swDiscount.title;
-      }
-    }
-    // Re-render product grid / rows if function exists
+    // Re-render product grid / rows so discounted prices are shown immediately
     if (typeof renderHeroProductRow === 'function') renderHeroProductRow();
     if (typeof renderShopProducts === 'function') renderShopProducts();
     if (typeof renderShopGrid === 'function') renderShopGrid();
+    // Re-render product detail page price if on product.html
+    if (typeof initPDP === 'function') initPDP();
   }
 
   const DEFAULT_SITE_BANNERS = [
@@ -1575,15 +1570,22 @@ async function loadCmsContent() {
   const heroBanners = allBanners.filter(b => b.visible !== false && (b.type === 'hero' || !b.type));
   const festBanners = allBanners.filter(b => b.visible !== false && b.type === 'festival');
 
-  // Announcement bar text
-  if (cms.announcement) {
+  // Announcement bar text — sitewide discount title takes priority when active
+  {
     const bar = document.getElementById('announcement');
     if (bar) {
       const textEl = bar.querySelector('.announcement__text');
-      const annText = typeof cms.announcement === 'string' 
-        ? cms.announcement 
-        : (cms.announcement.config?.text || cms.announcement.text || '');
-      if (textEl && annText) textEl.textContent = annText;
+      if (textEl) {
+        if (swDiscount && swDiscount.enabled && swDiscount.title) {
+          // Active sitewide discount overrides the generic announcement text
+          textEl.textContent = swDiscount.title;
+        } else if (cms.announcement) {
+          const annText = typeof cms.announcement === 'string'
+            ? cms.announcement
+            : (cms.announcement.config?.text || cms.announcement.text || '');
+          if (annText) textEl.textContent = annText;
+        }
+      }
     }
   }
 
