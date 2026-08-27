@@ -446,8 +446,8 @@ function getFiltered(){
     p = [...allProds];
   }
   
-  if (currentSort === 'price-asc') p.sort((a,b) => (a.price||0) - (b.price||0));
-  else if (currentSort === 'price-desc') p.sort((a,b) => (b.price||0) - (a.price||0));
+  if (currentSort === 'price-asc') p.sort((a,b) => ((typeof getEffectiveProductPrice==='function'?getEffectiveProductPrice(a).price:a.price)||0) - ((typeof getEffectiveProductPrice==='function'?getEffectiveProductPrice(b).price:b.price)||0));
+  else if (currentSort === 'price-desc') p.sort((a,b) => ((typeof getEffectiveProductPrice==='function'?getEffectiveProductPrice(b).price:b.price)||0) - ((typeof getEffectiveProductPrice==='function'?getEffectiveProductPrice(a).price:a.price)||0));
   else if (currentSort === 'rating') p.sort((a,b) => (b.rating||0) - (a.rating||0));
   else if (currentSort === 'new') p.sort((a,b) => (b.isNew?1:0) - (a.isNew?1:0));
   return p;
@@ -476,12 +476,31 @@ function renderShopGrid(){
   g.innerHTML = prods.map((p, i) => {
     const c = cardColorsArr[i % cardColorsArr.length];
     const w = wishlistArr.includes(p.id);
-    const bd = p.badge ? `<span class="product-card__badge ${p.badge==='sale'?'badge badge--red':p.badge==='limited'?'badge badge--warm':p.badge==='bestseller'?'badge badge--gold':'badge'}">${p.badgeText||p.badge}</span>` : '';
-    const disc = (p.originalPrice && p.price) ? `<div style="font-size:0.68rem;font-weight:700;color:#B91C1C;margin-top:2px">${Math.round((1 - p.price / p.originalPrice) * 100)}% OFF</div>` : '';
+
+    // Calculate effective price considering active site-wide discount
+    const eff = (typeof getEffectiveProductPrice === 'function')
+      ? getEffectiveProductPrice(p)
+      : { price: p.price, originalPrice: p.originalPrice, hasSitewideDiscount: false };
+    
+    const displayPrice = eff.price;
+    const displayOrig = eff.originalPrice;
+
+    let bd = '';
+    if (eff.hasSitewideDiscount && typeof TAVUSHA !== 'undefined' && TAVUSHA.sitewideDiscount) {
+      const sw = TAVUSHA.sitewideDiscount;
+      const swTag = sw.discount_type === 'percent' ? `${sw.discount_value}% OFF` : `₹${sw.discount_value} OFF`;
+      bd = `<span class="product-card__badge badge badge--red" style="background:#e11d48; color:#fff; font-weight:800; border-radius:999px; padding:3px 10px;">${swTag}</span>`;
+    } else if (p.badge) {
+      bd = `<span class="product-card__badge ${p.badge==='sale'?'badge badge--red':p.badge==='limited'?'badge badge--warm':p.badge==='bestseller'?'badge badge--gold':'badge'}">${p.badgeText||p.badge}</span>`;
+    }
+
+    const disc = (displayOrig && displayOrig > displayPrice)
+      ? `<div style="font-size:0.68rem;font-weight:700;color:#B91C1C;margin-top:2px">${Math.round((1 - displayPrice / displayOrig) * 100)}% OFF</div>`
+      : '';
     const rawImg = p.image || (Array.isArray(p.images) && p.images[0]) || p.imageAlt || '';
     const imgSrc = (typeof fixDriveUrl === 'function') ? fixDriveUrl(rawImg) : rawImg;
-    const safePrice = p.price ? p.price.toLocaleString('en-IN') : '0';
-    const safeOrigPrice = p.originalPrice ? p.originalPrice.toLocaleString('en-IN') : '';
+    const safePrice = displayPrice ? displayPrice.toLocaleString('en-IN') : '0';
+    const safeOrigPrice = (displayOrig && displayOrig > displayPrice) ? displayOrig.toLocaleString('en-IN') : '';
 
     return `<div class="product-card reveal visible" onclick="location.href='product.html?id=${p.id || p._id}'">
       <div class="product-card__media" style="--card-bg:${c}">
@@ -505,7 +524,7 @@ function renderShopGrid(){
         </div>
         <div style="display:flex;align-items:baseline;gap:8px">
           <span class="product-card__price">&#8377;${safePrice}</span>
-          ${p.originalPrice ? `<span class="product-card__price-orig">&#8377;${safeOrigPrice}</span>` : ''}
+          ${safeOrigPrice ? `<span class="product-card__price-orig">&#8377;${safeOrigPrice}</span>` : ''}
         </div>
         ${disc}
       </div>

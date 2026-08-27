@@ -836,6 +836,26 @@ async function handleMockApi(path, options = {}) {
     }
   }
 
+  if (path.includes('/sitewide_discount')) {
+    if (method === 'GET') {
+      const val = getLocal('sp_sitewide_discount', { enabled: false, discount_type: 'percent', discount_value: '', title: '' });
+      return { success: true, sitewide_discount: val };
+    }
+    if (method === 'PUT') {
+      let body = options.body || {};
+      if (typeof body === 'string') { try { body = JSON.parse(body); } catch(e){} }
+      const val = body.value !== undefined ? body.value : body;
+      setLocal('sp_sitewide_discount', val);
+      try {
+        let cmsData = getLocal('cms_data', {});
+        cmsData.site_settings = cmsData.site_settings || {};
+        cmsData.site_settings.sitewide_discount = val;
+        setLocal('cms_data', cmsData);
+      } catch(e){}
+      return { success: true, setting: { key: 'sitewide_discount', value: val } };
+    }
+  }
+
   // ─── NEW SHIPPING DEMO API ──────────────────────────────────────────────
   if (path === '/shipping/admin/zones') {
     const zones = getLocal('sp_demo_zones', DEFAULT_MOCK_ZONES);
@@ -4644,9 +4664,13 @@ async function renderCouponsTab(content) {
       saveSwBtn.textContent = 'Saving...';
 
       try {
-        await api('/cms/admin/site-settings/sitewide_discount', { method: 'PUT', body: { value: payload } });
+        await apiLive('/cms/admin/site-settings/sitewide_discount', { method: 'PUT', body: { value: payload } });
       } catch (err) {
-        console.warn('Backend sitewide discount save error:', err);
+        try {
+          await api('/cms/admin/site-settings/sitewide_discount', { method: 'PUT', body: { value: payload } });
+        } catch(e2) {
+          console.warn('Backend sitewide discount save notice:', e2);
+        }
       }
 
       localStorage.setItem('sp_sitewide_discount', JSON.stringify(payload));

@@ -1475,18 +1475,24 @@ function clearCart() {
 async function loadCmsContent() {
   let cms = null;
   let liveBannerUrl = null;
+  let liveSitewideDiscount = null;
 
   // Fetch live site_settings & public CMS data from Supabase backend on every page load
   try {
-    const [publicRes, settingRes] = await Promise.all([
+    const [publicRes, settingRes, swRes] = await Promise.all([
       fetch(`${API_BASE}/cms/public?_t=` + Date.now(), { cache: 'no-store' }).catch(() => null),
-      fetch(`${API_BASE}/cms/site-settings/banner?_t=` + Date.now(), { cache: 'no-store' }).catch(() => null)
+      fetch(`${API_BASE}/cms/site-settings/banner?_t=` + Date.now(), { cache: 'no-store' }).catch(() => null),
+      fetch(`${API_BASE}/cms/site-settings/sitewide_discount?_t=` + Date.now(), { cache: 'no-store' }).catch(() => null)
     ]);
 
     if (publicRes && publicRes.ok) cms = await publicRes.json();
     if (settingRes && settingRes.ok) {
       const settingData = await settingRes.json();
       if (settingData && settingData.banner_url) liveBannerUrl = settingData.banner_url;
+    }
+    if (swRes && swRes.ok) {
+      const swData = await swRes.json();
+      if (swData && swData.sitewide_discount) liveSitewideDiscount = swData.sitewide_discount;
     }
   } catch { /* backend offline */ }
 
@@ -1539,7 +1545,7 @@ async function loadCmsContent() {
   // Load Global Site-Wide Discount setting
   let localSw = null;
   try { localSw = JSON.parse(localStorage.getItem('sp_sitewide_discount') || 'null'); } catch(e){}
-  const swDiscount = cms.site_settings?.sitewide_discount || localCms?.site_settings?.sitewide_discount || localSw;
+  const swDiscount = liveSitewideDiscount || cms.site_settings?.sitewide_discount || localCms?.site_settings?.sitewide_discount || localSw;
   if (swDiscount) {
     TAVUSHA.sitewideDiscount = swDiscount;
     if (swDiscount.enabled && swDiscount.title) {
@@ -1552,6 +1558,7 @@ async function loadCmsContent() {
     // Re-render product grid / rows if function exists
     if (typeof renderHeroProductRow === 'function') renderHeroProductRow();
     if (typeof renderShopProducts === 'function') renderShopProducts();
+    if (typeof renderShopGrid === 'function') renderShopGrid();
   }
 
   const DEFAULT_SITE_BANNERS = [
