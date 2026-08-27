@@ -1087,16 +1087,17 @@ async function applyCoupon() {
     const res = await fetch(`${API_BASE}/coupons/validate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code, order_amount: subtotal })
+      body: JSON.stringify({ code, subtotal, order_amount: subtotal })
     });
     const data = await res.json();
 
     if (res.ok && data.valid) {
       TAVUSHA.appliedCoupon = data;
+      const discVal = Number(data.discount !== undefined ? data.discount : (data.discount_amount || 0));
       if (msgEl) {
         msgEl.style.display = 'block';
         msgEl.style.color = '#16a34a';
-        msgEl.textContent = `✓ Coupon '${data.coupon.code}' applied! You save ₹${data.discount_amount.toLocaleString('en-IN')}`;
+        msgEl.textContent = `✓ Coupon '${data.coupon.code}' applied! ${data.message || `You save ₹${discVal.toLocaleString('en-IN')}`}`;
       }
       showToast(`Coupon '${data.coupon.code}' applied!`, 'success');
       const pin = document.getElementById('coPincode')?.value?.trim() || '';
@@ -1112,11 +1113,34 @@ async function applyCoupon() {
       updateCheckoutSummary(pin);
     }
   } catch (err) {
-    console.warn('Backend coupon validate notice:', err);
+    console.warn('Backend coupon validate notice (trying local fallback):', err);
+    let localCoupons = [];
+    try { localCoupons = JSON.parse(localStorage.getItem('tavusha_coupons')) || []; } catch(e) {}
+    const c = localCoupons.find(x => String(x.code).toUpperCase() === code);
+    if (c && c.is_active !== false) {
+      let discount = 0;
+      if (c.discount_type === 'percent') {
+        discount = Math.round((subtotal * Number(c.discount_value)) / 100);
+        if (c.max_discount_amount) discount = Math.min(discount, Number(c.max_discount_amount));
+      } else if (c.discount_type === 'flat') {
+        discount = Math.min(subtotal, Number(c.discount_value));
+      }
+      TAVUSHA.appliedCoupon = { valid: true, coupon: c, discount };
+      if (msgEl) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#16a34a';
+        msgEl.textContent = `✓ Coupon '${c.code}' applied! You save ₹${discount.toLocaleString('en-IN')}`;
+      }
+      showToast(`Coupon '${c.code}' applied!`, 'success');
+      const pin = document.getElementById('coPincode')?.value?.trim() || '';
+      updateCheckoutSummary(pin);
+      return;
+    }
+
     if (msgEl) {
       msgEl.style.display = 'block';
       msgEl.style.color = '#dc2626';
-      msgEl.textContent = 'Could not validate coupon. Please check backend connection.';
+      msgEl.textContent = 'Could not validate coupon. Please check connection.';
     }
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = 'Apply'; }

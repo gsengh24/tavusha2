@@ -902,6 +902,48 @@ async function handleMockApi(path, options = {}) {
     }
   }
 
+  // ─── COUPONS DEMO / MOCK API ─────────────────────────────────────────────
+  if (path === '/coupons/admin' || path === '/coupons') {
+    const list = getLocal('tavusha_coupons', []);
+    if (method === 'GET') return list;
+    if (method === 'POST') {
+      const body = options.body || {};
+      const newC = {
+        id: 'cpn_' + Date.now(),
+        code: (body.code || 'SAVE10').toUpperCase(),
+        discount_type: body.discount_type || 'percent',
+        discount_value: Number(body.discount_value) || 10,
+        min_order_amount: Number(body.min_order_amount) || 0,
+        max_discount_amount: body.max_discount_amount ? Number(body.max_discount_amount) : null,
+        max_uses: body.max_uses ? Number(body.max_uses) : null,
+        used_count: 0,
+        expires_at: body.expires_at || null,
+        description: body.description || '',
+        is_active: body.is_active !== false,
+        created_at: new Date().toISOString()
+      };
+      list.unshift(newC);
+      setLocal('tavusha_coupons', list);
+      return newC;
+    }
+  }
+
+  if (path.startsWith('/coupons/admin/')) {
+    const id = path.split('/')[3];
+    const list = getLocal('tavusha_coupons', []);
+    const idx = list.findIndex(c => String(c.id) === String(id));
+    if (method === 'PUT' && idx !== -1) {
+      list[idx] = { ...list[idx], ...(options.body || {}), updated_at: new Date().toISOString() };
+      setLocal('tavusha_coupons', list);
+      return list[idx];
+    }
+    if (method === 'DELETE' && idx !== -1) {
+      list.splice(idx, 1);
+      setLocal('tavusha_coupons', list);
+      return { message: 'Coupon deleted' };
+    }
+  }
+
   return {};
 }
 
@@ -4504,15 +4546,17 @@ async function syncOfflineCmsData() {
 async function renderCouponsTab(content) {
   let coupons = [];
   try {
-    const res = await api('/coupons/admin');
+    let res = await apiLive('/coupons/admin').catch(() => null);
+    if (!res || !Array.isArray(res)) res = await api('/coupons/admin');
     if (Array.isArray(res)) coupons = res;
   } catch (err) {
     console.warn('Backend coupons fetch notice:', err);
+  }
+  if (!Array.isArray(coupons) || coupons.length === 0) {
     try {
       coupons = JSON.parse(localStorage.getItem('tavusha_coupons')) || [];
     } catch(e) {}
   }
-  if (!Array.isArray(coupons)) coupons = [];
   state.coupons = coupons;
 
   let swSetting = null;
@@ -4865,26 +4909,28 @@ function openCouponModal(coupon = null) {
 
     try {
       if (isEdit) {
-        await api('/coupons/admin/' + coupon.id, { method: 'PUT', body: payload });
+        await apiLive('/coupons/admin/' + coupon.id, { method: 'PUT', body: payload }).catch(() => api('/coupons/admin/' + coupon.id, { method: 'PUT', body: payload }));
       } else {
-        await api('/coupons/admin', { method: 'POST', body: payload });
+        await apiLive('/coupons/admin', { method: 'POST', body: payload }).catch(() => api('/coupons/admin', { method: 'POST', body: payload }));
       }
-      closeForm();
-      showAdminTab('coupons');
     } catch (err) {
-      console.warn('Coupon save API notice (using local storage fallback):', err);
-      let localCoupons = [];
-      try { localCoupons = JSON.parse(localStorage.getItem('tavusha_coupons')) || []; } catch(e) {}
-      if (isEdit) {
-        const idx = localCoupons.findIndex(x => String(x.id) === String(coupon.id));
-        if (idx !== -1) localCoupons[idx] = { ...localCoupons[idx], ...payload, updated_at: new Date().toISOString() };
-      } else {
-        localCoupons.push({ id: 'cpn_' + Date.now(), ...payload, used_count: 0, created_at: new Date().toISOString() });
-      }
-      localStorage.setItem('tavusha_coupons', JSON.stringify(localCoupons));
-      closeForm();
-      showAdminTab('coupons');
+      console.warn('Coupon save API notice:', err);
     }
+
+    let localCoupons = [];
+    try { localCoupons = JSON.parse(localStorage.getItem('tavusha_coupons')) || []; } catch(e) {}
+    if (isEdit) {
+      const idx = localCoupons.findIndex(x => String(x.id) === String(coupon.id));
+      if (idx !== -1) localCoupons[idx] = { ...localCoupons[idx], ...payload, updated_at: new Date().toISOString() };
+    } else {
+      const exists = localCoupons.some(x => String(x.code).toUpperCase() === String(payload.code).toUpperCase());
+      if (!exists) {
+        localCoupons.unshift({ id: 'cpn_' + Date.now(), ...payload, used_count: 0, created_at: new Date().toISOString() });
+      }
+    }
+    localStorage.setItem('tavusha_coupons', JSON.stringify(localCoupons));
+    closeForm();
+    showAdminTab('coupons');
   };
 }
 
