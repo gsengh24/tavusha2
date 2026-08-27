@@ -378,6 +378,14 @@ function getFiltered(){
     : ((typeof TAVUSHA_PRODUCTS !== 'undefined' && Array.isArray(TAVUSHA_PRODUCTS)) ? TAVUSHA_PRODUCTS : []);
     
   let p = [...allProds];
+  const deletedIds = JSON.parse(localStorage.getItem('sp_deleted_products') || '[]');
+  p = p.filter(x => {
+    if (!x) return false;
+    const name = (x.name || x.title || '').trim().toLowerCase();
+    if (!name || name.includes('untitled')) return false;
+    const xId = String(x.id || x._id || '');
+    return !deletedIds.some(d => String(d) === xId);
+  });
 
   if (currentQuery) {
     const q = currentQuery.toLowerCase();

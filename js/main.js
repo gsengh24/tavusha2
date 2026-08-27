@@ -309,7 +309,14 @@ function renderHeroProductRow() {
   if (!grid || typeof TAVUSHA_PRODUCTS === 'undefined' || !Array.isArray(TAVUSHA_PRODUCTS)) return;
 
   // Show first 4 trending products without mutating original TAVUSHA_PRODUCTS array
+  const deletedIds = JSON.parse(localStorage.getItem('sp_deleted_products') || '[]');
   const picks = [...TAVUSHA_PRODUCTS]
+    .filter(p => {
+      const name = (p.name || p.title || '').trim().toLowerCase();
+      if (!name || name.includes('untitled')) return false;
+      const pId = String(p.id || p._id || '');
+      return !deletedIds.some(d => String(d) === pId);
+    })
     .sort((a, b) => (b.reviewCount || 0) - (a.reviewCount || 0))
     .slice(0, 4);
 

@@ -1278,10 +1278,37 @@ function renderFilteredStaffProductsTable() {
   tbody.querySelectorAll('.tblSaveBtn').forEach(b => b.onclick = () => quickSavePriceStockTable(b.dataset.id, b));
   tbody.querySelectorAll('.tblDelBtn').forEach(b => b.onclick = async () => { 
     if (confirm('Remove this product?')) { 
-      await api('/products/' + b.dataset.id, { method: 'DELETE' }); 
+      await deleteProductById(b.dataset.id, false); 
       loadStaffProducts(); 
     } 
   });
+}
+
+async function deleteProductById(id, isPermanent = false) {
+  const pId = String(id || '');
+  if (!pId) return;
+  try {
+    const ep = isPermanent ? '/products/' + pId + '/permanent' : '/products/' + pId;
+    await apiLive(ep, { method: 'DELETE' }).catch(() => api(ep, { method: 'DELETE' }));
+  } catch (err) {
+    console.warn('Backend product delete notice:', err);
+  }
+  if (Array.isArray(state.products)) {
+    state.products = state.products.filter(p => String(p._id || p.id) !== pId);
+  }
+  try {
+    let demoProds = JSON.parse(localStorage.getItem('sp_demo_products') || '[]');
+    demoProds = demoProds.filter(p => String(p._id || p.id) !== pId);
+    localStorage.setItem('sp_demo_products', JSON.stringify(demoProds));
+  } catch(e) {}
+  try {
+    let deletedIds = JSON.parse(localStorage.getItem('sp_deleted_products') || '[]');
+    if (!deletedIds.some(d => String(d) === pId)) {
+      deletedIds.push(pId);
+      if (!pId.startsWith('staff-')) deletedIds.push('staff-' + pId);
+      localStorage.setItem('sp_deleted_products', JSON.stringify(deletedIds));
+    }
+  } catch(e) {}
 }
 
 function attachStaff() {
@@ -4133,7 +4160,7 @@ function renderFilteredProductsTable() {
   tbody.querySelectorAll('.tblSaveBtn').forEach(b => b.onclick = () => quickSavePriceStockTable(b.dataset.id, b));
   tbody.querySelectorAll('.tblApprBtn').forEach(b => b.onclick = async () => { await api('/products/' + b.dataset.id + '/approve', { method: 'PATCH' }); showAdminTab('products'); });
   tbody.querySelectorAll('.tblRejBtn').forEach(b => b.onclick = async () => { const reason = prompt('Reason for rejection?') || ''; await api('/products/' + b.dataset.id + '/reject', { method: 'PATCH', body: { reason } }); showAdminTab('products'); });
-  tbody.querySelectorAll('.tblDelBtn').forEach(b => b.onclick = async () => { if (confirm('Permanently delete this product?')) { await api('/products/' + b.dataset.id + '/permanent', { method: 'DELETE' }); showAdminTab('products'); } });
+  tbody.querySelectorAll('.tblDelBtn').forEach(b => b.onclick = async () => { if (confirm('Permanently delete this product?')) { await deleteProductById(b.dataset.id, true); showAdminTab('products'); } });
 }
 
 function stepProdTableStock(id, delta) {

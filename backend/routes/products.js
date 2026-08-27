@@ -95,8 +95,8 @@ async function uploadVideoToSupabase(fileBuffer, originalName) {
 
 // GET /api/products/storefront.js - PUBLIC (must be BEFORE /:id routes)
 router.get('/storefront.js', async (req, res) => {
-  try {
-    const products = await Product.find({ status: 'approved', isDeleted: false });
+    const rawProducts = await Product.find({ status: 'approved', isDeleted: false });
+    const products = rawProducts.filter(p => p.title && !p.title.toLowerCase().includes('untitled'));
     const shaped = products.map((p) => {
       const vars = Array.isArray(p.colorVariants) ? p.colorVariants : [];
       const colors = vars.length > 0

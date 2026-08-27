@@ -547,10 +547,12 @@ function initPDP() {
   const id = /^\d+$/.test(idParam) ? parseInt(idParam, 10) : idParam;
   
   pdpProduct = TAVUSHA_PRODUCTS.find(p=>String(p.id || p._id)===String(id));
-  if (!pdpProduct) {
+  const deletedIds = JSON.parse(localStorage.getItem('sp_deleted_products') || '[]');
+  const pName = (pdpProduct?.title || pdpProduct?.name || '').trim().toLowerCase();
+  if (!pdpProduct || deletedIds.some(d => String(d) === String(id)) || !pName || pName.includes('untitled')) {
     // Product not yet in TAVUSHA_PRODUCTS — storefront.js may still be loading
     // Don't show error yet; storefront loader will call initPDP() again when it finishes
-    if (!window._pdpLoaded) return;
+    if (!window._pdpLoaded && !deletedIds.some(d => String(d) === String(id)) && pName && !pName.includes('untitled')) return;
     document.getElementById('infoName').textContent='Product not found';
     return;
   }
