@@ -4495,18 +4495,69 @@ async function renderCouponsTab(content) {
   if (!Array.isArray(coupons)) coupons = [];
   state.coupons = coupons;
 
+  let swSetting = null;
+  try {
+    const res = await api('/cms/site-settings/sitewide_discount');
+    if (res && res.sitewide_discount) swSetting = res.sitewide_discount;
+  } catch (err) {}
+  if (!swSetting) {
+    try { swSetting = JSON.parse(localStorage.getItem('sp_sitewide_discount')) || {}; } catch(e){}
+  }
+  const swEnable = !!(swSetting && swSetting.enabled);
+  const swType = (swSetting && swSetting.discount_type) || 'percent';
+  const swVal = (swSetting && swSetting.discount_value !== undefined && swSetting.discount_value !== null) ? swSetting.discount_value : '';
+  const swTitle = (swSetting && swSetting.title) || '';
+
   content.innerHTML = `
     <div style="background: linear-gradient(135deg, #2d1b4e 0%, #1a102f 100%); color: #fff; padding: 24px; border-radius: 16px; margin-bottom: 24px; position: relative; overflow: hidden; box-shadow: 0 10px 30px rgba(45,27,78,0.25);">
       <div style="position: absolute; right: -20px; bottom: -20px; font-size: 8rem; opacity: 0.08; pointer-events: none;">🎟️</div>
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:16px; position:relative; z-index:1;">
         <div>
-          <span style="background: rgba(255,255,255,0.15); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 4px 12px; border-radius: 99px; letter-spacing: 0.08em; color: #e8b4ff;">Promotions & Discounts</span>
-          <h2 style="font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; margin: 8px 0 4px; color: #fff;">Coupon Code Management</h2>
-          <p style="font-size: 0.82rem; opacity: 0.85; max-width: 600px; margin: 0;">Create and manage discount codes for your customers. Codes work dynamically on checkout and in cart.</p>
+          <span style="background: rgba(255,255,255,0.15); font-size: 0.7rem; font-weight: 700; text-transform: uppercase; padding: 4px 12px; border-radius: 999px; letter-spacing: 0.08em; color: #e8b4ff;">Promotions & Discounts</span>
+          <h2 style="font-family: var(--font-display); font-size: 1.6rem; font-weight: 800; margin: 8px 0 4px; color: #fff;">Discount & Offer Center</h2>
+          <p style="font-size: 0.82rem; opacity: 0.85; max-width: 600px; margin: 0;">Configure site-wide automatic product discounts or create individual promo codes for checkout.</p>
         </div>
         <button id="createNewCouponBtn" class="btn-pill" style="background:#fff; color:#2d1b4e; font-weight:700; padding:12px 24px; cursor:pointer; border:none; box-shadow:0 4px 14px rgba(0,0,0,0.15);">+ Create New Coupon Code</button>
       </div>
     </div>
+
+    <!-- ⚡ STOREWIDE AUTOMATIC DISCOUNT CONTROL CARD -->
+    <div style="background:#fff; border-radius:16px; padding:24px; border:1px solid var(--border); margin-bottom:24px; box-shadow: 0 4px 16px rgba(0,0,0,0.04);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:16px;">
+        <div>
+          <span style="background:#ffe4e6; color:#e11d48; font-size:0.7rem; font-weight:700; text-transform:uppercase; padding:3px 10px; border-radius:999px; letter-spacing:0.06em;">⚡ Storewide Automatic Offer</span>
+          <h3 style="font-size:1.2rem; font-weight:800; margin:6px 0 2px; color:var(--black);">Global Site-Wide Product Discount</h3>
+          <p style="font-size:0.8rem; color:var(--warm-grey); margin:0;">Applies a set discount amount automatically across every single product on the storefront.</p>
+        </div>
+        <label style="display:flex; align-items:center; gap:10px; cursor:pointer; font-weight:700; font-size:0.9rem; background:#f8fafc; padding:8px 16px; border-radius:999px; border:1px solid var(--border);">
+          <input type="checkbox" id="swDiscountEnable" ${swEnable ? 'checked' : ''} style="width:18px; height:18px; accent-color:#e11d48;" />
+          <span id="swStatusText" style="color:${swEnable ? '#e11d48' : 'var(--warm-grey)'}; font-weight:800;">${swEnable ? 'ACTIVE ON SITE' : 'Disabled'}</span>
+        </label>
+      </div>
+
+      <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:12px; align-items:end; background:#fff8f8; padding:16px; border-radius:12px; border:1px solid #ffe4e6;">
+        <div>
+          <label class="sp-qe-label" style="font-weight:700;">Discount Type</label>
+          <select id="swType" class="sp-qe-input">
+            <option value="percent" ${swType === 'percent' ? 'selected' : ''}>Percentage (%) OFF</option>
+            <option value="flat" ${swType === 'flat' ? 'selected' : ''}>Flat Amount (₹) OFF</option>
+          </select>
+        </div>
+        <div>
+          <label class="sp-qe-label" style="font-weight:700;">Discount Amount</label>
+          <input type="number" id="swValue" class="sp-qe-input" value="${swVal}" placeholder="e.g. 15 for 15% off" min="0" step="any" />
+        </div>
+        <div style="grid-column: span 2;">
+          <label class="sp-qe-label" style="font-weight:700;">Sale Announcement Headline (Optional)</label>
+          <input type="text" id="swTitle" class="sp-qe-input" value="${esc(swTitle)}" placeholder="e.g. ⚡ GRAND SALE: 15% OFF EVERY PRODUCT STOREWIDE!" />
+        </div>
+        <div style="grid-column: 1 / -1; display:flex; justify-content:flex-end; margin-top:4px;">
+          <button id="saveSwDiscountBtn" class="btn-pill" style="background:#e11d48; color:#fff; font-weight:700; padding:10px 24px; border:none; cursor:pointer; height:42px;">Save Site-Wide Discount</button>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-bottom: 12px; font-weight:800; font-size:1.1rem;">Coupon Code List</div>
 
     <div class="sp-list">
       ${coupons.length === 0 ? `
@@ -4569,6 +4620,49 @@ async function renderCouponsTab(content) {
       `}
     </div>
   `;
+
+  // Attach Site-Wide Discount handlers
+  const swEnableCheckbox = document.getElementById('swDiscountEnable');
+  const swStatusText = document.getElementById('swStatusText');
+  if (swEnableCheckbox && swStatusText) {
+    swEnableCheckbox.onchange = () => {
+      swStatusText.textContent = swEnableCheckbox.checked ? 'ACTIVE ON SITE' : 'Disabled';
+      swStatusText.style.color = swEnableCheckbox.checked ? '#e11d48' : 'var(--warm-grey)';
+    };
+  }
+
+  const saveSwBtn = document.getElementById('saveSwDiscountBtn');
+  if (saveSwBtn) {
+    saveSwBtn.onclick = async () => {
+      const enabled = document.getElementById('swDiscountEnable').checked;
+      const discount_type = document.getElementById('swType').value;
+      const discount_value = Number(document.getElementById('swValue').value || 0);
+      const title = document.getElementById('swTitle').value.trim();
+
+      const payload = { enabled, discount_type, discount_value, title };
+      saveSwBtn.disabled = true;
+      saveSwBtn.textContent = 'Saving...';
+
+      try {
+        await api('/cms/admin/site-settings/sitewide_discount', { method: 'PUT', body: { value: payload } });
+      } catch (err) {
+        console.warn('Backend sitewide discount save error:', err);
+      }
+
+      localStorage.setItem('sp_sitewide_discount', JSON.stringify(payload));
+      try {
+        let cmsData = JSON.parse(localStorage.getItem('cms_data') || '{}');
+        cmsData.site_settings = cmsData.site_settings || {};
+        cmsData.site_settings.sitewide_discount = payload;
+        localStorage.setItem('cms_data', JSON.stringify(cmsData));
+      } catch(e) {}
+
+      saveSwBtn.disabled = false;
+      saveSwBtn.textContent = 'Save Site-Wide Discount';
+      toast('✓ Site-wide discount updated! Every product now reflects this discount.');
+      renderCouponsTab(content);
+    };
+  }
 
   document.getElementById('createNewCouponBtn')?.addEventListener('click', () => openCouponModal(null));
   document.getElementById('emptyCreateCouponBtn')?.addEventListener('click', () => openCouponModal(null));

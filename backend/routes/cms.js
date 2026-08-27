@@ -610,4 +610,34 @@ router.put('/admin/announcement', protect, adminOnly, async (req, res) => {
   }
 });
 
+// ── Site-Wide Discount Settings ────────────────────────────────────────────────
+router.get('/site-settings/sitewide_discount', async (req, res) => {
+  try {
+    let setting;
+    try {
+      setting = await CmsContent.getSiteSetting('sitewide_discount');
+    } catch (dbErr) {
+      setting = fileStore.getSiteSetting('sitewide_discount');
+    }
+    res.json({ success: true, sitewide_discount: setting ? setting.value : null });
+  } catch (err) {
+    res.json({ success: false, sitewide_discount: null });
+  }
+});
+
+router.put('/admin/site-settings/sitewide_discount', protect, adminOnly, async (req, res) => {
+  try {
+    const { value } = req.body;
+    let setting;
+    try {
+      setting = await CmsContent.updateSiteSetting('sitewide_discount', value);
+    } catch (dbErr) {
+      setting = fileStore.updateSiteSetting('sitewide_discount', value);
+    }
+    res.json({ success: true, setting });
+  } catch (err) {
+    res.status(500).json({ message: 'Failed to update sitewide discount setting', error: err.message });
+  }
+});
+
 module.exports = router;

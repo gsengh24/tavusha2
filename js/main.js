@@ -22,12 +22,35 @@ if (!Array.isArray(parsedWishlist)) parsedWishlist = [];
 parsedWishlist = parsedWishlist.map(String);
 
 const TAVUSHA = {
-  cart:     parsedCart,
-  wishlist: parsedWishlist,
+  cart:             parsedCart,
+  wishlist:         parsedWishlist,
   quickViewProduct: null,
   selectedSize:     null,
-  appliedCoupon:    null
+  appliedCoupon:    null,
+  sitewideDiscount: null
 };
+
+function getEffectiveProductPrice(product) {
+  if (!product) return { price: 0, originalPrice: null, hasSitewideDiscount: false };
+  let price = Number(product.price || 0);
+  let originalPrice = product.originalPrice ? Number(product.originalPrice) : null;
+  const sw = TAVUSHA.sitewideDiscount;
+  let hasSitewideDiscount = false;
+
+  if (sw && sw.enabled && Number(sw.discount_value) > 0) {
+    hasSitewideDiscount = true;
+    if (!originalPrice || originalPrice <= price) {
+      originalPrice = price;
+    }
+    if (sw.discount_type === 'percent') {
+      price = Math.max(0, Math.round(originalPrice * (1 - Number(sw.discount_value) / 100)));
+    } else if (sw.discount_type === 'flat') {
+      price = Math.max(0, Math.round(originalPrice - Number(sw.discount_value)));
+    }
+  }
+
+  return { price, originalPrice, hasSitewideDiscount };
+}
 
 // Card color zones — reference: colored photographic background
 const CARD_COLORS = [
@@ -223,14 +246,24 @@ function initAnnouncement() {
 // Reference: Colored BG top zone + White info + Badge pill + 2 action circles
 function renderProductCard(product, colorIdx) {
   const color = CARD_COLORS[colorIdx % CARD_COLORS.length];
+  const { price, originalPrice, hasSitewideDiscount } = getEffectiveProductPrice(product);
 
   const badgeMap = { new: 'badge', sale: 'badge badge--red', limited: 'badge badge--warm', bestseller: 'badge badge--gold' };
   const badgeLabelMap = { new: 'New', sale: 'Sale', limited: 'Limited', bestseller: 'Hot' };
 
-  const priceHTML = product.originalPrice
-    ? `<span class="product-card__price">₹${product.price.toLocaleString('en-IN')}</span>
-       <span class="product-card__price-orig">₹${product.originalPrice.toLocaleString('en-IN')}</span>`
-    : `<span class="product-card__price">₹${product.price.toLocaleString('en-IN')}</span>`;
+  let badgeMarkup = '';
+  if (hasSitewideDiscount && TAVUSHA.sitewideDiscount) {
+    const sw = TAVUSHA.sitewideDiscount;
+    const swTag = sw.discount_type === 'percent' ? `${sw.discount_value}% OFF` : `₹${sw.discount_value} OFF`;
+    badgeMarkup = `<span class="product-card__badge badge badge--red" style="background:#e11d48; color:#fff; font-weight:800;">${swTag}</span>`;
+  } else if (product.badge) {
+    badgeMarkup = `<span class="product-card__badge ${badgeMap[product.badge] || ''}">${badgeLabelMap[product.badge] || product.badge}</span>`;
+  }
+
+  const priceHTML = originalPrice && originalPrice > price
+    ? `<span class="product-card__price">₹${price.toLocaleString('en-IN')}</span>
+       <span class="product-card__price-orig">₹${originalPrice.toLocaleString('en-IN')}</span>`
+    : `<span class="product-card__price">₹${price.toLocaleString('en-IN')}</span>`;
 
   const starsHTML = Array.from({length: 5}, (_, i) =>
     `<svg width="10" height="10" viewBox="0 0 24 24" fill="${i < Math.round(product.rating) ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="1.5"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>`
@@ -243,7 +276,7 @@ function renderProductCard(product, colorIdx) {
       <div class="product-card__media" style="--card-bg:${color}">
         <img class="product-card__img" src="${typeof fixDriveUrl==='function'?fixDriveUrl(product.image):product.image}" data-orig-src="${product.image}" alt="${product.name}" loading="lazy" referrerpolicy="no-referrer"
           onerror="if(typeof tavushaImgError==='function'){tavushaImgError(this);}">
-        ${product.badge ? `<span class="product-card__badge ${badgeMap[product.badge] || ''}">${badgeLabelMap[product.badge] || product.badge}</span>` : ''}
+        ${badgeMarkup}
         <!-- Two action circles — reference pattern -->
         <div class="product-card__actions">
           <button class="product-card__action-btn ${isWishlisted ? 'active' : ''}"
@@ -457,9 +490,10 @@ function openQuickView(id) {
   document.getElementById('quickViewImg').alt   = product.name;
   document.getElementById('quickViewBrand').textContent = product.brand;
   document.getElementById('quickViewName').textContent  = product.name;
-  document.getElementById('quickViewPrice').innerHTML   = product.originalPrice
-    ? `₹${product.price.toLocaleString('en-IN')} <span style="text-decoration:line-through;color:var(--warm-grey);font-size:0.9rem;font-weight:400">₹${product.originalPrice.toLocaleString('en-IN')}</span>`
-    : `₹${product.price.toLocaleString('en-IN')}`;
+  const { price, originalPrice } = getEffectiveProductPrice(product);
+  document.getElementById('quickViewPrice').innerHTML   = originalPrice && originalPrice > price
+    ? `₹${price.toLocaleString('en-IN')} <span style="text-decoration:line-through;color:var(--warm-grey);font-size:0.9rem;font-weight:400">₹${originalPrice.toLocaleString('en-IN')}</span>`
+    : `₹${price.toLocaleString('en-IN')}`;
 
   const sizesEl = document.getElementById('quickViewSizes');
   sizesEl.innerHTML = product.sizes.map(s =>
@@ -623,15 +657,18 @@ function addToCart(product, size, colour) {
   }
 
   const existing = TAVUSHA.cart.find(i => String(i.id) === String(product.id) && i.size === size && (i.colour || '') === col);
+  const { price: effectivePrice } = getEffectiveProductPrice(product);
+
   if (existing) {
     if (existing.qty >= stock) {
       showToast(`Only ${stock} piece${stock !== 1 ? 's' : ''} available for ${product.name}`, 'info');
       return;
     }
     existing.qty += 1;
+    existing.price = effectivePrice; // Keep price updated with active site discount
     existing.stock = stock; // keep stock fresh
   } else {
-    TAVUSHA.cart.push({ id: product.id, name: product.name, price: product.price, image: product.image, brand: product.brand || 'TAVUSHA', size, colour: col, qty: 1, stock });
+    TAVUSHA.cart.push({ id: product.id, name: product.name, price: effectivePrice, image: product.image, brand: product.brand || 'TAVUSHA', size, colour: col, qty: 1, stock });
   }
   saveCart();
   updateCartUI();
@@ -1498,6 +1535,24 @@ async function loadCmsContent() {
 
   cms.sections = Object.values(sectionsMap);
   if (!cms.announcement && localCms?.announcement) cms.announcement = localCms.announcement;
+
+  // Load Global Site-Wide Discount setting
+  let localSw = null;
+  try { localSw = JSON.parse(localStorage.getItem('sp_sitewide_discount') || 'null'); } catch(e){}
+  const swDiscount = cms.site_settings?.sitewide_discount || localCms?.site_settings?.sitewide_discount || localSw;
+  if (swDiscount) {
+    TAVUSHA.sitewideDiscount = swDiscount;
+    if (swDiscount.enabled && swDiscount.title) {
+      const bar = document.getElementById('announcement');
+      if (bar) {
+        const textEl = bar.querySelector('.announcement__text');
+        if (textEl) textEl.textContent = swDiscount.title;
+      }
+    }
+    // Re-render product grid / rows if function exists
+    if (typeof renderHeroProductRow === 'function') renderHeroProductRow();
+    if (typeof renderShopProducts === 'function') renderShopProducts();
+  }
 
   const DEFAULT_SITE_BANNERS = [
     { id: 'b1', type: 'hero', title: 'Style Every Moment', subtitle: 'Discover curated elegance and edge.', badge_text: 'New Summer 2026', cta_text: 'Shop Now', cta_url: '#', image_url: 'https://images.unsplash.com/photo-1509631179647-0177331693ae?w=900', visible: true, sort_order: 0 },

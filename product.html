@@ -574,10 +574,11 @@ function renderPDP(p) {
   document.getElementById('infoStars').innerHTML=starFn(p.rating || 5,14);
   document.getElementById('infoRatingScore').textContent=p.rating || 5;
   document.getElementById('infoRatingCount').textContent=(p.reviewCount || 0)+' reviews';
-  document.getElementById('infoPrice').textContent='\u20b9'+(p.price || 0).toLocaleString('en-IN');
-  if(p.originalPrice){
-    const save=Math.round((1-p.price/p.originalPrice)*100);
-    document.getElementById('infoPriceOrig').textContent='\u20b9'+p.originalPrice.toLocaleString('en-IN');
+  const effectiveP = typeof getEffectiveProductPrice === 'function' ? getEffectiveProductPrice(p) : { price: p.price, originalPrice: p.originalPrice };
+  document.getElementById('infoPrice').textContent='\u20b9'+(effectiveP.price || 0).toLocaleString('en-IN');
+  if(effectiveP.originalPrice && effectiveP.originalPrice > effectiveP.price){
+    const save=Math.round((1-effectiveP.price/effectiveP.originalPrice)*100);
+    document.getElementById('infoPriceOrig').textContent='\u20b9'+effectiveP.originalPrice.toLocaleString('en-IN');
     document.getElementById('infoPriceOrig').style.display='';
     document.getElementById('infoPriceSave').textContent=save+'% OFF';
     document.getElementById('infoPriceSave').style.display='';
