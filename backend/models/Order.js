@@ -73,6 +73,8 @@ class OrderModel {
       items: fields.items,
       item_count: fields.item_count || (fields.items ? fields.items.length : 1),
       subtotal: fields.subtotal,
+      discount_amount: fields.discount_amount || 0,
+      coupon_code: fields.coupon_code || '',
       total: fields.total,
       payment_type: fields.payment_type || 'cod',
       advance_required: fields.advance_required || 0,

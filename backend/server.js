@@ -37,11 +37,13 @@ app.use(express.json({ limit: '10mb' }));
 // ═══════════════════════════════════════════════════════════
 // API ROUTES (MUST be registered BEFORE static files & SPA catch-all)
 // ═══════════════════════════════════════════════════════════
+const couponRoutes = require('./routes/coupons');
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/cms', cmsRoutes);
 app.use('/api/shipping', shippingRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/coupons', couponRoutes);
 
 app.get('/api/health', (req, res) => res.json({ ok: true, database: 'supabase', version: '2.0.0' }));
 

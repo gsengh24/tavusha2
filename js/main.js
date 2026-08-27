@@ -25,7 +25,8 @@ const TAVUSHA = {
   cart:     parsedCart,
   wishlist: parsedWishlist,
   quickViewProduct: null,
-  selectedSize:     null
+  selectedSize:     null,
+  appliedCoupon:    null
 };
 
 // Card color zones — reference: colored photographic background
@@ -1018,18 +1019,136 @@ function closeCheckout() {
   }
 }
 
+async function applyCoupon() {
+  const inputEl = document.getElementById('coCouponInput');
+  const msgEl   = document.getElementById('coCouponMsg');
+  const btn     = document.getElementById('btnApplyCoupon');
+  const code    = (inputEl?.value || '').trim().toUpperCase();
+
+  if (!code) {
+    if (msgEl) {
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#dc2626';
+      msgEl.textContent = 'Please enter a coupon code';
+    }
+    return;
+  }
+
+  const subtotal = TAVUSHA.cart.reduce((s, i) => s + i.price * i.qty, 0);
+  if (subtotal <= 0) {
+    if (msgEl) {
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#dc2626';
+      msgEl.textContent = 'Your bag is empty';
+    }
+    return;
+  }
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Validating...'; }
+
+  try {
+    const res = await fetch(`${API_BASE}/coupons/validate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code, order_amount: subtotal })
+    });
+    const data = await res.json();
+
+    if (res.ok && data.valid) {
+      TAVUSHA.appliedCoupon = data;
+      if (msgEl) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#16a34a';
+        msgEl.textContent = `✓ Coupon '${data.coupon.code}' applied! You save ₹${data.discount_amount.toLocaleString('en-IN')}`;
+      }
+      showToast(`Coupon '${data.coupon.code}' applied!`, 'success');
+      const pin = document.getElementById('coPincode')?.value?.trim() || '';
+      updateCheckoutSummary(pin);
+    } else {
+      TAVUSHA.appliedCoupon = null;
+      if (msgEl) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#dc2626';
+        msgEl.textContent = data.message || 'Invalid or expired coupon code';
+      }
+      const pin = document.getElementById('coPincode')?.value?.trim() || '';
+      updateCheckoutSummary(pin);
+    }
+  } catch (err) {
+    console.warn('Backend coupon validate notice:', err);
+    if (msgEl) {
+      msgEl.style.display = 'block';
+      msgEl.style.color = '#dc2626';
+      msgEl.textContent = 'Could not validate coupon. Please check backend connection.';
+    }
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Apply'; }
+  }
+}
+
+function removeCoupon() {
+  TAVUSHA.appliedCoupon = null;
+  const inputEl = document.getElementById('coCouponInput');
+  const msgEl   = document.getElementById('coCouponMsg');
+  if (inputEl) inputEl.value = '';
+  if (msgEl) { msgEl.style.display = 'none'; msgEl.textContent = ''; }
+  const pin = document.getElementById('coPincode')?.value?.trim() || '';
+  updateCheckoutSummary(pin);
+  showToast('Coupon removed', 'info');
+}
+
 function updateCheckoutSummary(pin = '') {
   const subtotal = TAVUSHA.cart.reduce((s, i) => s + i.price * i.qty, 0);
   const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
   const { zone, rate } = pin.length === 6 ? calcShippingRate(pin) : { zone: '—', rate: 0 };
-  const shipping = pin.length === 6 ? (rate * totalPieces) : 0;
+  let shipping = pin.length === 6 ? (rate * totalPieces) : 0;
   const tax      = Math.round(subtotal * 0.05);
-  const total    = subtotal + shipping + tax;
+
+  let discount = 0;
+  if (TAVUSHA.appliedCoupon && TAVUSHA.appliedCoupon.coupon) {
+    const c = TAVUSHA.appliedCoupon.coupon;
+    if (c.min_order_amount && subtotal < Number(c.min_order_amount)) {
+      TAVUSHA.appliedCoupon = null;
+      const msgEl = document.getElementById('coCouponMsg');
+      if (msgEl) {
+        msgEl.style.display = 'block';
+        msgEl.style.color = '#dc2626';
+        msgEl.textContent = `Coupon removed: Minimum order amount is ₹${Number(c.min_order_amount).toLocaleString('en-IN')}`;
+      }
+    } else {
+      if (c.discount_type === 'percent') {
+        discount = Math.round((subtotal * Number(c.discount_value)) / 100);
+        if (c.max_discount_amount) discount = Math.min(discount, Number(c.max_discount_amount));
+      } else if (c.discount_type === 'flat') {
+        discount = Math.min(subtotal, Number(c.discount_value));
+      } else if (c.discount_type === 'free_shipping') {
+        shipping = 0;
+        discount = 0;
+      }
+    }
+  }
+
+  const total = Math.max(0, subtotal - discount + shipping + tax);
 
   document.getElementById('coSubtotal').textContent    = `₹${subtotal.toLocaleString('en-IN')}`;
   document.getElementById('coShippingZone').textContent = zone;
   document.getElementById('coShipping').textContent    = pin.length === 6 ? `₹${shipping.toLocaleString('en-IN')}` : 'Enter PIN';
   if (document.getElementById('coTax')) document.getElementById('coTax').textContent = `₹${tax.toLocaleString('en-IN')}`;
+  
+  const discountRow = document.getElementById('coDiscountRow');
+  const discountTag = document.getElementById('coCouponTag');
+  const discountVal = document.getElementById('coDiscount');
+
+  if (discountRow && discountTag && discountVal) {
+    if (discount > 0 || (TAVUSHA.appliedCoupon && TAVUSHA.appliedCoupon.coupon && TAVUSHA.appliedCoupon.coupon.discount_type === 'free_shipping')) {
+      discountRow.style.display = 'flex';
+      discountTag.textContent = TAVUSHA.appliedCoupon.coupon.code;
+      discountVal.textContent = TAVUSHA.appliedCoupon.coupon.discount_type === 'free_shipping' ? 'FREE SHIPPING' : `-₹${discount.toLocaleString('en-IN')}`;
+    } else {
+      discountRow.style.display = 'none';
+    }
+  }
+
   document.getElementById('coTotal').textContent       = pin.length === 6 ? `₹${total.toLocaleString('en-IN')}` : '—';
 
   // Auto-fill city placeholder using known prefix->city map
@@ -1078,16 +1197,32 @@ async function placeOrder() {
 
   const subtotal    = TAVUSHA.cart.reduce((s, i) => s + i.price * i.qty, 0);
   const totalPieces = TAVUSHA.cart.reduce((s, i) => s + i.qty, 0);
-  const tax         = Math.round(subtotal * 0.12);
+  const tax         = Math.round(subtotal * 0.05);
   const { zone, rate } = calcShippingRate(pin);
-  const shipping    = rate * totalPieces;
-  const total       = subtotal + shipping + tax;
+  let shipping      = rate * totalPieces;
+
+  let discount = 0;
+  let couponCode = '';
+  if (TAVUSHA.appliedCoupon && TAVUSHA.appliedCoupon.coupon) {
+    couponCode = TAVUSHA.appliedCoupon.coupon.code;
+    const c = TAVUSHA.appliedCoupon.coupon;
+    if (c.discount_type === 'percent') {
+      discount = Math.round((subtotal * Number(c.discount_value)) / 100);
+      if (c.max_discount_amount) discount = Math.min(discount, Number(c.max_discount_amount));
+    } else if (c.discount_type === 'flat') {
+      discount = Math.min(subtotal, Number(c.discount_value));
+    } else if (c.discount_type === 'free_shipping') {
+      shipping = 0;
+    }
+  }
+
+  const total       = Math.max(0, subtotal - discount + shipping + tax);
   const advanceAmt  = paymentType === 'cod' ? Math.ceil(total * 0.20) : total;
   const orderNum    = 'TV' + Date.now().toString().slice(-8);
 
   _pendingOrder = {
     orderNum, name, phone, email, address, pin, zone,
-    items: [...TAVUSHA.cart], subtotal, shipping, tax, total,
+    items: [...TAVUSHA.cart], subtotal, discount, couponCode, shipping, tax, total,
     paymentType, advanceAmt
   };
 
@@ -1098,6 +1233,8 @@ async function placeOrder() {
     delivery_address: address,
     pincode: pin,
     payment_type: paymentType,
+    coupon_code: couponCode,
+    discount_amount: discount,
     items: TAVUSHA.cart.map(i => ({
       id: i.id,
       title: i.title || i.name,
@@ -1230,12 +1367,22 @@ function showOrderSuccessScreen(order) {
   document.getElementById('checkoutForm').style.display    = 'none';
   document.getElementById('checkoutPayment').style.display = 'none';
   document.getElementById('checkoutSuccess').style.display = 'block';
+
+  const couponCode = order.coupon_code || order.couponCode || (TAVUSHA.appliedCoupon?.coupon?.code);
+  if (couponCode) {
+    fetch(`${API_BASE}/coupons/redeem`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code: couponCode })
+    }).catch(e => console.warn('Coupon redeem warning:', e));
+  }
+
   clearCart();
 }
 
 async function simulatePaymentCapture() {
   if (!_pendingOrder) return;
-  const { orderNum, name, phone, email, address, pin, zone, items, subtotal, shipping, tax, total, paymentType, advanceAmt } = _pendingOrder;
+  const { orderNum, name, phone, email, address, pin, zone, items, subtotal, discount, couponCode, shipping, tax, total, paymentType, advanceAmt } = _pendingOrder;
 
   const orderData = {
     order_number: orderNum,
@@ -1246,6 +1393,8 @@ async function simulatePaymentCapture() {
     shipping_zone: zone,
     items: JSON.stringify(items),
     subtotal,
+    discount_amount: discount || 0,
+    coupon_code: couponCode || '',
     shipping_charge: shipping,
     tax_amount: tax,
     total_amount: total,
@@ -1274,6 +1423,13 @@ async function simulatePaymentCapture() {
 
 function clearCart() {
   TAVUSHA.cart = [];
+  TAVUSHA.appliedCoupon = null;
+  const inputEl = document.getElementById('coCouponInput');
+  const msgEl   = document.getElementById('coCouponMsg');
+  const discRow = document.getElementById('coDiscountRow');
+  if (inputEl) inputEl.value = '';
+  if (msgEl) { msgEl.style.display = 'none'; msgEl.textContent = ''; }
+  if (discRow) discRow.style.display = 'none';
   saveCart();
   updateCartUI();
 }

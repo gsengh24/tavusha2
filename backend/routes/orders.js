@@ -30,7 +30,8 @@ router.post('/', async (req, res) => {
       customer_name, customer_phone, customer_email,
       delivery_address, pincode,
       items, payment_type,
-      special_instructions
+      special_instructions,
+      coupon_code, discount_amount
     } = req.body;
 
     if (!customer_name || !customer_phone || !pincode || !items || !items.length) {
@@ -51,7 +52,8 @@ router.post('/', async (req, res) => {
     let shipping_charge = (zone.rate_per_piece || 60) * item_count;
     if (zone.free_shipping_above && subtotal >= zone.free_shipping_above) shipping_charge = 0;
 
-    const total = subtotal + shipping_charge;
+    const discount = Math.min(Number(discount_amount || 0), subtotal);
+    const total = Math.max(0, subtotal - discount + shipping_charge);
 
     // COD: 20% advance required
     const COD_ADVANCE_PCT = Number(process.env.COD_ADVANCE_PCT || 20) / 100;
@@ -91,6 +93,8 @@ router.post('/', async (req, res) => {
       items,
       item_count,
       subtotal,
+      discount_amount: discount,
+      coupon_code: coupon_code || '',
       total,
       payment_type: payment_type || 'cod',
       advance_required,

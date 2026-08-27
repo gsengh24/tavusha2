@@ -154,7 +154,23 @@
         <div style="flex:1"><label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px">PIN Code</label><input type="text" id="coPincode" maxlength="6" style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-family:var(--font-ui);box-sizing:border-box" placeholder="6-digit PIN"/></div>
         <div style="flex:1"><label style="font-size:0.75rem;font-weight:700;text-transform:uppercase;display:block;margin-bottom:4px">City</label><input type="text" id="coCity" readonly style="width:100%;border:1.5px solid var(--border);border-radius:8px;padding:10px;font-family:var(--font-ui);box-sizing:border-box;background:#faf8f6" placeholder="Auto-filled"/></div>
       </div>
+      <!-- COUPON CODE SECTION -->
+      <div style="margin:12px 0; border:1.5px dashed var(--border); border-radius:10px; padding:12px; background:#faf8f6">
+        <label style="font-size:0.75rem; font-weight:700; text-transform:uppercase; margin-bottom:6px; display:flex; align-items:center; justify-content:space-between; color:#6a0dad">
+          <span>🎟️ Promo / Coupon Code</span>
+          <span style="font-weight:400; text-transform:none; font-size:0.7rem; color:var(--warm-grey)">Optional</span>
+        </label>
+        <div style="display:flex; gap:8px">
+          <input type="text" id="coCouponInput" placeholder="Enter code (e.g. TAVUSHA10)" style="flex:1; border:1.5px solid var(--border); border-radius:6px; padding:8px 10px; font-family:var(--font-ui); font-size:0.85rem; text-transform:uppercase" />
+          <button type="button" onclick="applyCoupon()" id="btnApplyCoupon" style="background:#1C1917; color:#fff; border:none; border-radius:6px; padding:8px 14px; font-size:0.8rem; font-weight:600; cursor:pointer">Apply</button>
+        </div>
+        <div id="coCouponMsg" style="font-size:0.75rem; margin-top:6px; font-weight:600; display:none"></div>
+      </div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Subtotal</span><span id="coSubtotal">&#8377;0</span></div>
+      <div id="coDiscountRow" style="display:none; justify-content:space-between; font-size:0.85rem; margin-bottom:4px; color:#16a34a; font-weight:600">
+        <span>Discount (<span id="coCouponTag"></span>) <button type="button" onclick="removeCoupon()" style="border:none;background:none;color:#dc2626;cursor:pointer;font-size:0.75rem;padding:0 2px">&times; remove</button></span>
+        <span id="coDiscount">-&#8377;0</span>
+      </div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Shipping (<span id="coShippingZone">&#8212;</span>)</span><span id="coShipping">Enter PIN</span></div>
       <div style="display:flex;justify-content:space-between;font-size:0.85rem;margin-bottom:4px"><span>Tax / GST (5%)</span><span id="coTax">&#8377;0</span></div>
       <div style="display:flex;justify-content:space-between;font-weight:700;font-size:1rem;border-top:1px solid var(--border);padding-top:8px;margin-bottom:16px"><span>Total</span><span id="coTotal">&#8212;</span></div>
