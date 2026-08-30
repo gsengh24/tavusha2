@@ -11,3 +11,14 @@
   from = "/*"
   to = "/index.html"
   status = 200
+
+# ─── Prevent CDN caching of HTML pages so deploys appear instantly ───
+[[headers]]
+  for = "/*.html"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+  for = "/"
+  [headers.values]
+    Cache-Control = "public, max-age=0, must-revalidate"
