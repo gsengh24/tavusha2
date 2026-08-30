@@ -106,6 +106,17 @@ function handleCustomerSignup(e) {
 
   accounts.push({ name, email, phone, password: btoa(password), joinedAt: new Date().toISOString() });
   localStorage.setItem('tavusha_accounts', JSON.stringify(accounts));
+
+  // ── Also persist to backend so admin can see all signed-up customers ──
+  try {
+    const apiBase = (typeof API_BASE !== 'undefined' ? API_BASE : '') || 'https://tavusha2-backend.onrender.com';
+    fetch(apiBase + '/api/customers/register', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, email, phone })
+    }).catch(() => {}); // fire-and-forget — never block signup
+  } catch (_) {}
+
   setCustSession({ name, email, phone });
   onAuthSuccess(`Welcome to TAVUSHA, ${name.split(' ')[0]}! ✨`);
 }

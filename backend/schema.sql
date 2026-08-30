@@ -278,3 +278,27 @@ CREATE POLICY "Service role write cms_banners" ON cms_banners
 CREATE POLICY "Service role write cms_popups" ON cms_popups
   FOR ALL TO service_role USING (true) WITH CHECK (true);
 
+-- ───────────────────────────────────────────────────────────────────────
+-- 11. CUSTOMERS TABLE (storefront sign-ups)
+-- ───────────────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS customers (
+  id         UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  name       TEXT NOT NULL,
+  email      TEXT UNIQUE NOT NULL,
+  phone      TEXT DEFAULT '',
+  joined_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE customers ENABLE ROW LEVEL SECURITY;
+
+-- Backend (service role) can read & write customers
+CREATE POLICY "Service role all customers" ON customers
+  FOR ALL TO service_role USING (true) WITH CHECK (true);
+
+-- Public can insert (needed for the storefront signup POST)
+CREATE POLICY "Public insert customers" ON customers
+  FOR INSERT TO anon, authenticated WITH CHECK (true);
+
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers (email);
+CREATE INDEX IF NOT EXISTS idx_customers_joined_at ON customers (joined_at DESC);
+

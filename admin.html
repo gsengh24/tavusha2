@@ -4650,24 +4650,28 @@ async function syncOfflineCmsData() {
 }
 
 /* ──────────────────────────────────────────────────────────
-   CUSTOMERS TAB — shows all signed-up users from localStorage
+   CUSTOMERS TAB — fetches signed-up users from backend (Supabase)
 ────────────────────────────────────────────────────────── */
-function renderCustomersTab(content) {
-  // Load from localStorage — written by js/auth.js on signup
-  let accounts = [];
-  try { accounts = JSON.parse(localStorage.getItem('tavusha_accounts') || '[]'); } catch(e) {}
+async function renderCustomersTab(content) {
+  // Show a loading state immediately
+  content.innerHTML = `<p class="sp-empty" style="padding:40px;text-align:center">⏳ Loading customers…</p>`;
 
-  // Sort newest first (order of signup, index 0 = first registered)
-  // We reverse so latest appear on top
-  const customers = [...accounts].reverse();
+  // Fetch from backend API
+  let customers = [];
+  try {
+    let res = await apiLive('/customers/admin').catch(() => null);
+    if (!res || !Array.isArray(res)) res = await api('/customers/admin');
+    if (Array.isArray(res)) customers = res;
+  } catch (err) {
+    console.warn('Customers fetch error:', err);
+  }
 
   /* ── Stats ── */
-  const total      = customers.length;
-  const withPhone  = customers.filter(c => c.phone && c.phone.trim()).length;
-  const withEmail  = customers.filter(c => c.email && c.email.trim()).length;
-  const today      = new Date().toDateString();
-  // accounts don't store signup date by default — check joinedAt if present
-  const todayCount = customers.filter(c => c.joinedAt && new Date(c.joinedAt).toDateString() === today).length;
+  const total     = customers.length;
+  const withPhone = customers.filter(c => c.phone && c.phone.trim()).length;
+  const withEmail = customers.filter(c => c.email && c.email.trim()).length;
+  const today     = new Date().toDateString();
+  const todayCount = customers.filter(c => c.joined_at && new Date(c.joined_at).toDateString() === today).length;
 
   /* ── Search state ── */
   window.custSearchQuery = window.custSearchQuery || '';
@@ -4685,7 +4689,7 @@ function renderCustomersTab(content) {
         box-shadow: 0 12px 36px rgba(37,99,235,0.22);
       }
       .cust-hero::before {
-        content: '👤';
+        content: '👥';
         position: absolute;
         right: 24px;
         bottom: -8px;
@@ -4822,7 +4826,7 @@ function renderCustomersTab(content) {
       <div style="position:relative;z-index:1">
         <span style="background:rgba(255,255,255,0.15);font-size:0.7rem;font-weight:700;text-transform:uppercase;padding:4px 12px;border-radius:999px;letter-spacing:0.08em;color:#bfdbfe">Customer Registry</span>
         <h2 style="font-family:var(--font-display);font-size:1.65rem;font-weight:800;margin:10px 0 4px;color:#fff">Signed-Up Customers</h2>
-        <p style="font-size:0.83rem;opacity:0.85;margin:0;max-width:550px">All customers who have created an account on the TAVUSHA storefront. Accounts are stored locally and linked to checkout sessions.</p>
+        <p style="font-size:0.83rem;opacity:0.85;margin:0;max-width:550px">All customers who have created an account on the TAVUSHA storefront. Data is stored in the database and synced in real time.</p>
       </div>
     </div>
 
@@ -4831,7 +4835,7 @@ function renderCustomersTab(content) {
       <div class="cust-stat-card">
         <div class="cust-stat-icon" style="background:#dbeafe">👥</div>
         <div>
-          <div class="cust-stat-val" id="custStatTotal">${total}</div>
+          <div class="cust-stat-val">${total}</div>
           <div class="cust-stat-lbl">Total Registered</div>
         </div>
       </div>
@@ -4868,6 +4872,9 @@ function renderCustomersTab(content) {
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
         Export CSV
       </button>
+      <button id="custRefreshBtn" class="cust-export-btn" style="border-color:#6b7280;color:#6b7280">
+        🔄 Refresh
+      </button>
       <div id="custCount" style="font-size:0.78rem;color:var(--warm-grey);font-weight:600;white-space:nowrap"></div>
     </div>
 
@@ -4877,7 +4884,7 @@ function renderCustomersTab(content) {
         <div class="cust-empty-state">
           <div class="cust-empty-icon">🙋</div>
           <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:6px">No Customers Signed Up Yet</h3>
-          <p style="font-size:0.82rem;color:var(--warm-grey);max-width:360px;margin:0 auto">Once a customer creates an account on the storefront, their information will appear here in real time.</p>
+          <p style="font-size:0.82rem;color:var(--warm-grey);max-width:360px;margin:0 auto">Once a customer creates an account on the storefront, their information will appear here automatically.</p>
         </div>
       ` : `
         <table class="cust-table" id="custTable">
@@ -4925,10 +4932,10 @@ function renderCustomersTab(content) {
       const phoneHtml = c.phone && c.phone.trim()
         ? `<span class="cust-badge cust-badge--phone">📱 ${esc(c.phone)}</span>`
         : `<span class="cust-badge cust-badge--nophone">— Not provided</span>`;
-      const joinedText = c.joinedAt
-        ? new Date(c.joinedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+      const joinedDate = c.joined_at || c.joinedAt;
+      const joinedText = joinedDate
+        ? new Date(joinedDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
         : '<span style="color:#9ca3af;font-size:0.75rem">—</span>';
-      const originalIndex = accounts.length - 1 - i; // reverse-mapped index
       return `
         <tr>
           <td><span class="cust-serial">#${String(i + 1).padStart(3, '0')}</span></td>
@@ -4945,7 +4952,7 @@ function renderCustomersTab(content) {
           <td>${phoneHtml}</td>
           <td style="font-size:0.8rem;color:var(--warm-grey)">${joinedText}</td>
           <td>
-            <button class="cust-delete-btn" data-email="${esc(c.email)}" title="Remove this customer account">
+            <button class="cust-delete-btn" data-id="${esc(c.id)}" data-email="${esc(c.email)}" title="Remove this customer account">
               🗑 Remove
             </button>
           </td>
@@ -4955,15 +4962,16 @@ function renderCustomersTab(content) {
 
     // Bind delete buttons
     tbody.querySelectorAll('.cust-delete-btn').forEach(btn => {
-      btn.onclick = () => {
+      btn.onclick = async () => {
         const email = btn.dataset.email;
-        if (!email) return;
-        if (!confirm(`Remove account for ${email}?\n\nThis will delete their login credentials. Orders placed by this customer are not affected.`)) return;
-        let accs = [];
-        try { accs = JSON.parse(localStorage.getItem('tavusha_accounts') || '[]'); } catch(e){}
-        const updated = accs.filter(a => (a.email || '').toLowerCase() !== email.toLowerCase());
-        localStorage.setItem('tavusha_accounts', JSON.stringify(updated));
-        // Refresh tab
+        const id = btn.dataset.id;
+        if (!confirm(`Remove account for ${email}?\n\nThis will delete their registration. Orders placed are not affected.`)) return;
+        btn.textContent = '…'; btn.disabled = true;
+        try {
+          await apiLive('/customers/admin/' + id, { method: 'DELETE' }).catch(() =>
+            api('/customers/admin/' + id, { method: 'DELETE' })
+          );
+        } catch(e) { console.warn('Delete customer error:', e); }
         window.custSearchQuery = document.getElementById('custSearch')?.value || '';
         showAdminTab('customers');
       };
@@ -4981,6 +4989,9 @@ function renderCustomersTab(content) {
     };
   }
 
+  // ── Refresh button ──
+  document.getElementById('custRefreshBtn')?.addEventListener('click', () => showAdminTab('customers'));
+
   // ── CSV Export ──
   const exportBtn = document.getElementById('custExportBtn');
   if (exportBtn) {
@@ -4992,7 +5003,7 @@ function renderCustomersTab(content) {
           c.name || '',
           c.email || '',
           c.phone || '',
-          c.joinedAt ? new Date(c.joinedAt).toLocaleDateString('en-IN') : ''
+          (c.joined_at || c.joinedAt) ? new Date(c.joined_at || c.joinedAt).toLocaleDateString('en-IN') : ''
         ])
       ];
       const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -5007,9 +5018,6 @@ function renderCustomersTab(content) {
   }
 }
 
-/* ──────────────────────────────────────────────────────────
-   COUPONS MANAGEMENT TAB
-────────────────────────────────────────────────────────── */
 async function renderCouponsTab(content) {
   let coupons = [];
   try {
