@@ -104,7 +104,7 @@ function handleCustomerSignup(e) {
     errEl.textContent = 'An account with this email already exists.'; return;
   }
 
-  accounts.push({ name, email, phone, password: btoa(password) });
+  accounts.push({ name, email, phone, password: btoa(password), joinedAt: new Date().toISOString() });
   localStorage.setItem('tavusha_accounts', JSON.stringify(accounts));
   setCustSession({ name, email, phone });
   onAuthSuccess(`Welcome to TAVUSHA, ${name.split(' ')[0]}! ✨`);

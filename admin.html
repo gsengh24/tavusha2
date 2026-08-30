@@ -1702,6 +1702,7 @@ function adminView() {
     <button id="tabOrders" class="filter-btn">📋 Orders</button>
     <button id="tabBulkImport" class="filter-btn" style="background:linear-gradient(135deg,#0a4d2222,#22c55e22);border-color:#16a34a;font-weight:700">📊 Bulk Import</button>
     <button id="tabCoupons" class="filter-btn" style="background:linear-gradient(135deg,#c0392b22,#ff6b6b22);border-color:#e74c3c;font-weight:700">🎟️ Coupons</button>
+    <button id="tabCustomers" class="filter-btn" style="background:linear-gradient(135deg,#0e3a6e22,#2563eb22);border-color:#2563eb;font-weight:700">👤 Customers</button>
   </div>
   <div id="adminContent" class="sp-list"></div>
   <div id="formModal" class="sp-modal-overlay" style="display:none"><div class="sp-modal" id="formModalContent"></div></div>`;
@@ -1718,6 +1719,7 @@ function attachAdmin() {
   document.getElementById('tabOrders').onclick = () => showAdminTab('orders');
   document.getElementById('tabBulkImport').onclick = () => showAdminTab('bulkImport');
   document.getElementById('tabCoupons').onclick = () => showAdminTab('coupons');
+  document.getElementById('tabCustomers').onclick = () => showAdminTab('customers');
   showAdminTab('products');
 }
 async function showAdminTab(tab) {
@@ -1730,6 +1732,7 @@ async function showAdminTab(tab) {
   document.getElementById('tabOrders').classList.toggle('active', tab === 'orders');
   document.getElementById('tabBulkImport').classList.toggle('active', tab === 'bulkImport');
   if (document.getElementById('tabCoupons')) document.getElementById('tabCoupons').classList.toggle('active', tab === 'coupons');
+  if (document.getElementById('tabCustomers')) document.getElementById('tabCustomers').classList.toggle('active', tab === 'customers');
   const content = document.getElementById('adminContent');
   
   try {
@@ -2807,6 +2810,8 @@ async function showAdminTab(tab) {
       renderBulkImportTab(content);
     } else if (tab === 'coupons') {
       renderCouponsTab(content);
+    } else if (tab === 'customers') {
+      renderCustomersTab(content);
     }
   } catch(err) {
     content.innerHTML = `
@@ -4641,6 +4646,364 @@ async function syncOfflineCmsData() {
     localStorage.setItem('cms_data', JSON.stringify(cmsPayload));
   } catch (e) {
     console.warn('syncOfflineCmsData error:', e);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────
+   CUSTOMERS TAB — shows all signed-up users from localStorage
+────────────────────────────────────────────────────────── */
+function renderCustomersTab(content) {
+  // Load from localStorage — written by js/auth.js on signup
+  let accounts = [];
+  try { accounts = JSON.parse(localStorage.getItem('tavusha_accounts') || '[]'); } catch(e) {}
+
+  // Sort newest first (order of signup, index 0 = first registered)
+  // We reverse so latest appear on top
+  const customers = [...accounts].reverse();
+
+  /* ── Stats ── */
+  const total      = customers.length;
+  const withPhone  = customers.filter(c => c.phone && c.phone.trim()).length;
+  const withEmail  = customers.filter(c => c.email && c.email.trim()).length;
+  const today      = new Date().toDateString();
+  // accounts don't store signup date by default — check joinedAt if present
+  const todayCount = customers.filter(c => c.joinedAt && new Date(c.joinedAt).toDateString() === today).length;
+
+  /* ── Search state ── */
+  window.custSearchQuery = window.custSearchQuery || '';
+
+  content.innerHTML = `
+    <style>
+      .cust-hero {
+        background: linear-gradient(135deg, #0e1b4e 0%, #1a3a8f 60%, #2563eb 100%);
+        color: #fff;
+        border-radius: 18px;
+        padding: 28px 32px;
+        margin-bottom: 28px;
+        position: relative;
+        overflow: hidden;
+        box-shadow: 0 12px 36px rgba(37,99,235,0.22);
+      }
+      .cust-hero::before {
+        content: '👤';
+        position: absolute;
+        right: 24px;
+        bottom: -8px;
+        font-size: 7rem;
+        opacity: 0.10;
+        pointer-events: none;
+      }
+      .cust-stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(175px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+      .cust-stat-card {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 18px 20px;
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        transition: transform 0.15s, box-shadow 0.15s;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      }
+      .cust-stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 22px rgba(0,0,0,0.07); }
+      .cust-stat-icon {
+        width: 46px; height: 46px; border-radius: 12px;
+        display: flex; align-items: center; justify-content: center;
+        font-size: 1.4rem; flex-shrink: 0;
+      }
+      .cust-stat-val { font-size: 1.7rem; font-weight: 800; color: var(--black); line-height: 1; }
+      .cust-stat-lbl { font-size: 0.71rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--warm-grey); margin-top: 3px; }
+      .cust-search-bar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        align-items: center;
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 20px;
+      }
+      .cust-table-wrap {
+        background: #fff;
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        overflow-x: auto;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      }
+      .cust-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.85rem;
+      }
+      .cust-table thead th {
+        background: #f4f6fb;
+        padding: 14px 18px;
+        text-align: left;
+        font-size: 0.72rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: #6b7280;
+        border-bottom: 1px solid var(--border);
+      }
+      .cust-table tbody tr { transition: background 0.12s; }
+      .cust-table tbody tr:hover td { background: #f0f5ff; }
+      .cust-table tbody td {
+        padding: 14px 18px;
+        border-bottom: 1px solid #f3f4f6;
+        vertical-align: middle;
+      }
+      .cust-table tbody tr:last-child td { border-bottom: none; }
+      .cust-avatar {
+        width: 38px; height: 38px; border-radius: 50%;
+        background: linear-gradient(135deg, #2563eb, #7c3aed);
+        color: #fff;
+        font-weight: 800;
+        font-size: 0.9rem;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        text-transform: uppercase;
+      }
+      .cust-name-cell { display: flex; align-items: center; gap: 12px; }
+      .cust-name-text { font-weight: 700; color: var(--black); font-size: 0.9rem; line-height: 1.2; }
+      .cust-email-text { font-size: 0.75rem; color: var(--warm-grey); }
+      .cust-badge {
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: 0.72rem; font-weight: 700;
+        padding: 3px 10px; border-radius: 999px;
+      }
+      .cust-badge--phone { background: #dcfce7; color: #15803d; }
+      .cust-badge--nophone { background: #fef3c7; color: #b45309; }
+      .cust-serial { font-size: 0.72rem; color: #9ca3af; font-family: monospace; font-weight: 700; }
+      .cust-delete-btn {
+        padding: 5px 12px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        border: 1px solid #fecaca;
+        background: #fff5f5;
+        color: #b91c1c;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: background 0.12s;
+      }
+      .cust-delete-btn:hover { background: #fee2e2; }
+      .cust-empty-state {
+        text-align: center;
+        padding: 64px 24px;
+      }
+      .cust-empty-icon { font-size: 3.5rem; margin-bottom: 14px; }
+      .cust-export-btn {
+        padding: 9px 20px;
+        background: #fff;
+        border: 1.5px solid #2563eb;
+        color: #2563eb;
+        border-radius: 999px;
+        font-weight: 700;
+        font-size: 0.82rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        gap: 7px;
+        transition: background 0.15s;
+      }
+      .cust-export-btn:hover { background: #eff6ff; }
+    </style>
+
+    <!-- ── Hero Banner ── -->
+    <div class="cust-hero">
+      <div style="position:relative;z-index:1">
+        <span style="background:rgba(255,255,255,0.15);font-size:0.7rem;font-weight:700;text-transform:uppercase;padding:4px 12px;border-radius:999px;letter-spacing:0.08em;color:#bfdbfe">Customer Registry</span>
+        <h2 style="font-family:var(--font-display);font-size:1.65rem;font-weight:800;margin:10px 0 4px;color:#fff">Signed-Up Customers</h2>
+        <p style="font-size:0.83rem;opacity:0.85;margin:0;max-width:550px">All customers who have created an account on the TAVUSHA storefront. Accounts are stored locally and linked to checkout sessions.</p>
+      </div>
+    </div>
+
+    <!-- ── Stats Grid ── -->
+    <div class="cust-stats-grid">
+      <div class="cust-stat-card">
+        <div class="cust-stat-icon" style="background:#dbeafe">👥</div>
+        <div>
+          <div class="cust-stat-val" id="custStatTotal">${total}</div>
+          <div class="cust-stat-lbl">Total Registered</div>
+        </div>
+      </div>
+      <div class="cust-stat-card">
+        <div class="cust-stat-icon" style="background:#dcfce7">📱</div>
+        <div>
+          <div class="cust-stat-val">${withPhone}</div>
+          <div class="cust-stat-lbl">With Phone No.</div>
+        </div>
+      </div>
+      <div class="cust-stat-card">
+        <div class="cust-stat-icon" style="background:#fef3c7">📧</div>
+        <div>
+          <div class="cust-stat-val">${withEmail}</div>
+          <div class="cust-stat-lbl">With Email</div>
+        </div>
+      </div>
+      <div class="cust-stat-card">
+        <div class="cust-stat-icon" style="background:#ede9fe">🆕</div>
+        <div>
+          <div class="cust-stat-val">${todayCount}</div>
+          <div class="cust-stat-lbl">Joined Today</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Search & Export Bar ── -->
+    <div class="cust-search-bar">
+      <div style="flex:1;min-width:220px">
+        <label class="sp-qe-label">Search Customers</label>
+        <input type="text" id="custSearch" class="sp-qe-input" placeholder="Search by name, email or phone…" value="${esc(window.custSearchQuery)}" style="width:100%"/>
+      </div>
+      <button id="custExportBtn" class="cust-export-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+        Export CSV
+      </button>
+      <div id="custCount" style="font-size:0.78rem;color:var(--warm-grey);font-weight:600;white-space:nowrap"></div>
+    </div>
+
+    <!-- ── Customers Table ── -->
+    <div class="cust-table-wrap">
+      ${ total === 0 ? `
+        <div class="cust-empty-state">
+          <div class="cust-empty-icon">🙋</div>
+          <h3 style="font-size:1.1rem;font-weight:700;margin-bottom:6px">No Customers Signed Up Yet</h3>
+          <p style="font-size:0.82rem;color:var(--warm-grey);max-width:360px;margin:0 auto">Once a customer creates an account on the storefront, their information will appear here in real time.</p>
+        </div>
+      ` : `
+        <table class="cust-table" id="custTable">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Customer</th>
+              <th>Email Address</th>
+              <th>Phone Number</th>
+              <th>Joined</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="custTableBody"></tbody>
+        </table>
+      `}
+    </div>
+  `;
+
+  if (total === 0) return;
+
+  // ── Render rows ──
+  function renderRows(query) {
+    const tbody = document.getElementById('custTableBody');
+    const countEl = document.getElementById('custCount');
+    if (!tbody) return;
+    const q = (query || '').toLowerCase().trim();
+    const filtered = q
+      ? customers.filter(c =>
+          (c.name || '').toLowerCase().includes(q) ||
+          (c.email || '').toLowerCase().includes(q) ||
+          (c.phone || '').toLowerCase().includes(q)
+        )
+      : customers;
+
+    if (countEl) countEl.textContent = `Showing ${filtered.length} of ${total} customer${total !== 1 ? 's' : ''}`;
+
+    if (filtered.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--warm-grey)">No customers match your search.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = filtered.map((c, i) => {
+      const initials = (c.name || '?').split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase();
+      const phoneHtml = c.phone && c.phone.trim()
+        ? `<span class="cust-badge cust-badge--phone">📱 ${esc(c.phone)}</span>`
+        : `<span class="cust-badge cust-badge--nophone">— Not provided</span>`;
+      const joinedText = c.joinedAt
+        ? new Date(c.joinedAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' })
+        : '<span style="color:#9ca3af;font-size:0.75rem">—</span>';
+      const originalIndex = accounts.length - 1 - i; // reverse-mapped index
+      return `
+        <tr>
+          <td><span class="cust-serial">#${String(i + 1).padStart(3, '0')}</span></td>
+          <td>
+            <div class="cust-name-cell">
+              <div class="cust-avatar">${esc(initials)}</div>
+              <div>
+                <div class="cust-name-text">${esc(c.name || 'Unknown')}</div>
+                <div class="cust-email-text">${esc(c.email || '—')}</div>
+              </div>
+            </div>
+          </td>
+          <td style="font-size:0.82rem">${esc(c.email || '—')}</td>
+          <td>${phoneHtml}</td>
+          <td style="font-size:0.8rem;color:var(--warm-grey)">${joinedText}</td>
+          <td>
+            <button class="cust-delete-btn" data-email="${esc(c.email)}" title="Remove this customer account">
+              🗑 Remove
+            </button>
+          </td>
+        </tr>
+      `;
+    }).join('');
+
+    // Bind delete buttons
+    tbody.querySelectorAll('.cust-delete-btn').forEach(btn => {
+      btn.onclick = () => {
+        const email = btn.dataset.email;
+        if (!email) return;
+        if (!confirm(`Remove account for ${email}?\n\nThis will delete their login credentials. Orders placed by this customer are not affected.`)) return;
+        let accs = [];
+        try { accs = JSON.parse(localStorage.getItem('tavusha_accounts') || '[]'); } catch(e){}
+        const updated = accs.filter(a => (a.email || '').toLowerCase() !== email.toLowerCase());
+        localStorage.setItem('tavusha_accounts', JSON.stringify(updated));
+        // Refresh tab
+        window.custSearchQuery = document.getElementById('custSearch')?.value || '';
+        showAdminTab('customers');
+      };
+    });
+  }
+
+  renderRows(window.custSearchQuery);
+
+  // ── Live search ──
+  const searchEl = document.getElementById('custSearch');
+  if (searchEl) {
+    searchEl.oninput = (e) => {
+      window.custSearchQuery = e.target.value;
+      renderRows(e.target.value);
+    };
+  }
+
+  // ── CSV Export ──
+  const exportBtn = document.getElementById('custExportBtn');
+  if (exportBtn) {
+    exportBtn.onclick = () => {
+      const rows = [
+        ['#', 'Full Name', 'Email', 'Phone', 'Joined'],
+        ...customers.map((c, i) => [
+          i + 1,
+          c.name || '',
+          c.email || '',
+          c.phone || '',
+          c.joinedAt ? new Date(c.joinedAt).toLocaleDateString('en-IN') : ''
+        ])
+      ];
+      const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')).join('\n');
+      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `tavusha-customers-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
   }
 }
 
