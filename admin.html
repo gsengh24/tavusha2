@@ -976,11 +976,11 @@ async function api(path, options = {}) {
       return data;
     }
 
-    if (res.status === 401 || res.status === 403) {
+    if (res.status === 401 || res.status === 403 || res.status === 402 || res.status === 429) {
       if (state.token && state.token.startsWith('demo_token_')) {
         return handleMockApi(path, options);
       }
-      // If token expired on live backend, fallback to mock if demo login allowed
+      // If token expired or Supabase quota hit (402), fallback to mock
       if (path !== '/auth/login') {
         return handleMockApi(path, options);
       }

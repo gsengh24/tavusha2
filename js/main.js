@@ -1519,13 +1519,29 @@ async function loadCmsContent() {
     if (publicRes && publicRes.ok) cms = await publicRes.json();
     if (settingRes && settingRes.ok) {
       const settingData = await settingRes.json();
-      if (settingData && settingData.banner_url) liveBannerUrl = settingData.banner_url;
+      if (settingData && settingData.banner_url) {
+        liveBannerUrl = settingData.banner_url;
+        try { localStorage.setItem('sp_live_banner', liveBannerUrl); } catch(e){}
+      }
     }
     if (swRes && swRes.ok) {
       const swData = await swRes.json();
-      if (swData && swData.sitewide_discount) liveSitewideDiscount = swData.sitewide_discount;
+      if (swData && swData.sitewide_discount) {
+        liveSitewideDiscount = swData.sitewide_discount;
+        try { localStorage.setItem('sp_live_sitewide_discount', JSON.stringify(liveSitewideDiscount)); } catch(e){}
+      }
     }
   } catch { /* backend offline */ }
+
+  if (!liveBannerUrl) {
+    try { liveBannerUrl = localStorage.getItem('sp_live_banner') || null; } catch(e){}
+  }
+  if (!liveSitewideDiscount) {
+    try {
+      const storedSw = localStorage.getItem('sp_live_sitewide_discount');
+      if (storedSw) liveSitewideDiscount = JSON.parse(storedSw);
+    } catch(e){}
+  }
 
   if (!cms) cms = {};
   if (cms.banner_url && !liveBannerUrl) liveBannerUrl = cms.banner_url;
